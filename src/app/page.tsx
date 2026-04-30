@@ -16,12 +16,12 @@ export default function HomePage() {
       <HowItWorks />
 
       {/* Signatures */}
-      <section className="bg-creamSoft py-20">
+      <section className="bg-creamSoft py-14 sm:py-20">
         <div className="container-x">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
               <p className="eyebrow">Nos signatures</p>
-              <h2 className="heading-display mt-3 text-4xl text-primary sm:text-5xl">
+              <h2 className="heading-display mt-3 text-3xl text-primary sm:text-4xl lg:text-5xl">
                 Trois plats qui font dire&nbsp;
                 <span className="text-accent">miaam</span>.
               </h2>
@@ -47,12 +47,12 @@ export default function HomePage() {
       </section>
 
       {/* Valeurs */}
-      <section className="relative overflow-hidden bg-cream py-20">
+      <section className="relative overflow-hidden bg-cream py-14 sm:py-20">
         <div className="container-x">
           <div className="grid gap-12 md:grid-cols-[1.2fr_1fr] md:items-center">
             <div>
               <p className="eyebrow">Notre promesse</p>
-              <h2 className="heading-display mt-3 text-4xl text-primary sm:text-5xl">
+              <h2 className="heading-display mt-3 text-3xl text-primary sm:text-4xl lg:text-5xl">
                 Une cuisine généreuse, authentique
                 <span className="text-accent"> et raffinée.</span>
               </h2>
@@ -62,7 +62,7 @@ export default function HomePage() {
                 gastronomie française.
               </p>
 
-              <ul className="mt-10 grid gap-8 sm:grid-cols-2">
+              <ul className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 sm:gap-8">
                 <Value
                   icon={<LeafIcon className="h-6 w-6" />}
                   title="Ingrédients frais"
@@ -108,22 +108,22 @@ export default function HomePage() {
       </section>
 
       {/* CTA final */}
-      <section className="py-16">
+      <section className="py-12 sm:py-16">
         <div className="container-x">
-          <div className="relative overflow-hidden rounded-2xl bg-primary-gradient p-8 text-cream shadow-soft sm:p-12 bg-grain">
+          <div className="relative overflow-hidden rounded-2xl bg-primary-gradient bg-grain p-6 text-cream shadow-soft sm:p-10 lg:p-12">
             <div className="afro-side-pattern absolute inset-0 opacity-50" aria-hidden="true" />
             <div className="relative grid gap-6 md:grid-cols-[1.5fr_auto] md:items-center">
               <div>
                 <p className="eyebrow text-accentSoft">Prêt à commander ?</p>
-                <h2 className="heading-display mt-3 text-3xl sm:text-4xl">
+                <h2 className="heading-display mt-3 text-2xl sm:text-3xl lg:text-4xl">
                   Commande aujourd&apos;hui, savoure demain.
                 </h2>
-                <p className="mt-3 text-cream/80">
+                <p className="mt-3 text-sm text-cream/80 sm:text-base">
                   Paiement après validation par téléphone. Vous réservez, on
                   vous rappelle.
                 </p>
               </div>
-              <Link href="/menu" className="btn btn-lg btn-primary">
+              <Link href="/menu" className="btn btn-lg btn-primary justify-center">
                 Composer ma commande
               </Link>
             </div>

@@ -8,10 +8,10 @@ export const metadata = {
 export default function HowItWorksPage() {
   return (
     <>
-      <section className="bg-primary pt-12 pb-10 text-cream sm:pt-16">
+      <section className="bg-primary pt-10 pb-10 text-cream sm:pt-16 sm:pb-12">
         <div className="container-x">
           <p className="eyebrow text-accentSoft">Mode d&apos;emploi</p>
-          <h1 className="heading-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+          <h1 className="heading-display mt-3 text-3xl sm:text-4xl lg:text-6xl">
             Précommande Afro Miaam, en 3 étapes claires.
           </h1>
           <p className="mt-4 max-w-2xl text-cream/85">

@@ -31,7 +31,7 @@ export default function CartPage() {
     <section className="py-12 sm:py-16">
       <div className="container-x">
         <p className="eyebrow">Panier</p>
-        <h1 className="heading-display mt-2 text-4xl text-primary sm:text-5xl">
+        <h1 className="heading-display mt-2 text-3xl text-primary sm:text-4xl lg:text-5xl">
           Votre commande
         </h1>
 
@@ -72,7 +72,7 @@ export default function CartPage() {
                       {formatPrice(line.price)} l&apos;unité
                     </p>
                   </div>
-                  <div className="flex items-center justify-between gap-4 sm:justify-end">
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap sm:justify-end">
                     <div className="inline-flex items-center rounded-full border border-primary/15 bg-creamSoft">
                       <button
                         type="button"

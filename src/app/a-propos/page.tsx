@@ -8,11 +8,11 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <>
-      <section className="bg-primary pt-12 pb-10 text-cream sm:pt-16">
+      <section className="bg-primary pt-10 pb-10 text-cream sm:pt-16 sm:pb-12">
         <div className="container-x grid gap-10 md:grid-cols-[1.2fr_1fr] md:items-center">
           <div>
             <p className="eyebrow text-accentSoft">Notre histoire</p>
-            <h1 className="heading-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+            <h1 className="heading-display mt-3 text-3xl sm:text-4xl lg:text-6xl">
               Afro dans l&apos;âme,
               <br />
               <span className="text-accent">gastro</span> dans l&apos;assiette.

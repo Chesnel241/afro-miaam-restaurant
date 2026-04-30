@@ -122,7 +122,7 @@ export default function ReservationPage() {
       <section className="py-20">
         <div className="container-x text-center">
           <p className="eyebrow">Réservation</p>
-          <h1 className="heading-display mt-2 text-4xl text-primary sm:text-5xl">
+          <h1 className="heading-display mt-2 text-3xl text-primary sm:text-4xl lg:text-5xl">
             Votre panier est vide
           </h1>
           <p className="mt-3 text-primary/70">
@@ -140,7 +140,7 @@ export default function ReservationPage() {
     <section className="py-12 sm:py-16">
       <div className="container-x">
         <p className="eyebrow">Réservation</p>
-        <h1 className="heading-display mt-2 text-4xl text-primary sm:text-5xl">
+        <h1 className="heading-display mt-2 text-3xl text-primary sm:text-4xl lg:text-5xl">
           Date, heure et coordonnées
         </h1>
         <p className="mt-3 max-w-2xl text-primary/75">

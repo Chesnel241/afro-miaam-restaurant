@@ -37,7 +37,7 @@ export default function ConfirmationPage() {
             <CheckIcon className="h-8 w-8" />
           </div>
           <p className="eyebrow mt-4">Réservation envoyée</p>
-          <h1 className="heading-display mt-3 text-4xl text-primary sm:text-5xl">
+          <h1 className="heading-display mt-3 text-3xl text-primary sm:text-4xl lg:text-5xl">
             Merci, c&apos;est noté&nbsp;!
           </h1>
           <p className="mt-4 inline-flex items-center gap-2 text-lg text-primary/75">

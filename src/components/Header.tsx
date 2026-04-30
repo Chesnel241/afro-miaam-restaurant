@@ -33,8 +33,19 @@ export function Header() {
         scrolled ? "bg-primary/95 backdrop-blur" : "bg-primary"
       }`}
     >
-      <div className="container-x flex h-20 items-center justify-between gap-4 sm:h-24">
-        <Logo variant="light" size="lg" withTagline />
+      <div className="container-x flex h-16 items-center justify-between gap-3 sm:h-20 lg:h-24">
+        {/* Mobile : compact */}
+        <span className="sm:hidden">
+          <Logo variant="light" size="md" />
+        </span>
+        {/* Tablet : médium sans tagline */}
+        <span className="hidden sm:inline lg:hidden">
+          <Logo variant="light" size="md" />
+        </span>
+        {/* Desktop : grand avec tagline */}
+        <span className="hidden lg:inline">
+          <Logo variant="light" size="lg" withTagline />
+        </span>
 
         <nav
           aria-label="Navigation principale"
@@ -55,14 +66,14 @@ export function Header() {
           <Link
             href="/contact"
             aria-label="Compte / contact"
-            className="hidden h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 sm:inline-flex"
+            className="hidden h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 sm:inline-flex"
           >
             <UserIcon className="h-5 w-5" />
           </Link>
           <Link
             href="/panier"
             aria-label={`Panier — ${itemCount} article${itemCount > 1 ? "s" : ""}`}
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
+            className="relative inline-flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
           >
             <CartIcon className="h-5 w-5" />
             {itemCount > 0 && (
@@ -76,7 +87,7 @@ export function Header() {
             aria-label="Menu"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 lg:hidden"
+            className="inline-flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 lg:hidden"
           >
             <BurgerIcon open={open} />
           </button>

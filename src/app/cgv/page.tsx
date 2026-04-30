@@ -5,7 +5,7 @@ export default function CgvPage() {
     <section className="py-16">
       <div className="container-x max-w-3xl space-y-6 rounded-lg bg-white p-8 shadow-soft sm:p-12">
         <p className="eyebrow">Légal</p>
-        <h1 className="heading-display text-4xl text-primary sm:text-5xl">
+        <h1 className="heading-display text-3xl text-primary sm:text-4xl lg:text-5xl">
           Conditions générales de vente
         </h1>
 

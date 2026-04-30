@@ -33,7 +33,7 @@ export default function MenuPage() {
       <section className="bg-primary-gradient bg-grain pb-10 pt-12 text-cream sm:pt-16">
         <div className="container-x">
           <p className="eyebrow text-accentSoft">Notre carte</p>
-          <h1 className="heading-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
+          <h1 className="heading-display mt-3 text-3xl sm:text-4xl lg:text-6xl">
             Notre menu
           </h1>
           <p className="mt-4 max-w-2xl text-cream/85">
@@ -44,7 +44,7 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <section className="sticky top-20 z-30 border-b border-primary/10 bg-cream/95 py-3 backdrop-blur sm:top-24">
+      <section className="sticky top-16 z-30 border-b border-primary/10 bg-cream/95 py-3 backdrop-blur sm:top-20 lg:top-24">
         <div className="container-x">
           <CategoryTabs active={filter} onChange={setFilter} />
         </div>

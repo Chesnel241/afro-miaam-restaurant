@@ -15,9 +15,14 @@ export function Footer() {
     <footer className="mt-20 bg-primary text-cream bg-grain">
       <div className="afro-divider" aria-hidden="true" />
 
-      <div className="container-x grid gap-10 py-14 md:grid-cols-12">
+      <div className="container-x grid gap-10 py-12 sm:py-14 md:grid-cols-12">
         <div className="md:col-span-4">
-          <Logo variant="light" size="lg" withTagline />
+          <span className="hidden sm:inline">
+            <Logo variant="light" size="lg" withTagline />
+          </span>
+          <span className="sm:hidden">
+            <Logo variant="light" size="md" />
+          </span>
           <p className="mt-5 max-w-sm text-cream/80">
             La rencontre entre les saveurs authentiques de l&apos;Afrique et le
             raffinement de la gastronomie française. Faite maison, pensée pour
