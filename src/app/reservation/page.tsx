@@ -153,11 +153,11 @@ export default function ReservationPage() {
           className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_1fr]"
         >
           <div className="space-y-6">
-            <fieldset className="rounded-2xl bg-white p-6 shadow-card">
-              <legend className="inline-flex items-center gap-2 font-display text-xl font-bold text-primary">
-                <CalendarIcon className="h-5 w-5 text-accent" />
+            <div className="rounded-2xl bg-white p-6 shadow-card">
+              <h2 className="flex items-center gap-2 font-display text-xl font-bold text-primary">
+                <CalendarIcon className="h-5 w-5 shrink-0 text-accent" />
                 Date de retrait ou livraison
-              </legend>
+              </h2>
               <p className="mt-1 text-sm text-primary/65">
                 Minimum 24h à l&apos;avance — la première date disponible est
                 {" "}
@@ -212,12 +212,12 @@ export default function ReservationPage() {
                   ))}
                 </div>
               </div>
-            </fieldset>
+            </div>
 
-            <fieldset className="rounded-2xl bg-white p-6 shadow-card">
-              <legend className="font-display text-xl font-bold text-primary">
+            <div className="rounded-2xl bg-white p-6 shadow-card">
+              <h2 className="font-display text-xl font-bold text-primary">
                 Vos coordonnées
-              </legend>
+              </h2>
               <p className="mt-1 text-sm text-primary/65">
                 C&apos;est sur ce numéro qu&apos;on vous rappelle pour finaliser.
               </p>
@@ -291,7 +291,7 @@ export default function ReservationPage() {
                   />
                 </Field>
               </div>
-            </fieldset>
+            </div>
           </div>
 
           <aside className="space-y-4">

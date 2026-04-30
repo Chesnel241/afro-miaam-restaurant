@@ -44,7 +44,7 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <section className="sticky top-16 z-30 border-b border-primary/10 bg-cream/95 py-3 backdrop-blur sm:top-20 lg:top-24">
+      <section className="sticky top-20 z-30 border-b border-primary/10 bg-cream/95 py-3 backdrop-blur sm:top-24">
         <div className="container-x">
           <CategoryTabs active={filter} onChange={setFilter} />
         </div>
