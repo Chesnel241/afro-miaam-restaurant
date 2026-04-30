@@ -1,71 +1,70 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HeartIcon, LeafIcon, PotIcon } from "./Icons";
+import { ArrowRightIcon } from "./Icons";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-afro-green text-afro-cream">
-      <div className="afro-pattern-bg absolute inset-0 opacity-70" aria-hidden="true" />
-      <div className="absolute -top-40 -right-40 h-[420px] w-[420px] rounded-full bg-afro-orange/20 blur-3xl" aria-hidden="true" />
-      <div className="absolute -bottom-32 -left-32 h-[360px] w-[360px] rounded-full bg-afro-green-light/20 blur-3xl" aria-hidden="true" />
+    <section className="relative overflow-hidden bg-primary-gradient text-cream bg-grain">
+      <div
+        className="absolute inset-y-0 left-0 hidden w-16 afro-side-pattern md:block"
+        aria-hidden="true"
+      />
+      <div className="absolute -top-32 -right-32 h-[420px] w-[420px] rounded-full bg-accent/15 blur-3xl" aria-hidden="true" />
 
-      <div className="container-x relative grid items-center gap-12 py-16 md:grid-cols-[1.1fr_1fr] md:py-24 lg:py-28">
+      <div className="container-x relative grid items-center gap-10 py-14 md:grid-cols-[1.05fr_1fr] md:py-20 lg:py-24">
         <div>
-          <p className="eyebrow text-afro-orange-soft">
+          <p className="eyebrow text-accentSoft">
             Afro dans l&apos;âme, gastro dans l&apos;assiette
           </p>
 
-          <h1 className="heading-display mt-4 text-5xl sm:text-6xl lg:text-7xl">
+          <h1 className="heading-display mt-4 text-5xl sm:text-6xl lg:text-[72px]">
             Ça mijote,
             <br />
-            <span className="text-afro-orange">ça régale !</span>
+            ça <em className="not-italic text-accent" style={{ fontStyle: "italic" }}>régale</em>
+            <span className="text-accent"> !</span>
           </h1>
 
-          <p className="mt-6 max-w-lg text-lg text-afro-cream/85">
-            Cuisine afro gastronomique préparée avec amour, à partir de
-            produits frais et de qualité. Commande aujourd&apos;hui, savoure
-            demain.
+          <p className="mt-5 max-w-md text-lg text-cream/85">
+            Cuisine afro gastronomique préparée avec amour à partir de
+            produits frais et de qualité.
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Badge>⏰ Commande 24h à l&apos;avance</Badge>
-            <Badge>🍲 Préparation maison</Badge>
-            <Badge>🌿 Produits frais</Badge>
-          </div>
+          <ul className="mt-8 grid gap-4 sm:grid-cols-3">
+            <Pill icon={<PotIcon />} label="Fait maison" sub="Préparé le jour même" />
+            <Pill icon={<LeafIcon />} label="Produits frais" sub="Sélectionnés avec soin" />
+            <Pill icon={<HeartIcon />} label="Fait avec amour" sub="Pour votre plaisir" />
+          </ul>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link href="/menu" className="btn btn-lg btn-primary">
               Commander maintenant
+              <ArrowRightIcon className="h-5 w-5" />
             </Link>
-            <Link href="/menu" className="btn btn-lg btn-secondary">
+            <Link
+              href="/menu"
+              className="text-sm font-bold uppercase tracking-[0.18em] text-cream/85 underline-offset-4 hover:text-accent hover:underline"
+            >
               Découvrir le menu
             </Link>
           </div>
-
-          <p className="mt-6 text-sm text-afro-cream/70">
-            Paiement après validation par téléphone — vous réservez, on vous rappelle.
-          </p>
         </div>
 
         <div className="relative">
-          <div className="relative aspect-square w-full overflow-hidden rounded-xl shadow-soft md:aspect-[4/5]">
+          <div className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-soft">
             <Image
-              src="https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=1200&q=80"
+              src="https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=1400&q=80"
               alt="Plat signature Afro Miaam"
               fill
               priority
               sizes="(min-width: 768px) 50vw, 100vw"
               className="object-cover"
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-afro-green/80 via-afro-green/0 to-transparent p-6">
-              <span className="badge bg-white/95 text-afro-green">
-                Plat signature — Poulet Yassa revisité
-              </span>
-            </div>
           </div>
 
-          <div className="absolute -bottom-6 -left-6 hidden rounded-lg bg-afro-cream p-4 text-afro-green shadow-soft sm:block animate-floaty">
-            <p className="font-display text-lg font-bold leading-tight">+18 plats</p>
-            <p className="text-xs text-afro-green/80">faits maison chaque jour</p>
+          {/* Badge circulaire "Commandez 24h à l'avance" */}
+          <div className="absolute -left-6 top-6 sm:-left-10 sm:top-10">
+            <CircularBadge />
           </div>
         </div>
       </div>
@@ -73,10 +72,73 @@ export function Hero() {
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Pill({
+  icon,
+  label,
+  sub,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sub: string;
+}) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-afro-cream/25 bg-white/5 px-3 py-1.5 text-sm font-medium text-afro-cream/90">
-      {children}
-    </span>
+    <li className="flex items-center gap-3">
+      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-cream text-primary">
+        {icon}
+      </span>
+      <span>
+        <span className="block text-xs font-bold uppercase tracking-wide text-cream">
+          {label}
+        </span>
+        <span className="block text-sm text-cream/75">{sub}</span>
+      </span>
+    </li>
+  );
+}
+
+function CircularBadge() {
+  return (
+    <div className="relative h-32 w-32 sm:h-40 sm:w-40">
+      <svg
+        viewBox="0 0 200 200"
+        className="absolute inset-0 spin-slow"
+        aria-hidden="true"
+      >
+        <defs>
+          <path
+            id="circle-text"
+            d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"
+          />
+        </defs>
+        <circle
+          cx="100"
+          cy="100"
+          r="92"
+          fill="none"
+          stroke="#E85D2A"
+          strokeWidth="2"
+          strokeDasharray="3 6"
+        />
+        <text
+          fill="#F4EDE4"
+          fontSize="13"
+          fontWeight="700"
+          letterSpacing="6"
+          fontFamily="var(--font-display), Poppins, sans-serif"
+        >
+          <textPath href="#circle-text" startOffset="0">
+            ★ COMMANDEZ 24H À L&apos;AVANCE ★ COMMANDEZ 24H À L&apos;AVANCE
+          </textPath>
+        </text>
+      </svg>
+      <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-accent text-cream shadow-soft">
+        <span className="font-display text-3xl font-extrabold leading-none sm:text-4xl">
+          24H
+        </span>
+        <span className="text-[10px] font-bold uppercase tracking-widest sm:text-xs">
+          à l&apos;avance
+        </span>
+      </div>
+    </div>
   );
 }

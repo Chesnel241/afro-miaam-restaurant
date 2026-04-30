@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartContext";
 import { TIME_SLOTS, formatHumanDate, minBookingDate } from "@/lib/booking";
 import { formatPrice } from "@/lib/utils";
+import { CalendarIcon, ClockIcon } from "@/components/Icons";
 
 type FormState = {
   firstName: string;
@@ -121,10 +122,10 @@ export default function ReservationPage() {
       <section className="py-20">
         <div className="container-x text-center">
           <p className="eyebrow">Réservation</p>
-          <h1 className="heading-display mt-2 text-4xl text-afro-green sm:text-5xl">
+          <h1 className="heading-display mt-2 text-4xl text-primary sm:text-5xl">
             Votre panier est vide
           </h1>
-          <p className="mt-3 text-afro-black/70">
+          <p className="mt-3 text-primary/70">
             Choisissez d&apos;abord vos plats avant de réserver un créneau.
           </p>
           <Link href="/menu" className="btn btn-md btn-primary mt-6">
@@ -139,10 +140,10 @@ export default function ReservationPage() {
     <section className="py-12 sm:py-16">
       <div className="container-x">
         <p className="eyebrow">Réservation</p>
-        <h1 className="heading-display mt-2 text-4xl text-afro-green sm:text-5xl">
+        <h1 className="heading-display mt-2 text-4xl text-primary sm:text-5xl">
           Date, heure et coordonnées
         </h1>
-        <p className="mt-3 max-w-2xl text-afro-black/75">
+        <p className="mt-3 max-w-2xl text-primary/75">
           Commande à l&apos;avance — paiement après validation par téléphone.
           Choisissez votre créneau, on s&apos;occupe du reste.
         </p>
@@ -152,14 +153,15 @@ export default function ReservationPage() {
           className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_1fr]"
         >
           <div className="space-y-6">
-            <fieldset className="rounded-lg bg-white p-6 shadow-soft">
-              <legend className="font-display text-xl font-bold text-afro-green">
+            <fieldset className="rounded-2xl bg-white p-6 shadow-card">
+              <legend className="inline-flex items-center gap-2 font-display text-xl font-bold text-primary">
+                <CalendarIcon className="h-5 w-5 text-accent" />
                 Date de retrait ou livraison
               </legend>
-              <p className="mt-1 text-sm text-afro-black/65">
+              <p className="mt-1 text-sm text-primary/65">
                 Minimum 24h à l&apos;avance — la première date disponible est
                 {" "}
-                <span className="font-semibold text-afro-green">
+                <span className="font-semibold text-primary">
                   {formatHumanDate(minDate)}
                 </span>
                 .
@@ -173,7 +175,7 @@ export default function ReservationPage() {
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     required
-                    className="input"
+                    className="field"
                   />
                 </Field>
                 <Field label="Mode" htmlFor="mode">
@@ -182,13 +184,14 @@ export default function ReservationPage() {
                     type="text"
                     readOnly
                     value={deliveryMode === "livraison" ? "Livraison à Lyon" : "Retrait sur place"}
-                    className="input bg-afro-cream-soft"
+                    className="field bg-creamSoft"
                   />
                 </Field>
               </div>
 
               <div className="mt-6">
-                <p className="font-display text-base font-bold text-afro-green">
+                <p className="inline-flex items-center gap-2 font-display text-base font-bold text-primary">
+                  <ClockIcon className="h-5 w-5 text-accent" />
                   Choisir un créneau
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -198,10 +201,10 @@ export default function ReservationPage() {
                       type="button"
                       onClick={() => setSlot(s)}
                       aria-pressed={slot === s}
-                      className={`min-h-12 rounded-full border px-3 text-sm font-semibold transition focus-ring ${
+                      className={`min-h-12 rounded-xl border px-3 text-sm font-semibold transition focus-ring ${
                         slot === s
-                          ? "border-afro-orange bg-afro-orange text-white"
-                          : "border-afro-green/15 bg-afro-cream-soft text-afro-green hover:border-afro-green/40"
+                          ? "border-accent bg-accent text-white"
+                          : "border-primary/15 bg-creamSoft text-primary hover:border-primary/40"
                       }`}
                     >
                       {s}
@@ -211,11 +214,11 @@ export default function ReservationPage() {
               </div>
             </fieldset>
 
-            <fieldset className="rounded-lg bg-white p-6 shadow-soft">
-              <legend className="font-display text-xl font-bold text-afro-green">
+            <fieldset className="rounded-2xl bg-white p-6 shadow-card">
+              <legend className="font-display text-xl font-bold text-primary">
                 Vos coordonnées
               </legend>
-              <p className="mt-1 text-sm text-afro-black/65">
+              <p className="mt-1 text-sm text-primary/65">
                 C&apos;est sur ce numéro qu&apos;on vous rappelle pour finaliser.
               </p>
 
@@ -228,7 +231,7 @@ export default function ReservationPage() {
                     required
                     value={form.firstName}
                     onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                    className="input"
+                    className="field"
                   />
                 </Field>
                 <Field label="Nom" htmlFor="lastName" required>
@@ -239,7 +242,7 @@ export default function ReservationPage() {
                     required
                     value={form.lastName}
                     onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                    className="input"
+                    className="field"
                   />
                 </Field>
                 <Field label="Téléphone" htmlFor="phone" required>
@@ -251,7 +254,7 @@ export default function ReservationPage() {
                     placeholder="06 12 34 56 78"
                     value={form.phone}
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                    className="input"
+                    className="field"
                   />
                 </Field>
                 <Field label="Email (optionnel)" htmlFor="email">
@@ -261,7 +264,7 @@ export default function ReservationPage() {
                     autoComplete="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className="input"
+                    className="field"
                   />
                 </Field>
                 {deliveryMode === "livraison" && (
@@ -274,7 +277,7 @@ export default function ReservationPage() {
                       placeholder="12 rue de la République, 69002 Lyon"
                       value={form.address}
                       onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                      className="input"
+                      className="field"
                     />
                   </Field>
                 )}
@@ -284,7 +287,7 @@ export default function ReservationPage() {
                     rows={3}
                     value={form.notes}
                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                    className="input min-h-[88px] resize-y py-3"
+                    className="field min-h-[88px] resize-y py-3"
                   />
                 </Field>
               </div>
@@ -292,12 +295,12 @@ export default function ReservationPage() {
           </div>
 
           <aside className="space-y-4">
-            <div className="rounded-lg bg-afro-green p-6 text-afro-cream shadow-soft">
+            <div className="rounded-2xl bg-primary-gradient p-6 text-cream shadow-soft bg-grain">
               <h2 className="font-display text-xl font-bold">Votre commande</h2>
               <ul className="mt-4 space-y-2 text-sm">
                 {lines.map((l) => (
                   <li key={l.id} className="flex items-start justify-between gap-4">
-                    <span className="text-afro-cream/85">
+                    <span className="text-cream/85">
                       {l.quantity} × {l.name}
                     </span>
                     <span className="whitespace-nowrap font-semibold">
@@ -306,7 +309,7 @@ export default function ReservationPage() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-4 space-y-1 border-t border-afro-cream/15 pt-4 text-sm text-afro-cream/80">
+              <div className="mt-4 space-y-1 border-t border-cream/15 pt-4 text-sm text-cream/80">
                 <div className="flex items-center justify-between">
                   <span>Sous-total</span>
                   <span>{formatPrice(subtotal)}</span>
@@ -316,20 +319,20 @@ export default function ReservationPage() {
                   <span>{deliveryFee === 0 ? "Gratuit" : formatPrice(deliveryFee)}</span>
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between border-t border-afro-cream/15 pt-3">
+              <div className="mt-3 flex items-center justify-between border-t border-cream/15 pt-3">
                 <span className="font-display text-lg">Total</span>
-                <span className="font-display text-2xl font-bold text-afro-orange-soft">
+                <span className="font-display text-2xl font-extrabold text-accentSoft">
                   {formatPrice(total)}
                 </span>
               </div>
-              <p className="mt-3 text-xs text-afro-cream/70">
+              <p className="mt-3 text-xs text-cream/70">
                 Paiement à finaliser au téléphone après confirmation de votre
                 commande par notre équipe.
               </p>
             </div>
 
             {error && (
-              <p className="rounded-md border border-afro-red/30 bg-afro-red/10 p-3 text-sm text-afro-red">
+              <p className="rounded-xl border border-afro-red/30 bg-afro-red/10 p-3 text-sm text-afro-red">
                 {error}
               </p>
             )}
@@ -341,32 +344,13 @@ export default function ReservationPage() {
             >
               {submitting ? "Envoi en cours…" : "Réserver — on vous rappelle"}
             </button>
-            <p className="text-center text-xs text-afro-black/55">
+            <p className="text-center text-xs text-primary/55">
               En réservant, vous acceptez d&apos;être recontacté pour
               finaliser votre commande.
             </p>
           </aside>
         </form>
       </div>
-
-      <style jsx>{`
-        :global(.input) {
-          width: 100%;
-          min-height: 48px;
-          border-radius: 12px;
-          border: 1px solid rgba(31, 61, 43, 0.15);
-          background: #fff;
-          padding: 0 14px;
-          color: #1a1a1a;
-          font-size: 16px;
-          transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        :global(.input:focus-visible) {
-          outline: none;
-          border-color: #e85d2a;
-          box-shadow: 0 0 0 4px rgba(232, 93, 42, 0.18);
-        }
-      `}</style>
     </section>
   );
 }
@@ -389,8 +373,8 @@ function Field({
       htmlFor={htmlFor}
       className={`flex flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}
     >
-      <span className="text-sm font-semibold text-afro-green">
-        {label} {required && <span className="text-afro-orange">*</span>}
+      <span className="text-sm font-semibold text-primary">
+        {label} {required && <span className="text-accent">*</span>}
       </span>
       {children}
     </label>

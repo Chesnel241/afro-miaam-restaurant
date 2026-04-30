@@ -5,7 +5,7 @@ export default function LegalPage() {
     <section className="py-16">
       <div className="container-x max-w-3xl space-y-6 rounded-lg bg-white p-8 shadow-soft sm:p-12">
         <p className="eyebrow">Légal</p>
-        <h1 className="heading-display text-4xl text-afro-green sm:text-5xl">
+        <h1 className="heading-display text-4xl text-primary sm:text-5xl">
           Mentions légales
         </h1>
 
@@ -39,8 +39,8 @@ export default function LegalPage() {
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="font-display text-xl font-bold text-afro-green">{title}</h2>
-      <p className="mt-2 text-afro-black/75">{children}</p>
+      <h2 className="font-display text-xl font-bold text-primary">{title}</h2>
+      <p className="mt-2 text-primary/75">{children}</p>
     </div>
   );
 }

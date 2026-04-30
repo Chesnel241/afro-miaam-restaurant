@@ -38,13 +38,13 @@ const FAQ = [
 export default function FaqPage() {
   return (
     <>
-      <section className="bg-afro-green pt-12 pb-10 text-afro-cream sm:pt-16">
+      <section className="bg-primary pt-12 pb-10 text-cream sm:pt-16">
         <div className="container-x">
-          <p className="eyebrow text-afro-orange-soft">Questions fréquentes</p>
+          <p className="eyebrow text-accentSoft">Questions fréquentes</p>
           <h1 className="heading-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
             On répond à tout, sans détour.
           </h1>
-          <p className="mt-4 max-w-2xl text-afro-cream/85">
+          <p className="mt-4 max-w-2xl text-cream/85">
             Une question sur la commande, la livraison ou le paiement ?
             La réponse est probablement ici.
           </p>
@@ -59,22 +59,22 @@ export default function FaqPage() {
               className="group rounded-lg bg-white p-5 shadow-soft transition open:shadow-glow/50"
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
-                <span className="font-display text-lg font-bold text-afro-green">
+                <span className="font-display text-lg font-bold text-primary">
                   {item.q}
                 </span>
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-afro-cream-soft text-xl text-afro-orange transition group-open:rotate-45">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-creamSoft text-xl text-accent transition group-open:rotate-45">
                   +
                 </span>
               </summary>
-              <p className="mt-3 text-afro-black/75">{item.a}</p>
+              <p className="mt-3 text-primary/75">{item.a}</p>
             </details>
           ))}
 
-          <div className="mt-8 rounded-lg border border-afro-orange/20 bg-afro-cream-soft p-6 text-center">
-            <p className="font-display text-xl text-afro-green">
+          <div className="mt-8 rounded-lg border border-accent/20 bg-creamSoft p-6 text-center">
+            <p className="font-display text-xl text-primary">
               Une autre question&nbsp;?
             </p>
-            <p className="mt-2 text-afro-black/70">
+            <p className="mt-2 text-primary/70">
               Écrivez-nous, on est là.
             </p>
             <Link href="/contact" className="btn btn-md btn-primary mt-4">

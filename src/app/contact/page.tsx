@@ -14,13 +14,13 @@ export default function ContactPage() {
 
   return (
     <>
-      <section className="bg-afro-green pt-12 pb-10 text-afro-cream sm:pt-16">
+      <section className="bg-primary pt-12 pb-10 text-cream sm:pt-16">
         <div className="container-x">
-          <p className="eyebrow text-afro-orange-soft">Contact</p>
+          <p className="eyebrow text-accentSoft">Contact</p>
           <h1 className="heading-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
             Une question, un événement&nbsp;?
           </h1>
-          <p className="mt-4 max-w-2xl text-afro-cream/85">
+          <p className="mt-4 max-w-2xl text-cream/85">
             Écrivez-nous, on revient vers vous très vite.
           </p>
         </div>
@@ -54,19 +54,19 @@ export default function ContactPage() {
           <div className="rounded-lg bg-white p-6 shadow-soft sm:p-8">
             {sent ? (
               <div className="text-center">
-                <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-afro-orange/15 text-2xl text-afro-orange">
+                <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent/15 text-2xl text-accent">
                   ✓
                 </div>
-                <h2 className="heading-display mt-4 text-2xl text-afro-green">
+                <h2 className="heading-display mt-4 text-2xl text-primary">
                   Message envoyé&nbsp;!
                 </h2>
-                <p className="mt-2 text-afro-black/70">
+                <p className="mt-2 text-primary/70">
                   Merci, on revient vers vous au plus vite.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
-                <h2 className="heading-display text-2xl text-afro-green">
+                <h2 className="heading-display text-2xl text-primary">
                   Envoyez-nous un message
                 </h2>
                 <Field label="Nom" htmlFor="name" required>
@@ -140,13 +140,13 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-lg bg-white p-5 shadow-soft">
-      <p className="text-xs font-bold uppercase tracking-wide text-afro-orange">
+      <p className="text-xs font-bold uppercase tracking-wide text-accent">
         {title}
       </p>
-      <p className="mt-1 font-display text-xl font-bold text-afro-green">
+      <p className="mt-1 font-display text-xl font-bold text-primary">
         {value}
       </p>
-      <p className="text-sm text-afro-black/65">{note}</p>
+      <p className="text-sm text-primary/65">{note}</p>
     </div>
   );
 }
@@ -164,8 +164,8 @@ function Field({
 }) {
   return (
     <label htmlFor={htmlFor} className="flex flex-col gap-1.5">
-      <span className="text-sm font-semibold text-afro-green">
-        {label} {required && <span className="text-afro-orange">*</span>}
+      <span className="text-sm font-semibold text-primary">
+        {label} {required && <span className="text-accent">*</span>}
       </span>
       {children}
     </label>

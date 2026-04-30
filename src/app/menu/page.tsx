@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { useCart } from "@/components/CartContext";
 import { CATEGORY_LABELS, CATEGORY_ORDER, menuItems } from "@/data/menu";
 import { formatPrice } from "@/lib/utils";
+import { CartIcon } from "@/components/Icons";
 
 export default function MenuPage() {
   const [filter, setFilter] = useState<CategoryFilter>("all");
@@ -29,20 +30,21 @@ export default function MenuPage() {
 
   return (
     <>
-      <section className="bg-afro-green pb-10 pt-12 text-afro-cream sm:pt-16">
+      <section className="bg-primary-gradient bg-grain pb-10 pt-12 text-cream sm:pt-16">
         <div className="container-x">
-          <p className="eyebrow text-afro-orange-soft">Notre carte</p>
+          <p className="eyebrow text-accentSoft">Notre carte</p>
           <h1 className="heading-display mt-3 text-4xl sm:text-5xl lg:text-6xl">
-            Le menu Afro Miaam
+            Notre menu
           </h1>
-          <p className="mt-4 max-w-2xl text-afro-cream/85">
-            Cuisine afro gastronomique, préparée à la demande. Commande à
-            l&apos;avance — paiement après validation par téléphone.
+          <p className="mt-4 max-w-2xl text-cream/85">
+            Des plats généreux, faits maison, inspirés des traditions
+            africaines. Commande à l&apos;avance — paiement après validation
+            par téléphone.
           </p>
         </div>
       </section>
 
-      <section className="sticky top-16 z-30 border-b border-afro-green/10 bg-afro-cream/95 py-3 backdrop-blur sm:top-20">
+      <section className="sticky top-20 z-30 border-b border-primary/10 bg-cream/95 py-3 backdrop-blur sm:top-24">
         <div className="container-x">
           <CategoryTabs active={filter} onChange={setFilter} />
         </div>
@@ -53,10 +55,10 @@ export default function MenuPage() {
           {grouped.map(({ category, items }) => (
             <div key={category}>
               <div className="mb-6 flex items-end justify-between gap-4">
-                <h2 className="heading-display text-3xl text-afro-green">
+                <h2 className="heading-display text-3xl text-primary">
                   {CATEGORY_LABELS[category]}
                 </h2>
-                <span className="text-sm font-semibold text-afro-black/60">
+                <span className="text-sm font-semibold text-primary/60">
                   {items.length} plat{items.length > 1 ? "s" : ""}
                 </span>
               </div>
@@ -76,8 +78,9 @@ export default function MenuPage() {
             href="/panier"
             className="btn btn-lg btn-primary w-full justify-between shadow-glow"
           >
-            <span>
-              Voir le panier · {itemCount} article{itemCount > 1 ? "s" : ""}
+            <span className="inline-flex items-center gap-2">
+              <CartIcon className="h-5 w-5" />
+              {itemCount} article{itemCount > 1 ? "s" : ""}
             </span>
             <span>{formatPrice(total)}</span>
           </Link>

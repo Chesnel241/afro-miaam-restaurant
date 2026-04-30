@@ -15,7 +15,10 @@ export function CategoryTabs({
 }) {
   const items: { id: CategoryFilter; label: string }[] = [
     { id: "all", label: "Tous" },
-    ...CATEGORY_ORDER.map((c) => ({ id: c as CategoryFilter, label: CATEGORY_LABELS[c] })),
+    ...CATEGORY_ORDER.map((c) => ({
+      id: c as CategoryFilter,
+      label: CATEGORY_LABELS[c],
+    })),
   ];
 
   return (

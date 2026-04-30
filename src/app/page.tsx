@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { ProductCard } from "@/components/ProductCard";
-import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { menuItems } from "@/data/menu";
+import { CheckIcon, HeartIcon, LeafIcon, PotIcon } from "@/components/Icons";
 
 export default function HomePage() {
   const signatures = menuItems.filter((i) => i.category === "signature");
@@ -15,23 +15,24 @@ export default function HomePage() {
 
       <HowItWorks />
 
-      <section className="bg-afro-cream-soft py-20">
+      {/* Signatures */}
+      <section className="bg-creamSoft py-20">
         <div className="container-x">
-          <div className="flex items-end justify-between gap-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
               <p className="eyebrow">Nos signatures</p>
-              <h2 className="heading-display mt-3 text-4xl text-afro-green sm:text-5xl">
+              <h2 className="heading-display mt-3 text-4xl text-primary sm:text-5xl">
                 Trois plats qui font dire&nbsp;
-                <span className="text-afro-orange">miaam</span>.
+                <span className="text-accent">miaam</span>.
               </h2>
-              <p className="mt-4 text-afro-black/75">
-                Nos plats les plus aimés. Préparés à la demande, jamais à
+              <p className="mt-4 text-primary/75">
+                Nos plats les plus aimés. Préparés à la commande, jamais à
                 l&apos;avance.
               </p>
             </div>
             <Link
               href="/menu"
-              className="hidden shrink-0 self-end text-sm font-bold text-afro-green underline-offset-4 hover:underline sm:inline"
+              className="text-sm font-bold uppercase tracking-[0.18em] text-primary underline-offset-4 hover:text-accent hover:underline"
             >
               Voir tout le menu →
             </Link>
@@ -42,56 +43,89 @@ export default function HomePage() {
               <ProductCard key={item.id} item={item} />
             ))}
           </div>
-
-          <div className="mt-8 sm:hidden">
-            <Link href="/menu" className="btn btn-md btn-ghost-dark">
-              Voir tout le menu
-            </Link>
-          </div>
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-afro-green py-20 text-afro-cream">
-        <div className="afro-pattern-bg absolute inset-0 opacity-60" aria-hidden="true" />
-        <div className="container-x relative grid gap-12 md:grid-cols-2 md:items-center">
-          <div>
-            <p className="eyebrow text-afro-orange-soft">Notre promesse</p>
-            <h2 className="heading-display mt-3 text-4xl sm:text-5xl">
-              Une cuisine généreuse, authentique et raffinée.
-            </h2>
-            <ul className="mt-8 grid gap-4">
-              <Value>Ingrédients frais et sélectionnés</Value>
-              <Value>Recettes traditionnelles revisitées</Value>
-              <Value>Préparé avec amour chaque jour</Value>
-              <Value>Zéro compromis sur la qualité</Value>
-            </ul>
-          </div>
+      {/* Valeurs */}
+      <section className="relative overflow-hidden bg-cream py-20">
+        <div className="container-x">
+          <div className="grid gap-12 md:grid-cols-[1.2fr_1fr] md:items-center">
+            <div>
+              <p className="eyebrow">Notre promesse</p>
+              <h2 className="heading-display mt-3 text-4xl text-primary sm:text-5xl">
+                Une cuisine généreuse, authentique
+                <span className="text-accent"> et raffinée.</span>
+              </h2>
+              <p className="mt-4 max-w-xl text-primary/75">
+                Afro Miaam, c&apos;est la rencontre entre les saveurs
+                authentiques de l&apos;Afrique et le raffinement de la
+                gastronomie française.
+              </p>
 
-          <div className="grid grid-cols-2 gap-4">
-            <ImgTile src="https://images.unsplash.com/photo-1547928576-b822bc410bdf?auto=format&fit=crop&w=700&q=80" alt="Mafé fumant" tall />
-            <div className="grid gap-4">
-              <ImgTile src="https://images.unsplash.com/photo-1542367592-8849eb950fd8?auto=format&fit=crop&w=700&q=80" alt="Cuisine authentique" />
-              <ImgTile src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=700&q=80" alt="Détail d'un plat" />
+              <ul className="mt-10 grid gap-8 sm:grid-cols-2">
+                <Value
+                  icon={<LeafIcon className="h-6 w-6" />}
+                  title="Ingrédients frais"
+                  text="Sélectionnés chaque matin auprès de producteurs locaux et de qualité."
+                />
+                <Value
+                  icon={<PotIcon className="h-6 w-6" />}
+                  title="Recettes revisitées"
+                  text="Mafé, Yassa, Thieboudienne — réinterprétés sans jamais être trahis."
+                />
+                <Value
+                  icon={<HeartIcon className="h-6 w-6" />}
+                  title="Préparé avec amour"
+                  text="Chaque plat est cuisiné pour vous, à la commande."
+                />
+                <Value
+                  icon={<CheckIcon className="h-6 w-6" />}
+                  title="Zéro compromis"
+                  text="Pas de batch cooking, pas de tiédeur. Juste une cuisine vivante."
+                />
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <ImgTile
+                src="https://images.unsplash.com/photo-1547928576-b822bc410bdf?auto=format&fit=crop&w=700&q=80"
+                alt="Mafé fumant"
+                tall
+              />
+              <div className="grid gap-4">
+                <ImgTile
+                  src="https://images.unsplash.com/photo-1542367592-8849eb950fd8?auto=format&fit=crop&w=700&q=80"
+                  alt="Cuisine authentique"
+                />
+                <ImgTile
+                  src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=700&q=80"
+                  alt="Détail d'un plat"
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-20">
+      {/* CTA final */}
+      <section className="py-16">
         <div className="container-x">
-          <div className="rounded-xl bg-afro-green text-afro-cream shadow-soft">
-            <div className="grid gap-8 p-8 md:grid-cols-[1fr_auto] md:items-center md:p-12">
+          <div className="relative overflow-hidden rounded-2xl bg-primary-gradient p-8 text-cream shadow-soft sm:p-12 bg-grain">
+            <div className="afro-side-pattern absolute inset-0 opacity-50" aria-hidden="true" />
+            <div className="relative grid gap-6 md:grid-cols-[1.5fr_auto] md:items-center">
               <div>
-                <p className="eyebrow text-afro-orange-soft">Restez prévenus</p>
+                <p className="eyebrow text-accentSoft">Prêt à commander ?</p>
                 <h2 className="heading-display mt-3 text-3xl sm:text-4xl">
-                  Soyez prévenu de l&apos;ouverture des prochains créneaux.
+                  Commande aujourd&apos;hui, savoure demain.
                 </h2>
-                <p className="mt-3 text-afro-cream/80">
-                  Inscrivez-vous, on vous écrit dès que de nouvelles dates
-                  s&apos;ouvrent.
+                <p className="mt-3 text-cream/80">
+                  Paiement après validation par téléphone. Vous réservez, on
+                  vous rappelle.
                 </p>
               </div>
-              <NewsletterSignup />
+              <Link href="/menu" className="btn btn-lg btn-primary">
+                Composer ma commande
+              </Link>
             </div>
           </div>
         </div>
@@ -100,13 +134,24 @@ export default function HomePage() {
   );
 }
 
-function Value({ children }: { children: React.ReactNode }) {
+function Value({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
   return (
-    <li className="flex items-start gap-3">
-      <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-afro-orange text-afro-cream">
-        ✓
+    <li className="flex items-start gap-4">
+      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent/12 text-accent">
+        {icon}
       </span>
-      <span className="text-lg text-afro-cream/90">{children}</span>
+      <div>
+        <p className="font-display text-lg font-bold text-primary">{title}</p>
+        <p className="mt-1 text-sm text-primary/75">{text}</p>
+      </div>
     </li>
   );
 }
@@ -122,11 +167,17 @@ function ImgTile({
 }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-lg ${
+      className={`relative overflow-hidden rounded-xl shadow-card ${
         tall ? "aspect-[3/4]" : "aspect-[5/4]"
       }`}
     >
-      <Image src={src} alt={alt} fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover" />
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(min-width: 768px) 25vw, 50vw"
+        className="object-cover"
+      />
     </div>
   );
 }

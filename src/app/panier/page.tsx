@@ -5,6 +5,13 @@ import Link from "next/link";
 import { useCart } from "@/components/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { DELIVERY_FEE } from "@/lib/booking";
+import {
+  CalendarIcon,
+  MinusIcon,
+  PlusIcon,
+  TrashIcon,
+  TruckIcon,
+} from "@/components/Icons";
 
 export default function CartPage() {
   const {
@@ -24,16 +31,16 @@ export default function CartPage() {
     <section className="py-12 sm:py-16">
       <div className="container-x">
         <p className="eyebrow">Panier</p>
-        <h1 className="heading-display mt-2 text-4xl text-afro-green sm:text-5xl">
+        <h1 className="heading-display mt-2 text-4xl text-primary sm:text-5xl">
           Votre commande
         </h1>
 
         {empty ? (
-          <div className="mt-10 rounded-lg bg-white p-10 text-center shadow-soft">
-            <p className="font-display text-2xl text-afro-green">
+          <div className="mt-10 rounded-2xl bg-white p-10 text-center shadow-card">
+            <p className="font-display text-2xl text-primary">
               Votre panier est vide.
             </p>
-            <p className="mt-2 text-afro-black/70">
+            <p className="mt-2 text-primary/70">
               Parcourez la carte et ajoutez vos plats préférés.
             </p>
             <Link href="/menu" className="btn btn-md btn-primary mt-6">
@@ -46,9 +53,9 @@ export default function CartPage() {
               {lines.map((line) => (
                 <li
                   key={line.id}
-                  className="flex flex-col gap-4 rounded-lg bg-white p-4 shadow-soft sm:flex-row sm:items-center"
+                  className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-card sm:flex-row sm:items-center"
                 >
-                  <div className="relative h-24 w-full overflow-hidden rounded-md bg-afro-sand sm:h-20 sm:w-20 sm:shrink-0">
+                  <div className="relative h-24 w-full overflow-hidden rounded-xl bg-creamSoft sm:h-20 sm:w-20 sm:shrink-0">
                     <Image
                       src={line.image}
                       alt={line.name}
@@ -58,45 +65,45 @@ export default function CartPage() {
                     />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-display text-lg font-bold text-afro-green">
+                    <h3 className="font-display text-lg font-bold text-primary">
                       {line.name}
                     </h3>
-                    <p className="text-sm text-afro-black/60">
+                    <p className="text-sm text-primary/60">
                       {formatPrice(line.price)} l&apos;unité
                     </p>
                   </div>
                   <div className="flex items-center justify-between gap-4 sm:justify-end">
-                    <div className="inline-flex items-center rounded-full border border-afro-green/15 bg-afro-cream-soft">
+                    <div className="inline-flex items-center rounded-full border border-primary/15 bg-creamSoft">
                       <button
                         type="button"
                         onClick={() => setQuantity(line.id, line.quantity - 1)}
                         aria-label="Réduire la quantité"
-                        className="h-9 w-9 rounded-full text-lg font-bold text-afro-green hover:bg-afro-green/5"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full text-primary hover:bg-primary/5"
                       >
-                        −
+                        <MinusIcon className="h-4 w-4" />
                       </button>
-                      <span className="min-w-8 text-center font-bold text-afro-green">
+                      <span className="min-w-8 text-center font-bold text-primary">
                         {line.quantity}
                       </span>
                       <button
                         type="button"
                         onClick={() => setQuantity(line.id, line.quantity + 1)}
                         aria-label="Augmenter la quantité"
-                        className="h-9 w-9 rounded-full text-lg font-bold text-afro-green hover:bg-afro-green/5"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full text-primary hover:bg-primary/5"
                       >
-                        +
+                        <PlusIcon className="h-4 w-4" />
                       </button>
                     </div>
-                    <span className="font-display text-lg font-bold text-afro-orange">
+                    <span className="font-display text-lg font-bold text-accent">
                       {formatPrice(line.price * line.quantity)}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeItem(line.id)}
                       aria-label={`Retirer ${line.name}`}
-                      className="text-sm text-afro-black/50 underline-offset-4 hover:text-afro-red hover:underline"
+                      className="text-primary/50 transition hover:text-afro-red"
                     >
-                      Retirer
+                      <TrashIcon className="h-5 w-5" />
                     </button>
                   </div>
                 </li>
@@ -104,8 +111,8 @@ export default function CartPage() {
             </ul>
 
             <aside className="space-y-6">
-              <div className="rounded-lg bg-white p-6 shadow-soft">
-                <h2 className="font-display text-xl font-bold text-afro-green">
+              <div className="rounded-2xl bg-white p-6 shadow-card">
+                <h2 className="font-display text-xl font-bold text-primary">
                   Mode de réception
                 </h2>
                 <div className="mt-4 grid gap-3">
@@ -113,20 +120,20 @@ export default function CartPage() {
                     selected={deliveryMode === "retrait"}
                     onSelect={() => setDeliveryMode("retrait")}
                     title="Retrait sur place"
-                    sub="Gratuit · adresse envoyée après validation"
-                    price="0 €"
+                    sub="Adresse envoyée après validation"
+                    price="Gratuit"
                   />
                   <ModeOption
                     selected={deliveryMode === "livraison"}
                     onSelect={() => setDeliveryMode("livraison")}
                     title="Livraison à Lyon"
-                    sub="Livraison dans les arrondissements de Lyon"
+                    sub="Tous les arrondissements de Lyon"
                     price={`${DELIVERY_FEE} €`}
                   />
                 </div>
               </div>
 
-              <div className="rounded-lg bg-afro-green p-6 text-afro-cream shadow-soft">
+              <div className="rounded-2xl bg-primary-gradient p-6 text-cream shadow-soft bg-grain">
                 <h2 className="font-display text-xl font-bold">Récapitulatif</h2>
                 <dl className="mt-4 space-y-2 text-sm">
                   <Row label="Sous-total" value={formatPrice(subtotal)} />
@@ -137,13 +144,14 @@ export default function CartPage() {
                     value={deliveryFee === 0 ? "Gratuit" : formatPrice(deliveryFee)}
                   />
                 </dl>
-                <div className="mt-4 flex items-center justify-between border-t border-afro-cream/15 pt-4">
+                <div className="mt-4 flex items-center justify-between border-t border-cream/15 pt-4">
                   <span className="font-display text-lg">Total</span>
-                  <span className="font-display text-2xl font-bold text-afro-orange-soft">
+                  <span className="font-display text-2xl font-extrabold text-accentSoft">
                     {formatPrice(total)}
                   </span>
                 </div>
-                <p className="mt-3 text-xs text-afro-cream/70">
+                <p className="mt-3 flex items-start gap-2 text-xs text-cream/75">
+                  <TruckIcon className="mt-0.5 h-4 w-4 shrink-0 text-accentSoft" />
                   Paiement après validation par téléphone. Le total ci-dessus
                   est purement indicatif.
                 </p>
@@ -151,11 +159,12 @@ export default function CartPage() {
                   href="/reservation"
                   className="btn btn-lg btn-primary mt-6 w-full"
                 >
+                  <CalendarIcon className="h-5 w-5" />
                   Choisir la date et l&apos;heure
                 </Link>
                 <Link
                   href="/menu"
-                  className="mt-3 block text-center text-sm text-afro-cream/80 underline-offset-4 hover:underline"
+                  className="mt-3 block text-center text-sm text-cream/80 underline-offset-4 hover:underline"
                 >
                   Continuer mes achats
                 </Link>
@@ -170,7 +179,7 @@ export default function CartPage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-afro-cream/85">
+    <div className="flex items-center justify-between text-cream/85">
       <dt>{label}</dt>
       <dd className="font-semibold">{value}</dd>
     </div>
@@ -195,19 +204,17 @@ function ModeOption({
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`flex items-center justify-between gap-4 rounded-md border p-4 text-left transition focus-ring ${
+      className={`flex items-center justify-between gap-4 rounded-xl border p-4 text-left transition focus-ring ${
         selected
-          ? "border-afro-orange bg-afro-orange/5"
-          : "border-afro-green/15 bg-afro-cream-soft hover:border-afro-green/30"
+          ? "border-accent bg-accent/5"
+          : "border-primary/15 bg-creamSoft hover:border-primary/30"
       }`}
     >
       <div>
-        <p className="font-display text-base font-bold text-afro-green">{title}</p>
-        <p className="text-sm text-afro-black/65">{sub}</p>
+        <p className="font-display text-base font-bold text-primary">{title}</p>
+        <p className="text-sm text-primary/65">{sub}</p>
       </div>
-      <span className="font-display text-lg font-bold text-afro-orange">
-        {price}
-      </span>
+      <span className="font-display text-lg font-bold text-accent">{price}</span>
     </button>
   );
 }

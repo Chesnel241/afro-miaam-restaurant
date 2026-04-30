@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#1F3D2B"/>
-  <text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle"
-        font-family="'Poppins', system-ui, sans-serif" font-weight="800"
-        font-size="28" fill="#F4EDE4">M<tspan fill="#E85D2A">a</tspan>m</text>
+  <circle cx="32" cy="28" r="14" fill="none" stroke="#E85D2A" stroke-width="6"/>
+  <path d="M44 12 c5 -2 11 -2 13 1 c-3 4 -10 5 -15 3 z" fill="#6BAA75"/>
+  <path d="M48 19 c5 -2 11 -2 13 1 c-3 4 -10 5 -15 3 z" fill="#6BAA75"/>
 </svg>

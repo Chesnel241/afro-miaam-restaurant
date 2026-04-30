@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatHumanDate } from "@/lib/booking";
 import { formatPrice } from "@/lib/utils";
+import { CheckIcon, PhoneIcon } from "@/components/Icons";
 
 type SavedReservation = {
   reference: string;
@@ -31,21 +32,21 @@ export default function ConfirmationPage() {
   return (
     <section className="py-16 sm:py-20">
       <div className="container-x max-w-3xl">
-        <div className="rounded-xl bg-white p-8 text-center shadow-soft sm:p-12">
-          <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-afro-orange/15 text-3xl text-afro-orange">
-            ✓
+        <div className="rounded-2xl bg-white p-8 text-center shadow-card sm:p-12">
+          <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white">
+            <CheckIcon className="h-8 w-8" />
           </div>
           <p className="eyebrow mt-4">Réservation envoyée</p>
-          <h1 className="heading-display mt-3 text-4xl text-afro-green sm:text-5xl">
+          <h1 className="heading-display mt-3 text-4xl text-primary sm:text-5xl">
             Merci, c&apos;est noté&nbsp;!
           </h1>
-          <p className="mt-4 text-lg text-afro-black/75">
-            Nous vous contactons rapidement pour finaliser votre commande et
-            confirmer le paiement par téléphone.
+          <p className="mt-4 inline-flex items-center gap-2 text-lg text-primary/75">
+            <PhoneIcon className="h-5 w-5 text-accent" />
+            Nous vous contactons rapidement pour finaliser votre commande.
           </p>
 
           {loaded && data && (
-            <div className="mx-auto mt-8 max-w-xl rounded-lg bg-afro-cream-soft p-6 text-left">
+            <div className="mx-auto mt-8 max-w-xl rounded-xl bg-creamSoft p-6 text-left">
               <Row label="Référence" value={data.reference} />
               <Row label="Date" value={formatHumanDate(data.date)} />
               <Row label="Créneau" value={data.slot} />
@@ -61,7 +62,7 @@ export default function ConfirmationPage() {
             </div>
           )}
 
-          <p className="mt-8 text-sm text-afro-black/60">
+          <p className="mt-8 text-sm text-primary/60">
             {data?.deliveryMode === "retrait"
               ? "Une fois validée, l'adresse exacte de retrait vous sera communiquée par téléphone."
               : "Notre équipe vous rappelle pour confirmer la fenêtre de livraison."}
@@ -77,7 +78,7 @@ export default function ConfirmationPage() {
           </div>
         </div>
 
-        <p className="mt-8 text-center font-display text-xl text-afro-green">
+        <p className="mt-8 text-center font-display text-xl font-extrabold text-primary">
           Ça mijote, ça régale.
         </p>
       </div>
@@ -87,11 +88,11 @@ export default function ConfirmationPage() {
 
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-afro-green/10 py-2 last:border-0">
-      <span className="text-sm font-semibold text-afro-black/65">{label}</span>
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/10 py-2 last:border-0">
+      <span className="text-sm font-semibold text-primary/65">{label}</span>
       <span
         className={`font-display ${
-          highlight ? "text-lg font-bold text-afro-orange" : "text-base text-afro-green"
+          highlight ? "text-lg font-bold text-accent" : "text-base text-primary"
         }`}
       >
         {value}

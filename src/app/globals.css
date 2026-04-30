@@ -3,11 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --color-green: #1f3d2b;
-  --color-green-deep: #152a1e;
-  --color-orange: #e85d2a;
+  --color-primary: #1f3d2b;
+  --color-primary-dark: #1a3526;
+  --color-primary-light: #244a33;
+  --color-accent: #e85d2a;
   --color-cream: #f4ede4;
-  --color-black: #1a1a1a;
+  --color-cream-soft: #fbf7f1;
 }
 
 html {
@@ -16,7 +17,7 @@ html {
 
 body {
   background-color: var(--color-cream);
-  color: var(--color-black);
+  color: #1a1a1a;
   font-feature-settings: "ss01", "cv11";
 }
 
@@ -26,7 +27,7 @@ body {
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-md {
@@ -38,23 +39,23 @@ body {
   }
 
   .btn-primary {
-    @apply bg-afro-orange text-white shadow-glow hover:bg-afro-orange-soft hover:shadow-soft;
+    @apply bg-accent text-white shadow-glow hover:opacity-95 hover:shadow-soft;
   }
 
   .btn-secondary {
-    @apply border border-afro-cream/40 bg-transparent text-afro-cream hover:bg-afro-cream/10;
+    @apply border border-cream/40 bg-transparent text-cream hover:bg-cream/10;
   }
 
   .btn-ghost-dark {
-    @apply border border-afro-green/20 bg-white text-afro-green hover:bg-afro-cream;
+    @apply border border-primary/20 bg-white text-primary hover:bg-cream;
   }
 
   .chip {
-    @apply inline-flex items-center gap-2 rounded-full border border-afro-green/15 bg-white px-4 py-2 text-sm font-medium text-afro-green transition;
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 text-sm font-medium text-primary transition;
   }
 
   .chip-active {
-    @apply border-afro-green bg-afro-green text-afro-cream;
+    @apply border-primary bg-primary text-cream;
   }
 
   .badge {
@@ -62,39 +63,61 @@ body {
   }
 
   .badge-orange {
-    @apply bg-afro-orange/15 text-afro-orange;
+    @apply bg-accent/15 text-accent;
   }
 
   .badge-green {
-    @apply bg-afro-green/10 text-afro-green;
+    @apply bg-primary/10 text-primary;
   }
 
   .card-soft {
-    @apply rounded-lg bg-white shadow-soft;
+    @apply rounded-2xl bg-white shadow-card;
   }
 
   .eyebrow {
-    @apply text-xs font-bold uppercase tracking-[0.18em] text-afro-orange;
+    @apply text-xs font-bold uppercase tracking-[0.18em] text-accent;
   }
 
   .heading-display {
-    @apply font-display font-bold leading-[1.05] tracking-tight;
+    @apply font-display font-extrabold leading-[1.05] tracking-tight;
   }
 }
 
-.afro-pattern-bg {
-  background-image:
-    radial-gradient(circle at 20px 20px, rgba(244, 237, 228, 0.07) 2px, transparent 2px),
-    radial-gradient(circle at 60px 60px, rgba(232, 93, 42, 0.08) 2px, transparent 2px);
-  background-size: 80px 80px;
+/* Texture grain (issue du kit) */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
 }
 
+/* Dégradé subtil de la primary */
+.bg-primary-gradient {
+  background: linear-gradient(135deg, #1f3d2b 0%, #244a33 50%, #1a3526 100%);
+}
+
+/* Diviseur losanges */
 .afro-divider {
   height: 24px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 24' width='80' height='24'%3E%3Cg fill='none' stroke='%23E85D2A' stroke-width='1.5'%3E%3Cpath d='M0 12 L10 4 L20 12 L30 4 L40 12 L50 4 L60 12 L70 4 L80 12'/%3E%3Cpath d='M0 12 L10 20 L20 12 L30 20 L40 12 L50 20 L60 12 L70 20 L80 12' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-size: 80px 24px;
   opacity: 0.6;
+}
+
+/* Bande latérale décorative façon kente, façon mockup */
+.afro-side-pattern {
+  background-image: repeating-linear-gradient(
+      45deg,
+      rgba(244, 237, 228, 0.06) 0,
+      rgba(244, 237, 228, 0.06) 10px,
+      transparent 10px,
+      transparent 20px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(232, 93, 42, 0.06) 0,
+      rgba(232, 93, 42, 0.06) 10px,
+      transparent 10px,
+      transparent 20px
+    );
 }
 
 input[type="text"],
@@ -107,5 +130,29 @@ select {
 }
 
 .focus-ring:focus-visible {
-  @apply outline-none ring-4 ring-afro-orange/40;
+  @apply outline-none ring-4 ring-accent/40;
 }
+
+/* Champs partagés pour formulaires */
+.field {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 61, 43, 0.15);
+  background: #fff;
+  padding: 0 14px;
+  color: #1a1a1a;
+  font-size: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field:focus-visible {
+  outline: none;
+  border-color: #e85d2a;
+  box-shadow: 0 0 0 4px rgba(232, 93, 42, 0.18);
+}
+
+/* Animation fluide du badge 24h */
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.spin-slow { animation: spin-slow 30s linear infinite; }

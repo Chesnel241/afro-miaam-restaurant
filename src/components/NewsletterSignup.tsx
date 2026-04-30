@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRightIcon } from "./Icons";
 
 export function NewsletterSignup() {
   const [email, setEmail] = useState("");
@@ -14,17 +15,14 @@ export function NewsletterSignup() {
 
   if (done) {
     return (
-      <p className="rounded-full bg-afro-cream/10 px-5 py-3 text-afro-cream">
+      <p className="rounded-xl bg-cream/10 px-4 py-3 text-sm text-cream">
         Merci ! On vous écrit dès qu&apos;un nouveau créneau s&apos;ouvre.
       </p>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex w-full flex-col gap-3 sm:flex-row md:max-w-md"
-    >
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
       <label className="sr-only" htmlFor="newsletter-email">
         Adresse email
       </label>
@@ -35,10 +33,15 @@ export function NewsletterSignup() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="votre@email.com"
-        className="min-h-12 flex-1 rounded-full border border-afro-cream/20 bg-afro-green-deep px-5 text-afro-cream placeholder:text-afro-cream/50 focus-ring"
+        className="min-h-12 flex-1 rounded-xl border border-cream/20 bg-primaryDark px-4 text-cream placeholder:text-cream/50 focus-ring"
       />
-      <button type="submit" className="btn btn-md btn-primary">
-        Je m&apos;inscris
+      <button
+        type="submit"
+        aria-label="S'inscrire à la newsletter"
+        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-accent px-5 font-bold text-white transition hover:opacity-90"
+      >
+        S&apos;inscrire
+        <ArrowRightIcon className="h-4 w-4" />
       </button>
     </form>
   );
