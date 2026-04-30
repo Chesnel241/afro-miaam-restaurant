@@ -42,3 +42,20 @@ src/
   `src/app/api/reservation/route.ts`.
 - Numéro de téléphone et email dans `src/app/contact/page.tsx` et le
   footer.
+
+### Avatar du chatbot
+
+Le bouton flottant en bas à droite affiche l'avatar du chatbot. Pour
+utiliser la vraie photo de l'employée :
+
+1. Enregistre ton image (jpg ou png) sous **`public/chatbot-avatar.png`**
+2. C'est tout — la photo prend automatiquement la place du SVG par défaut
+
+Tant que ce fichier n'existe pas, le composant retombe sur
+`public/chatbot-avatar.svg` (illustration brand) qui sert de placeholder.
+
+### Base de connaissances du chatbot
+
+Toutes les questions/réponses sont centralisées dans
+`src/data/chatbot.ts` — ajoute un nouveau topic (id, label, mots-clés,
+réponse, CTA optionnel) pour enrichir la base.
