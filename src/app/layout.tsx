@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     "Cuisine afro gastronomique à Lyon, en précommande 24h à l'avance. Commande en ligne, retrait sur place ou livraison à 2 € dans Lyon. Paiement après validation par téléphone.",
   metadataBase: new URL("https://afro-miaam.fr"),
   openGraph: {
-    title: "Afro Miaam — Ça mijote, ça régale",
+    title: "Afro Miaam, Ça mijote, ça régale",
     description:
       "Précommande 24h à l'avance. Retrait à Lyon ou livraison à 2 €.",
     type: "website",

@@ -40,7 +40,7 @@ export default function AboutPage() {
         <div className="container-x grid gap-10 md:grid-cols-3">
           <Pillar title="Authenticité">
             Des recettes profondément ancrées dans nos racines. Mafé, Yassa,
-            Thieboudienne — réinterprétés sans jamais être trahis.
+            Thieboudienne, réinterprétés sans jamais être trahis.
           </Pillar>
           <Pillar title="Précision">
             Une cuisine maîtrisée, comme en gastronomie. Cuissons justes,

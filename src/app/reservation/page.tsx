@@ -144,7 +144,7 @@ export default function ReservationPage() {
           Date, heure et coordonnées
         </h1>
         <p className="mt-3 max-w-2xl text-primary/75">
-          Commande à l&apos;avance — paiement après validation par téléphone.
+          Commande à l&apos;avance, paiement après validation par téléphone.
           Choisissez votre créneau, on s&apos;occupe du reste.
         </p>
 
@@ -159,7 +159,7 @@ export default function ReservationPage() {
                 Date de retrait ou livraison
               </h2>
               <p className="mt-1 text-sm text-primary/65">
-                Minimum 24h à l&apos;avance — la première date disponible est
+                Minimum 24h à l&apos;avance, la première date disponible est
                 {" "}
                 <span className="font-semibold text-primary">
                   {formatHumanDate(minDate)}
@@ -342,7 +342,7 @@ export default function ReservationPage() {
               disabled={!canSubmit || submitting}
               className="btn btn-lg btn-primary w-full"
             >
-              {submitting ? "Envoi en cours…" : "Réserver — on vous rappelle"}
+              {submitting ? "Envoi en cours…" : "Réserver, on vous rappelle"}
             </button>
             <p className="text-center text-xs text-primary/55">
               En réservant, vous acceptez d&apos;être recontacté pour

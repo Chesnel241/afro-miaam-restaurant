@@ -18,7 +18,7 @@ export const CATEGORY_ORDER: MenuCategory[] = [
   "boisson",
 ];
 
-// Photos Unsplash temporaires — à remplacer par les visuels officiels Afro Miaam.
+// Photos Unsplash temporaires, à remplacer par les visuels officiels Afro Miaam.
 export const menuItems: MenuItem[] = [
   {
     id: "poulet-yassa",

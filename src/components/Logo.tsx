@@ -28,7 +28,7 @@ export function Logo({
   return (
     <Link
       href="/"
-      aria-label="Afro Miaam — accueil"
+      aria-label="Afro Miaam, accueil"
       className={`inline-flex items-center ${className}`}
     >
       <svg

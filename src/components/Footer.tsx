@@ -45,7 +45,7 @@ export function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-cream/80">
             <li className="flex items-start gap-2">
               <PinIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-              Lyon — France
+              Lyon, France
             </li>
             <li className="flex items-start gap-2">
               <PhoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
@@ -79,7 +79,7 @@ export function Footer() {
 
       <div className="border-t border-cream/10">
         <div className="container-x flex flex-col items-start justify-between gap-3 py-6 text-xs text-cream/60 sm:flex-row sm:items-center">
-          <p>&copy; {new Date().getFullYear()} Afro Miaam — Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} Afro Miaam, Tous droits réservés.</p>
           <ul className="flex flex-wrap gap-4">
             <li><Link href="/mentions-legales" className="hover:text-accent">Mentions légales</Link></li>
             <li><Link href="/cgv" className="hover:text-accent">CGV</Link></li>

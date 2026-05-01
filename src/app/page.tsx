@@ -71,7 +71,7 @@ export default function HomePage() {
                 <Value
                   icon={<PotIcon className="h-6 w-6" />}
                   title="Recettes revisitées"
-                  text="Mafé, Yassa, Thieboudienne — réinterprétés sans jamais être trahis."
+                  text="Mafé, Yassa, Thieboudienne, réinterprétés sans jamais être trahis."
                 />
                 <Value
                   icon={<HeartIcon className="h-6 w-6" />}

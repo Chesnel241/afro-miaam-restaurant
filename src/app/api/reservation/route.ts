@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   if (items.length === 0) return bad("Le panier est vide.");
   if (items.length > MAX_ITEMS) return bad("Trop d'articles dans le panier.");
 
-  // 3) Date / slot — basic shape validation
+  // 3) Date / slot, basic shape validation
   const date = clean(payload.date, 10);
   const slot = clean(payload.slot, 32);
   if (!ISO_DATE_RE.test(date)) return bad("Date invalide.");

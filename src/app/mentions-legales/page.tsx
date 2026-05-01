@@ -10,7 +10,7 @@ export default function LegalPage() {
         </h1>
 
         <Block title="Éditeur du site">
-          Afro Miaam — Lyon, France.
+          Afro Miaam, Lyon, France.
           <br />
           Email : bonjour@afro-miaam.fr
         </Block>

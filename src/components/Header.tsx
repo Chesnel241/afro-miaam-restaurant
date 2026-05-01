@@ -61,7 +61,7 @@ export function Header() {
           </Link>
           <Link
             href="/panier"
-            aria-label={`Panier — ${itemCount} article${itemCount > 1 ? "s" : ""}`}
+            aria-label={`Panier, ${itemCount} article${itemCount > 1 ? "s" : ""}`}
             className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
           >
             <CartIcon className="h-5 w-5" />

@@ -154,24 +154,22 @@ export function Chatbot() {
               <CloseIcon />
             ) : (
               <span className="block h-full w-full overflow-hidden rounded-full">
-                <span className="block h-full w-full animate-floaty">
-                  {!imgFailed ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={AVATAR_PRIMARY}
-                      alt="Assistant Afro Miaam"
-                      onError={() => setImgFailed(true)}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={AVATAR_FALLBACK}
-                      alt="Assistant Afro Miaam"
-                      className="h-full w-full object-cover"
-                    />
-                  )}
-                </span>
+                {!imgFailed ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={AVATAR_PRIMARY}
+                    alt="Assistant Afro Miaam"
+                    onError={() => setImgFailed(true)}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={AVATAR_FALLBACK}
+                    alt="Assistant Afro Miaam"
+                    className="h-full w-full object-cover"
+                  />
+                )}
               </span>
             )}
 
@@ -211,7 +209,7 @@ export function Chatbot() {
               <p className="font-display text-base font-bold">Afro Miaam</p>
               <p className="text-xs text-cream/75">
                 <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400 align-middle" />
-                En ligne — réponse rapide
+                En ligne, réponse rapide
               </p>
             </div>
             <button

@@ -38,7 +38,7 @@ export default function MenuPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-cream/85">
             Des plats généreux, faits maison, inspirés des traditions
-            africaines. Commande à l&apos;avance — paiement après validation
+            africaines. Commande à l&apos;avance, paiement après validation
             par téléphone.
           </p>
         </div>

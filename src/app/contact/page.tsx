@@ -41,7 +41,7 @@ export default function ContactPage() {
             />
             <InfoCard
               title="Zone de livraison"
-              value="Lyon — 2 € de frais"
+              value="Lyon, 2 € de frais"
               note="Tous les arrondissements"
             />
             <InfoCard
