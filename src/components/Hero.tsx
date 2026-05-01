@@ -15,7 +15,7 @@ export function Hero() {
       />
 
       <div className="container-x relative pb-12 pt-8 sm:pb-16 sm:pt-10 md:pb-20 md:pt-12">
-        <div className="overflow-hidden rounded-2xl shadow-soft">
+        <div className="relative overflow-hidden rounded-2xl shadow-soft">
           <Image
             src="/667339BE-F744-4983-B7E9-E1BEC20A4134.png"
             alt="Afro Miaam, le goût du pays, l'amour dans chaque assiette"
@@ -25,27 +25,32 @@ export function Hero() {
             sizes="(min-width: 1280px) 1240px, 100vw"
             className="h-auto w-full"
           />
+          <div className="absolute right-[2.5%] top-[69%] h-14 w-14 -translate-y-1/2 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-28 lg:w-28 xl:h-32 xl:w-32">
+            <CircularBadge />
+          </div>
         </div>
 
-        <div className="mt-10 grid items-center gap-8 md:mt-14 md:grid-cols-[1fr_auto] md:gap-12 lg:gap-16">
+        <div className="mt-10 md:mt-14 lg:grid lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-12 xl:gap-16">
           <div>
             <p className="eyebrow text-accentSoft">
               Afro dans l&apos;âme, gastro dans l&apos;assiette
             </p>
 
-            <h1 className="heading-display mt-3 text-[40px] leading-[1.05] sm:text-5xl md:text-6xl lg:text-[72px]">
+            <h1 className="heading-display mt-3 text-[40px] leading-[1.05] sm:text-5xl md:text-6xl lg:text-7xl xl:text-[80px]">
               Ça mijote,
               <br />
               ça <span className="italic text-accent">régale</span>
               <span className="text-accent"> !</span>
             </h1>
+          </div>
 
-            <p className="mt-4 max-w-md text-base text-cream/85 sm:mt-5 sm:text-lg">
+          <div className="mt-6 lg:mt-3">
+            <p className="text-base text-cream/85 sm:text-lg">
               Cuisine afro gastronomique préparée avec amour à partir de
               produits frais et de qualité.
             </p>
 
-            <ul className="mt-7 grid gap-3 sm:gap-4 md:grid-cols-3">
+            <ul className="mt-7 grid gap-3 sm:gap-4 sm:grid-cols-3">
               <Pill
                 icon={<PotIcon />}
                 label="Fait maison"
@@ -79,10 +84,6 @@ export function Hero() {
               </Link>
             </div>
           </div>
-
-          <div className="hidden self-center md:block">
-            <CircularBadge />
-          </div>
         </div>
       </div>
     </section>
@@ -115,10 +116,10 @@ function Pill({
 
 function CircularBadge() {
   return (
-    <div className="relative h-32 w-32 lg:h-40 lg:w-40">
+    <div className="relative h-full w-full">
       <svg
         viewBox="0 0 200 200"
-        className="spin-slow absolute inset-0"
+        className="spin-slow absolute inset-0 h-full w-full"
         aria-hidden="true"
       >
         <defs>
@@ -148,11 +149,11 @@ function CircularBadge() {
           </textPath>
         </text>
       </svg>
-      <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-accent text-cream shadow-soft">
-        <span className="font-display text-3xl font-extrabold leading-none lg:text-4xl">
+      <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full bg-accent text-cream shadow-soft">
+        <span className="font-display text-[11px] font-extrabold leading-none sm:text-base md:text-lg lg:text-2xl xl:text-3xl">
           24H
         </span>
-        <span className="text-[10px] font-bold uppercase tracking-widest lg:text-xs">
+        <span className="hidden text-[6px] font-bold uppercase tracking-widest sm:block sm:text-[7px] md:text-[8px] lg:text-[9px] xl:text-[10px]">
           à l&apos;avance
         </span>
       </div>
