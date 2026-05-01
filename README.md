@@ -45,14 +45,15 @@ src/
 
 ### Avatar du chatbot
 
-Le bouton flottant en bas à droite affiche l'avatar du chatbot. Pour
-utiliser la vraie photo de l'employée :
+Le bouton flottant en bas à droite affiche l'avatar du chatbot.
 
-1. Enregistre ton image (jpg ou png) sous **`public/chatbot-avatar.png`**
-2. C'est tout — la photo prend automatiquement la place du SVG par défaut
+- **Photo principale** : `public/923DCAED-BB80-435A-BE60-442EFAC52BD1.png`
+- **Fallback** : `public/chatbot-avatar.svg` (illustration brand) si la
+  photo principale n'est pas disponible.
 
-Tant que ce fichier n'existe pas, le composant retombe sur
-`public/chatbot-avatar.svg` (illustration brand) qui sert de placeholder.
+Pour changer le nom du fichier, met à jour les constantes
+`AVATAR_PRIMARY` / `AVATAR_FALLBACK` en haut de
+`src/components/Chatbot.tsx`.
 
 ### Base de connaissances du chatbot
 

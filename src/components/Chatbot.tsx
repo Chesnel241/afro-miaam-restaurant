@@ -15,6 +15,10 @@ type Message = {
 
 const STORAGE_KEY = "afro-miaam-chat-v1";
 
+// Avatar : photo officielle uploadée dans /public, fallback sur le SVG brand.
+const AVATAR_PRIMARY = "/923DCAED-BB80-435A-BE60-442EFAC52BD1.png";
+const AVATAR_FALLBACK = "/chatbot-avatar.svg";
+
 const INITIAL_MESSAGE: Message = {
   id: "welcome",
   sender: "bot",
@@ -154,7 +158,7 @@ export function Chatbot() {
                   {!imgFailed ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src="/chatbot-avatar.png"
+                      src={AVATAR_PRIMARY}
                       alt="Assistant Afro Miaam"
                       onError={() => setImgFailed(true)}
                       className="h-full w-full object-cover"
@@ -162,7 +166,7 @@ export function Chatbot() {
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src="/chatbot-avatar.svg"
+                      src={AVATAR_FALLBACK}
                       alt="Assistant Afro Miaam"
                       className="h-full w-full object-cover"
                     />
@@ -196,7 +200,7 @@ export function Chatbot() {
             <span className="relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-cream ring-2 ring-accent">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={imgFailed ? "/chatbot-avatar.svg" : "/chatbot-avatar.png"}
+                src={imgFailed ? AVATAR_FALLBACK : AVATAR_PRIMARY}
                 onError={() => setImgFailed(true)}
                 alt="Assistant Afro Miaam"
                 className="h-full w-full object-cover"
