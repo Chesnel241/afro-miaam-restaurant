@@ -5,6 +5,7 @@ import { CartProvider } from "@/components/CartContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Chatbot } from "@/components/Chatbot";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className={`${display.variable} ${body.variable}`}>
       <body className="font-sans antialiased">
+        <LoadingScreen />
         <CartProvider>
           <Header />
           <main className="min-h-[60vh]">{children}</main>
