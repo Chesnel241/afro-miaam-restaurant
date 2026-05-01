@@ -49,11 +49,11 @@ export function Footer() {
             </li>
             <li className="flex items-start gap-2">
               <PhoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-              +33 (0)6 00 00 00 00
+                +33652875281
             </li>
             <li className="flex items-start gap-2">
               <MailIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-              bonjour@afro-miaam.fr
+              contactnkumu241@gmail.com
             </li>
             <li className="text-cream/70">Précommande 24h minimum · Paiement après validation</li>
           </ul>
@@ -65,7 +65,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="md:col-span-3">
+        <div className="md:col-span-3 overflow-hidden">
           <h4 className="font-display text-lg font-bold text-cream">Newsletter</h4>
           <p className="mt-4 text-sm text-cream/80">
             Recevez l&apos;ouverture des prochains créneaux et les nouvelles
@@ -80,6 +80,9 @@ export function Footer() {
       <div className="border-t border-cream/10">
         <div className="container-x flex flex-col items-start justify-between gap-3 py-6 text-xs text-cream/60 sm:flex-row sm:items-center">
           <p>&copy; {new Date().getFullYear()} Afro Miaam, Tous droits réservés.</p>
+          <p>
+            Site created by <a href="https://logique-prod-agency.vercel.app" target="_blank" rel="noreferrer" className="text-cream underline-offset-4 hover:text-accent hover:underline">Logique Prod</a>
+          </p>
           <ul className="flex flex-wrap gap-4">
             <li><Link href="/mentions-legales" className="hover:text-accent">Mentions légales</Link></li>
             <li><Link href="/cgv" className="hover:text-accent">CGV</Link></li>

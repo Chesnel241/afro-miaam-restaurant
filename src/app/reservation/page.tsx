@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartContext";
@@ -37,17 +37,14 @@ export default function ReservationPage() {
     clear,
   } = useCart();
 
-  const [date, setDate] = useState("");
+  
   const [slot, setSlot] = useState("");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const minDate = useMemo(() => minBookingDate(), []);
-
-  useEffect(() => {
-    if (!date) setDate(minDate);
-  }, [date, minDate]);
+  const minDate = minBookingDate();
+  const [date, setDate] = useState(() => minBookingDate());
 
   const canSubmit =
     lines.length > 0 &&

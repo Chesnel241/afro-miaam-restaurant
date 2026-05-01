@@ -22,7 +22,7 @@ export function NewsletterSignup() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 overflow-hidden">
       <label className="sr-only" htmlFor="newsletter-email">
         Adresse email
       </label>
@@ -33,12 +33,12 @@ export function NewsletterSignup() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="votre@email.com"
-        className="min-h-12 flex-1 rounded-xl border border-cream/20 bg-primaryDark px-4 text-cream placeholder:text-cream/50 focus-ring"
+        className="min-h-12 w-full rounded-xl border border-cream/20 bg-primaryDark px-4 text-cream placeholder:text-cream/50 focus-ring"
       />
       <button
         type="submit"
         aria-label="S'inscrire à la newsletter"
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-accent px-5 font-bold text-white transition hover:opacity-90"
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent font-bold text-white transition hover:opacity-90"
       >
         S&apos;inscrire
         <ArrowRightIcon className="h-4 w-4" />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { formatHumanDate } from "@/lib/booking";
 import { formatPrice } from "@/lib/utils";
 import { CheckIcon, PhoneIcon } from "@/components/Icons";
@@ -16,18 +16,14 @@ type SavedReservation = {
 };
 
 export default function ConfirmationPage() {
-  const [data, setData] = useState<SavedReservation | null>(null);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
+  const [data] = useState<SavedReservation | null>(() => {
     try {
       const raw = sessionStorage.getItem("afro-miaam-last-reservation");
-      if (raw) setData(JSON.parse(raw));
+      return raw ? (JSON.parse(raw) as SavedReservation) : null;
     } catch {
-      /* ignore */
+      return null;
     }
-    setLoaded(true);
-  }, []);
+  });
 
   return (
     <section className="py-16 sm:py-20">
@@ -45,7 +41,7 @@ export default function ConfirmationPage() {
             Nous vous contactons rapidement pour finaliser votre commande.
           </p>
 
-          {loaded && data && (
+          {data && (
             <div className="mx-auto mt-8 max-w-xl rounded-xl bg-creamSoft p-6 text-left">
               <Row label="Référence" value={data.reference} />
               <Row label="Date" value={formatHumanDate(data.date)} />

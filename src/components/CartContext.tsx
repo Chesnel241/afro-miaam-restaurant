@@ -34,38 +34,31 @@ type CartContextValue = CartState & {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<CartState>({
-    lines: [],
-    deliveryMode: "retrait",
-  });
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
+  const [state, setState] = useState<CartState>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as CartState;
         if (parsed && Array.isArray(parsed.lines)) {
-          setState({
+          return {
             lines: parsed.lines,
             deliveryMode: parsed.deliveryMode === "livraison" ? "livraison" : "retrait",
-          });
+          };
         }
       }
     } catch {
       // ignore corrupted storage
     }
-    setHydrated(true);
-  }, []);
+    return { lines: [], deliveryMode: "retrait" };
+  });
 
   useEffect(() => {
-    if (!hydrated) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // ignore quota errors
     }
-  }, [state, hydrated]);
+  }, [state]);
 
   const addItem: CartContextValue["addItem"] = useCallback((line, qty = 1) => {
     setState((prev) => {

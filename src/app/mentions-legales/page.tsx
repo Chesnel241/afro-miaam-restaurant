@@ -12,7 +12,7 @@ export default function LegalPage() {
         <Block title="Éditeur du site">
           Afro Miaam, Lyon, France.
           <br />
-          Email : bonjour@afro-miaam.fr
+          Email : contactnkumu241@gmail.com
         </Block>
 
         <Block title="Hébergement">

@@ -32,37 +32,32 @@ function uid() {
 
 export function Chatbot() {
   const [open, setOpen] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
   const [tooltip, setTooltip] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Message[];
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      /* ignore */
+    }
+    return [INITIAL_MESSAGE];
+  });
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Hydrate persisted history
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Message[];
-        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
-      }
-    } catch {
-      /* ignore */
-    }
-    setHydrated(true);
-  }, []);
-
   // Persist history
   useEffect(() => {
-    if (!hydrated) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     } catch {
       /* ignore */
     }
-  }, [messages, hydrated]);
+  }, [messages]);
 
   // Tease tooltip after 3s on first visit
   useEffect(() => {

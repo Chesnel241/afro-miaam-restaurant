@@ -31,12 +31,12 @@ export default function ContactPage() {
           <div className="space-y-4">
             <InfoCard
               title="Téléphone"
-              value="+33 (0)6 00 00 00 00"
+              value="+33652875281"
               note="Lun – Sam, 10h – 19h"
             />
             <InfoCard
               title="Email"
-              value="bonjour@afro-miaam.fr"
+              value="contactnkumu241@gmail.com"
               note="Réponse sous 24h"
             />
             <InfoCard

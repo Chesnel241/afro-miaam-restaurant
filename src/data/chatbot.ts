@@ -83,7 +83,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "mail",
     ],
     answer:
-      "Par téléphone au +33 (0)6 00 00 00 00 (Lun, Sam, 10h, 19h) ou par email à bonjour@afro-miaam.fr.",
+      "Par téléphone au +33652875281 (Lun, Sam, 10h, 19h) ou par email à contactnkumu241@gmail.com.",
     cta: { label: "Page contact", href: "/contact" },
   },
   {
@@ -400,7 +400,7 @@ export function answerFor(input: string): { answer: string; cta?: ChatCta } {
   const phone = extractPhone(input);
   if (phone) {
     return {
-      answer: `Merci ! On a bien noté votre numéro (${phone}). Un membre de l'équipe Afro Miaam vous rappelle dans la journée (Lun à Sam, 10h à 19h). Si c'est urgent, vous pouvez aussi nous joindre au +33 (0)6 00 00 00 00.`,
+      answer: `Merci ! On a bien noté votre numéro (${phone}). Un membre de l'équipe Afro Miaam vous rappelle dans la journée (Lun à Sam, 10h à 19h). Si c'est urgent, vous pouvez aussi nous joindre au +33652875281.`,
       cta: { label: "Voir le menu en attendant", href: "/menu" },
     };
   }
