@@ -133,14 +133,130 @@ export function LoadingScreen() {
           </text>
         </svg>
 
-        <div
-          className="h-1.5 w-44 overflow-hidden rounded-full bg-cream/15"
+        <svg
+          viewBox="0 0 200 180"
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-36 w-44"
           aria-hidden="true"
         >
-          <div className="h-full w-1/3 animate-loader-bar rounded-full bg-accent" />
-        </div>
+          <defs>
+            <linearGradient id="potGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#F4814F" />
+              <stop offset="1" stopColor="#C44820" />
+            </linearGradient>
+          </defs>
 
-        <span className="sr-only">Chargement…</span>
+          {/* Vapeur */}
+          <g
+            fill="none"
+            stroke="#F4EDE4"
+            strokeWidth="3"
+            strokeLinecap="round"
+          >
+            <path
+              d="M75 60 Q72 50 75 38 Q78 28 75 20"
+              className="cook-steam cook-steam-1"
+            />
+            <path
+              d="M100 58 Q97 48 100 36 Q103 26 100 18"
+              className="cook-steam cook-steam-2"
+            />
+            <path
+              d="M125 60 Q122 50 125 38 Q128 28 125 20"
+              className="cook-steam cook-steam-3"
+            />
+          </g>
+
+          {/* Tomate */}
+          <g className="cook-fall cook-fall-1">
+            <circle cx="68" cy="14" r="6" fill="#E85D2A" />
+            <path
+              d="M66 7 Q68 3 71 7"
+              stroke="#6BAA75"
+              strokeWidth="1.6"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* Feuille d'herbe */}
+          <g className="cook-fall cook-fall-2">
+            <ellipse
+              cx="100"
+              cy="14"
+              rx="4"
+              ry="7"
+              fill="#8BC34A"
+              transform="rotate(25 100 14)"
+            />
+            <line
+              x1="100"
+              y1="20"
+              x2="100"
+              y2="24"
+              stroke="#3F6B45"
+              strokeWidth="1"
+            />
+          </g>
+
+          {/* Piment */}
+          <g className="cook-fall cook-fall-3">
+            <ellipse cx="132" cy="14" rx="3" ry="7" fill="#F7931E" />
+            <path
+              d="M130 6 L132 3 L134 6"
+              stroke="#6BAA75"
+              strokeWidth="1.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* Marmite */}
+          <g>
+            <ellipse cx="44" cy="73" rx="7" ry="4" fill="#C44820" />
+            <ellipse cx="156" cy="73" rx="7" ry="4" fill="#C44820" />
+            <path
+              d="M52 70 L148 70 L146 135 Q146 145 136 145 L64 145 Q54 145 54 135 Z"
+              fill="url(#potGrad)"
+            />
+            <rect
+              x="60"
+              y="82"
+              width="3"
+              height="36"
+              rx="1.5"
+              fill="#F4EDE4"
+              opacity="0.3"
+            />
+            <ellipse cx="100" cy="68" rx="52" ry="7" fill="#1F3D2B" />
+            <ellipse cx="100" cy="68" rx="46" ry="5" fill="#3A6E48" />
+          </g>
+
+          {/* Bulles à la surface */}
+          <circle
+            cx="86"
+            cy="68"
+            r="2.5"
+            fill="#A3C24F"
+            className="cook-bubble cook-bubble-1"
+          />
+          <circle
+            cx="100"
+            cy="68"
+            r="3"
+            fill="#A3C24F"
+            className="cook-bubble cook-bubble-2"
+          />
+          <circle
+            cx="114"
+            cy="68"
+            r="2"
+            fill="#A3C24F"
+            className="cook-bubble cook-bubble-3"
+          />
+        </svg>
+
+        <span className="sr-only">Chargement, ça mijote…</span>
       </div>
     </div>
   );
