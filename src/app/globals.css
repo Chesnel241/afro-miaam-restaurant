@@ -156,3 +156,21 @@ select {
   to { transform: rotate(360deg); }
 }
 .spin-slow { animation: spin-slow 30s linear infinite; }
+
+/* Écran de chargement */
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1f3d2b;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+
+.loader-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
