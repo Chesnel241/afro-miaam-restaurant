@@ -58,5 +58,19 @@ service cloud.firestore {
       // Aucune suppression autorisée
       allow delete: if false;
     }
+
+    // ─── Newsletter ───
+    match /newsletter/{emailId} {
+      // N'importe qui peut s'inscrire (même non-authentifié)
+      allow create: if true 
+        && request.resource.data.email is string
+        && request.resource.data.email.size() < 200;
+
+      // Seul l'admin peut consulter la liste des inscrits
+      allow read: if isAdmin();
+      
+      // Personne ne peut modifier ou supprimer un email
+      allow update, delete: if false;
+    }
   }
 }
