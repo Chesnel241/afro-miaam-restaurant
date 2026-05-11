@@ -22,7 +22,7 @@ export function AdminMenuManager() {
   const [form, setForm] = useState<Omit<MenuItemDynamic, "id">>({
     name: "",
     description: "",
-    price: 0,
+    price: "0" as any,
     image: "/img/signatures/mafe.jpg",
     category: "signature",
     tags: [],
@@ -34,12 +34,12 @@ export function AdminMenuManager() {
     setForm({
       name: item.name,
       description: item.description,
-      price: item.price,
+      price: item.price.toString(),
       image: item.image,
       category: item.category,
       tags: item.tags || [],
       available: item.available,
-      flavors: item.flavors || [],
+      flavors: (item.flavors || []).map(f => ({ ...f, supplement: f.supplement.toString() })),
     });
     setIsAdding(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -51,7 +51,7 @@ export function AdminMenuManager() {
     setForm({
       name: "",
       description: "",
-      price: 0,
+      price: "0",
       image: "/img/signatures/mafe.jpg",
       category: "signature",
       tags: [],
@@ -79,12 +79,21 @@ export function AdminMenuManager() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const sanitizedForm = {
+      ...form,
+      price: parseFloat(String(form.price)) || 0,
+      flavors: form.flavors?.map(f => ({
+        ...f,
+        name: f.name.trim(),
+        supplement: parseFloat(String(f.supplement)) || 0
+      })).filter(f => f.name !== "") || []
+    };
+
     try {
       if (editingId) {
-        await updateMenuItem(editingId, form);
+        await updateMenuItem(editingId, sanitizedForm);
       } else {
-        await addMenuItem(form);
+        await addMenuItem(sanitizedForm);
       }
       handleCancel();
     } catch (err: unknown) {
@@ -186,12 +195,18 @@ export function AdminMenuManager() {
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-primary/60">Prix (€)</label>
               <input 
-                type="number" 
-                step="0.1" 
+                type="text" 
+                inputMode="decimal"
                 required 
                 value={form.price}
-                onChange={e => setForm({...form, price: parseFloat(e.target.value)})}
+                onChange={e => {
+                  const val = e.target.value.replace(',', '.');
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    setForm({...form, price: val as any});
+                  }
+                }}
                 className="field h-12"
+                placeholder="0.00"
               />
             </div>
             <div className="sm:col-span-2 space-y-2">
@@ -279,14 +294,17 @@ export function AdminMenuManager() {
                       />
                       <div className="relative w-28">
                         <input 
-                          type="number" 
-                          step="0.1" 
+                          type="text" 
+                          inputMode="decimal"
                           placeholder="0.00"
                           value={f.supplement}
                           onChange={e => {
-                            const newFlavors = [...(form.flavors || [])];
-                            newFlavors[i].supplement = parseFloat(e.target.value) || 0;
-                            setForm({ ...form, flavors: newFlavors });
+                            const val = e.target.value.replace(',', '.');
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                              const newFlavors = [...(form.flavors || [])];
+                              newFlavors[i].supplement = val as any;
+                              setForm({ ...form, flavors: newFlavors });
+                            }
                           }}
                           className="field h-10 w-full pl-7"
                         />
