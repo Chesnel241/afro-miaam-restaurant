@@ -1,6 +1,6 @@
-import { db } from "./lib/firebase";
+import { db } from "./firebase";
 import { collection, addDoc, getDocs, query, limit } from "firebase/firestore";
-import { menuItems } from "./data/menu";
+import { menuItems } from "../data/menu";
 
 export async function seedMenu() {
   const q = query(collection(db, "menu"), limit(1));
