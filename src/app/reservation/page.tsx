@@ -48,7 +48,7 @@ export default function ReservationPage() {
   }, [user]);
 
   const canSubmit =
-    cart.length > 0 &&
+    (cart ?? []).length > 0 &&
     form.firstName &&
     form.lastName &&
     form.phone &&
