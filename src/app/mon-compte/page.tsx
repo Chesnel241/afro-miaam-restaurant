@@ -1,18 +1,28 @@
 "use client";
 
 import { useAuth, type Order, type MenuItemDynamic } from "@/components/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { GiftIcon, ArrowRightIcon, TrashIcon, ClockIcon, UserIcon, CartIcon } from "@/components/Icons";
 import { formatPrice } from "@/lib/utils";
 
 type Tab = "menu" | "orders" | "dashboard" | "profile";
 
-export default function MonComptePage() {
+function MonCompteContent() {
   const { user, loading, logout, deleteAccount, userOrders, dynamicMenu, updateProfile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Onglet par défaut ou depuis l'URL
   const [activeTab, setActiveTab] = useState<Tab>("menu");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab") as Tab;
+    if (tab && ["menu", "orders", "dashboard", "profile"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Profile Form State
   const [profileForm, setProfileForm] = useState({
@@ -35,8 +45,6 @@ export default function MonComptePage() {
     }
   }, [user, loading, router]);
 
-  // --- Logique intelligente de personnalisation ---
-  
   const recentlyOrderedItems = useMemo(() => {
     if (userOrders.length === 0) return [];
     const allItems = userOrders.flatMap(o => o.items);
@@ -98,110 +106,100 @@ export default function MonComptePage() {
   };
 
   return (
-    <div className="container-x py-10 sm:py-16">
-      <div className="grid gap-10 lg:grid-cols-[320px_1fr]">
+    <div className="container-x py-8 sm:py-16 overflow-hidden max-w-full">
+      <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
         
-        {/* --- SIDEBAR PERSISTANTE --- */}
+        {/* --- SIDEBAR / MOBILE HEADER --- */}
         <aside className="space-y-6">
-          <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-cream/20">
+          <div className="rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-6 shadow-soft ring-1 ring-cream/20">
             <div className="flex flex-col items-center text-center">
-              <div className="h-20 w-20 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-4">
-                <UserIcon className="h-10 w-10" />
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-4">
+                <UserIcon className="h-8 w-8 sm:h-10 sm:w-10" />
               </div>
-              <h2 className="font-display text-xl font-bold text-primary">{user.name}</h2>
-              <p className="text-sm text-primary/50 mb-6">{user.email}</p>
+              <h2 className="font-display text-lg sm:text-xl font-bold text-primary">{user.name}</h2>
+              <p className="text-xs sm:text-sm text-primary/50 mb-6 truncate max-w-full px-4">{user.email}</p>
               
               <button
                 onClick={async () => {
                   await logout();
                   router.push("/login");
                 }}
-                className="btn btn-md bg-afro-red text-white w-full flex items-center justify-center min-w-[180px] px-6"
+                className="btn btn-md bg-afro-red text-white w-full flex items-center justify-center min-w-0 px-4 text-sm sm:text-base h-12"
               >
                 Se déconnecter
               </button>
             </div>
           </div>
 
-          {/* Ma Fidélité : Toujours visible sous le bouton déconnexion */}
-          <div className="relative overflow-hidden rounded-3xl bg-primary-gradient p-6 text-cream shadow-soft">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-primary-gradient p-5 sm:p-6 text-cream shadow-soft">
             <div className="afro-side-pattern absolute inset-0 opacity-10" aria-hidden="true" />
             <div className="relative z-10">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent/20 text-accent">
-                  <GiftIcon className="h-5 w-5" />
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-accent">
+                  <GiftIcon className="h-4 w-4" />
                 </span>
-                <h2 className="font-display text-lg font-bold">Ma Fidélité</h2>
+                <h2 className="font-display text-base sm:text-lg font-bold">Ma Fidélité</h2>
               </div>
               
-              <div className="mt-6">
+              <div className="mt-5">
                 {isRewardReady ? (
-                  <div className="rounded-2xl bg-accent p-4 text-center shadow-glow animate-bounce">
-                    <p className="font-bold text-white text-sm">🎉 Cadeau prêt !</p>
-                    <p className="text-[10px] text-white/90 mt-0.5">Votre 11ème commande est offerte.</p>
+                  <div className="rounded-xl bg-accent p-3 text-center shadow-glow animate-bounce">
+                    <p className="font-bold text-white text-xs">🎉 Cadeau prêt !</p>
                   </div>
                 ) : (
                   <>
                     <div className="flex justify-between items-end mb-2">
-                      <p className="text-xs text-cream/80 font-semibold">
-                        {remaining <= 2 ? "Presque fini ! 🔥" : `Encore ${remaining} repas`}
+                      <p className="text-[10px] sm:text-xs text-cream/80 font-semibold leading-none">
+                        {remaining <= 2 ? "Presque fini ! 🔥" : `${remaining} repas restants`}
                       </p>
-                      <span className="text-[10px] font-bold text-accent">{currentCycleCount}/10</span>
+                      <span className="text-[10px] font-bold text-accent leading-none">{currentCycleCount}/10</span>
                     </div>
-                    <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-cream/10">
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-cream/10">
                       <div className={`h-full bg-accent transition-all duration-1000 ${remaining <= 2 ? 'animate-pulse' : ''}`} style={{ width: `${progressPercentage}%` }} />
                     </div>
-                    <p className="mt-3 text-[10px] text-cream/50 italic text-center">Après 10 commandes, la 11ème est offerte !</p>
                   </>
                 )}
+                <p className="mt-3 text-[9px] text-cream/40 italic text-center">La 11ème commande est offerte !</p>
               </div>
             </div>
           </div>
-
-          <div className="hidden lg:block rounded-3xl bg-creamSoft p-6 border border-cream/30">
-            <h3 className="font-bold text-primary text-sm mb-4">Besoin d'aide ?</h3>
-            <Link href="/contact" className="text-xs font-bold text-accent hover:underline flex items-center gap-2">
-              Nous contacter <ArrowRightIcon className="h-3 w-3" />
-            </Link>
-          </div>
         </aside>
 
-        {/* --- ZONE DE CONTENU (TABS) --- */}
-        <main>
-          {/* Header Mobile / Tablet */}
-          <div className="lg:hidden mb-8 border-b border-cream/20 pb-6">
-            <h1 className="heading-display text-3xl text-primary">Mon Espace</h1>
+        {/* --- ZONE DE CONTENU --- */}
+        <main className="min-w-0">
+          <div className="mb-6">
+            <h1 className="heading-display text-2xl sm:text-3xl text-primary">Mon Espace</h1>
           </div>
 
-          {/* Navigation par Onglets */}
-          <div className="flex gap-2 sm:gap-6 border-b border-cream/30 overflow-x-auto no-scrollbar scroll-smooth">
+          {/* Navigation par Onglets (Compacte sur mobile, disparait si trop petit car burger menu prend le relais) */}
+          <div className="flex gap-1 sm:gap-4 border-b border-cream/30 overflow-x-auto no-scrollbar scroll-smooth mb-8">
             <TabBtn active={activeTab === "menu"} onClick={() => setActiveTab("menu")} label="Le Menu" />
             <TabBtn active={activeTab === "orders"} onClick={() => setActiveTab("orders")} label="Historique" />
             <TabBtn active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} label="Dashboard" />
             <TabBtn active={activeTab === "profile"} onClick={() => setActiveTab("profile")} label="Mon profil" />
           </div>
 
-          <div className="mt-8">
-            {/* --- TAB 1: MENU (Suggérés + Lien Menu) --- */}
+          <div className="space-y-8">
+            {/* --- TAB 1: MENU --- */}
             {activeTab === "menu" && (
-              <div className="space-y-10">
+              <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h2 className="heading-display text-2xl text-primary">Suggestions pour vous</h2>
-                  <Link href="/menu" className="btn btn-md btn-primary px-8 flex items-center justify-center min-w-[160px]">
+                  <h2 className="heading-display text-xl sm:text-2xl text-primary">Suggestions pour vous</h2>
+                  <Link href="/menu" className="btn btn-md btn-primary px-8 flex items-center justify-center h-12 sm:h-auto">
                     Voir tout le menu
                   </Link>
                 </div>
 
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {suggestedItems.map(item => (
                     <MiniProductCard key={item.id} item={item} label="Commander" />
                   ))}
                 </div>
 
                 {recentlyOrderedItems.length > 0 && (
-                  <div className="pt-6 border-t border-cream/20">
-                    <h3 className="font-display text-xl font-bold text-primary mb-6">Vos classiques</h3>
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="pt-8 border-t border-cream/20">
+                    <h3 className="font-display text-lg sm:text-xl font-bold text-primary mb-6">Vos classiques</h3>
+                    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                       {recentlyOrderedItems.map(item => (
                         <MiniProductCard key={item.id} item={item} label="Reprendre" />
                       ))}
@@ -211,10 +209,10 @@ export default function MonComptePage() {
               </div>
             )}
 
-            {/* --- TAB 2: ORDERS (Historique) --- */}
+            {/* --- TAB 2: ORDERS --- */}
             {activeTab === "orders" && (
-              <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-cream/20 sm:p-8">
-                <h2 className="heading-display text-2xl text-primary mb-6">Mes commandes passées</h2>
+              <div className="rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-soft ring-1 ring-cream/20">
+                <h2 className="heading-display text-xl sm:text-2xl text-primary mb-6">Mes commandes</h2>
                 {userOrders.length > 0 ? (
                   <div className="divide-y divide-cream/30">
                     {userOrders.map((order) => (
@@ -223,62 +221,56 @@ export default function MonComptePage() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <p className="text-primary/60 italic">Aucune commande pour le moment.</p>
-                    <Link href="/menu" className="btn btn-primary mt-6 inline-flex">Démarrer ma première commande</Link>
+                    <p className="text-primary/60 text-sm italic">Aucune commande pour le moment.</p>
+                    <Link href="/menu" className="btn btn-primary mt-6 inline-flex">Commander mon premier repas</Link>
                   </div>
                 )}
               </div>
             )}
 
-            {/* --- TAB 3: DASHBOARD (Stats) --- */}
+            {/* --- TAB 3: DASHBOARD --- */}
             {activeTab === "dashboard" && (
-              <div className="grid gap-6 sm:grid-cols-2">
-                <StatCard title="Commandes totales" value={ordersCount} sub="Depuis votre inscription" />
-                <StatCard title="Points fidélité" value={currentCycleCount} sub={`Plus que ${remaining} avant cadeau`} />
-                <div className="sm:col-span-2 rounded-3xl bg-creamSoft p-8 border border-cream/20">
-                  <h3 className="font-bold text-primary mb-4 text-center sm:text-left">Statistiques de consommation</h3>
-                  <p className="text-sm text-primary/60 text-center sm:text-left">
-                    Vous êtes l'un de nos clients les plus fidèles ! Continuez ainsi pour débloquer des offres exclusives.
-                  </p>
-                </div>
+              <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
+                <StatCard title="Commandes" value={ordersCount} sub="Total passé" />
+                <StatCard title="Fidélité" value={currentCycleCount} sub={`${remaining} restants`} />
               </div>
             )}
 
             {/* --- TAB 4: PROFILE --- */}
             {activeTab === "profile" && (
-              <div className="max-w-2xl space-y-8">
-                <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-cream/20 sm:p-8">
-                  <h2 className="heading-display text-2xl text-primary mb-6">Informations personnelles</h2>
+              <div className="space-y-8 max-w-full overflow-hidden">
+                <div className="rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-soft ring-1 ring-cream/20">
+                  <h2 className="heading-display text-xl sm:text-2xl text-primary mb-6">Profil</h2>
                   <form onSubmit={handleUpdateProfile} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold uppercase text-primary/60">Nom complet</label>
-                        <input type="text" required value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="field" />
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-primary/60">Nom complet</label>
+                        <input type="text" required value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="field h-11 text-sm" />
                       </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold uppercase text-primary/60">Téléphone</label>
-                        <input type="tel" required value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} className="field" />
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-primary/60">Téléphone</label>
+                        <input type="tel" required value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} className="field h-11 text-sm" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 pt-4">
-                      <button type="submit" disabled={isUpdating} className="btn btn-md btn-primary px-10 min-w-[160px]">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+                      <button type="submit" disabled={isUpdating} className="btn btn-md btn-primary w-full sm:w-auto px-10 h-12">
                         {isUpdating ? "Enregistrement..." : "Enregistrer"}
                       </button>
-                      {updateMsg && <span className="text-sm font-bold text-green-600 animate-fade-in">{updateMsg}</span>}
+                      {updateMsg && <span className="text-xs font-bold text-green-600">{updateMsg}</span>}
                     </div>
                   </form>
                 </div>
 
-                <div className="rounded-3xl bg-red-50 p-6 shadow-sm ring-1 ring-red-100 sm:p-8">
-                  <h2 className="font-display text-xl font-bold text-afro-red mb-2">Zone critique</h2>
-                  <p className="text-sm text-afro-red/70 mb-6">L'effacement du compte est immédiat et irréversible.</p>
+                <div className="rounded-2xl sm:rounded-3xl bg-red-50 p-5 sm:p-8 ring-1 ring-red-100">
+                  <h2 className="font-display text-lg font-bold text-afro-red mb-2">Suppression</h2>
+                  <p className="text-xs text-afro-red/70 mb-6 leading-relaxed">Cette action est immédiate et irréversible.</p>
                   <button onClick={async () => {
                     if (confirm("Supprimer définitivement ?")) {
                       await deleteAccount();
                       router.push("/");
                     }
-                  }} className="btn btn-md bg-white border border-red-200 text-afro-red hover:bg-afro-red hover:text-white transition-all">
-                    Supprimer mon compte
+                  }} className="text-xs font-bold text-afro-red hover:underline uppercase tracking-widest">
+                    Supprimer mon compte définitivement
                   </button>
                 </div>
               </div>
@@ -290,13 +282,21 @@ export default function MonComptePage() {
   );
 }
 
+export default function MonComptePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <MonCompteContent />
+    </Suspense>
+  );
+}
+
 // ─── Composants Internes ──────────────────────────────────────
 
 function TabBtn({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) {
   return (
     <button
       onClick={onClick}
-      className={`whitespace-nowrap px-4 sm:px-6 py-4 text-sm font-bold uppercase tracking-wider transition-all border-b-2 outline-none ${
+      className={`whitespace-nowrap px-3 sm:px-6 py-4 text-[10px] sm:text-xs font-bold uppercase tracking-[0.1em] transition-all border-b-2 outline-none ${
         active 
           ? "border-accent text-accent" 
           : "border-transparent text-primary/40 hover:text-primary"
@@ -309,9 +309,9 @@ function TabBtn({ active, onClick, label }: { active: boolean, onClick: () => vo
 
 function StatCard({ title, value, sub }: { title: string, value: string | number, sub: string }) {
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-cream/20 text-center sm:text-left">
-      <p className="text-xs font-bold uppercase tracking-widest text-primary/40 mb-2">{title}</p>
-      <p className="font-display text-4xl font-black text-primary">{value}</p>
+    <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-soft ring-1 ring-cream/20 text-center sm:text-left">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-primary/40 mb-2">{title}</p>
+      <p className="font-display text-3xl sm:text-4xl font-black text-primary">{value}</p>
       <p className="mt-2 text-xs text-primary/60">{sub}</p>
     </div>
   );
@@ -319,15 +319,15 @@ function StatCard({ title, value, sub }: { title: string, value: string | number
 
 function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string }) {
   return (
-    <div className="group rounded-3xl bg-white p-4 shadow-sm ring-1 ring-cream/20 hover:shadow-soft transition-all">
-      <div className="aspect-square w-full overflow-hidden rounded-2xl bg-creamSoft mb-4">
+    <div className="group rounded-2xl bg-white p-3 sm:p-4 shadow-sm ring-1 ring-cream/20 hover:shadow-soft transition-all">
+      <div className="aspect-square w-full overflow-hidden rounded-xl bg-creamSoft mb-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.image} alt={item.name} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
       </div>
-      <h3 className="font-bold text-primary text-base mb-1 truncate">{item.name}</h3>
+      <h3 className="font-bold text-primary text-sm sm:text-base mb-1 truncate">{item.name}</h3>
       <div className="flex items-center justify-between mt-3">
-         <span className="text-sm font-bold text-accent">{formatPrice(item.price)}</span>
-         <Link href="/menu" className="btn btn-xs bg-primary/5 text-primary hover:bg-accent hover:text-white px-3 py-1.5 text-[10px] uppercase font-bold tracking-widest rounded-lg transition-all min-w-[100px] flex justify-center">
+         <span className="text-xs sm:text-sm font-bold text-accent">{formatPrice(item.price)}</span>
+         <Link href="/menu" className="btn btn-xs bg-primary/5 text-primary hover:bg-accent hover:text-white px-3 py-2 text-[9px] uppercase font-bold tracking-widest rounded-lg transition-all min-w-[80px] flex justify-center">
            {label}
          </Link>
       </div>
@@ -337,24 +337,24 @@ function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string
 
 function OrderRow({ order }: { order: Order }) {
   return (
-    <div className="flex items-center justify-between py-6 first:pt-0 last:pb-0">
-      <div className="flex gap-4">
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+    <div className="flex items-center justify-between py-5 first:pt-0 last:pb-0">
+      <div className="flex gap-3 sm:gap-4">
+        <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${
           order.status === 'Livré' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
         }`}>
-          {order.status === 'Livré' ? <GiftIcon className="h-6 w-6" /> : <ClockIcon className="h-6 w-6" />}
+          {order.status === 'Livré' ? <GiftIcon className="h-5 w-5 sm:h-6 sm:w-6" /> : <ClockIcon className="h-5 w-5 sm:h-6 sm:w-6" />}
         </div>
-        <div>
-          <p className="font-bold text-primary text-sm sm:text-base">{order.id.substring(0, 8).toUpperCase()}</p>
-          <p className="text-xs text-primary/50">{order.createdAt}</p>
-          <p className="mt-1 text-[11px] font-medium text-primary/60 leading-tight">
+        <div className="min-w-0">
+          <p className="font-bold text-primary text-xs sm:text-base truncate">{order.id.substring(0, 8).toUpperCase()}</p>
+          <p className="text-[10px] sm:text-xs text-primary/50">{order.createdAt}</p>
+          <p className="mt-1 text-[10px] font-medium text-primary/60 leading-tight truncate">
             {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
           </p>
         </div>
       </div>
-      <div className="text-right">
-        <p className="font-bold text-primary text-sm sm:text-base">{formatPrice(order.total)}</p>
-        <span className={`mt-2 inline-block rounded-lg px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest ${
+      <div className="text-right shrink-0">
+        <p className="font-bold text-primary text-xs sm:text-base">{formatPrice(order.total)}</p>
+        <span className={`mt-2 inline-block rounded-lg px-2 py-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest ${
           order.status === "Livré"
             ? "bg-accent text-white"
             : order.status === "En cours"

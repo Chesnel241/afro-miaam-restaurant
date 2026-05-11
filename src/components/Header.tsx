@@ -7,14 +7,20 @@ import { useCart } from "./CartContext";
 import { CartIcon, UserIcon } from "./Icons";
 import { useAuth } from "./AuthContext";
 
-const NAV_ITEMS = [
+const NAV_ITEMS_VISITOR = [
   { href: "/", label: "Accueil" },
   { href: "/menu", label: "Menu" },
   { href: "/prestation-service", label: "Prestation Service" },
   { href: "/comment-ca-marche", label: "Comment ça marche" },
-  { href: "/a-propos", label: "À propos" },
-  { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
+];
+
+const NAV_ITEMS_CUSTOMER = [
+  { href: "/mon-compte?tab=menu", label: "Le Menu" },
+  { href: "/mon-compte?tab=orders", label: "Historique" },
+  { href: "/mon-compte?tab=dashboard", label: "Dashboard" },
+  { href: "/mon-compte?tab=profile", label: "Mon profil" },
+  { href: "/prestation-service", label: "Prestation Service" },
 ];
 
 export function Header() {
@@ -30,11 +36,13 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const isCustomer = user?.role === "customer";
+  const navItems = isCustomer ? NAV_ITEMS_CUSTOMER : NAV_ITEMS_VISITOR;
   const userLink = user ? (user.role === "admin" ? "/admin" : "/mon-compte") : "/login";
 
   return (
     <header
-      className={`sticky top-0 z-40 transition-colors duration-300 ${
+      className={`sticky top-0 z-40 transition-colors duration-300 w-full overflow-hidden ${
         scrolled ? "bg-primary/95 backdrop-blur" : "bg-primary"
       }`}
     >
@@ -45,7 +53,7 @@ export function Header() {
           aria-label="Navigation principale"
           className="hidden items-center gap-7 lg:flex"
         >
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -54,16 +62,17 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          <Link
-            href={userLink}
-            className="text-sm font-semibold text-accent transition hover:text-white"
-          >
-            {user ? "Mon Compte" : "Connexion"}
-          </Link>
+          {!isCustomer && (
+            <Link
+              href={userLink}
+              className="text-sm font-semibold text-accent transition hover:text-white"
+            >
+              {user ? "Mon Compte" : "Connexion"}
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
-          {/* Toujours visible sur mobile et desktop pour encourager la connexion */}
           <Link
             href={userLink}
             aria-label={user ? "Mon Compte" : "Connexion / Inscription"}
@@ -97,37 +106,44 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="border-t border-cream/10 bg-primaryDark lg:hidden">
-          <nav className="container-x flex flex-col py-4">
-            {NAV_ITEMS.map((item) => (
+        <div className="border-t border-cream/10 bg-primaryDark lg:hidden max-h-[85vh] overflow-y-auto">
+          <nav className="container-x flex flex-col py-6 space-y-1">
+            <p className="px-2 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent/60">Navigation</p>
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="rounded-md px-2 py-3 text-base font-semibold text-cream/90 hover:bg-cream/5 hover:text-accent"
+                className="rounded-xl px-4 py-3 text-lg font-bold text-cream/90 transition-all hover:bg-cream/5 hover:text-accent flex items-center justify-between group"
               >
                 {item.label}
+                <span className="opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0">→</span>
               </Link>
             ))}
-            {/* Bouton de connexion mis en avant dans le menu burger */}
+            
+            <div className="h-px bg-cream/10 my-4 mx-2" />
+            
             <Link
               href={userLink}
               onClick={() => setOpen(false)}
-              className={`mt-2 rounded-xl px-4 py-4 text-center text-lg font-bold shadow-sm transition-all ${
+              className={`rounded-2xl px-6 py-4 text-center text-lg font-black shadow-lg transition-all ${
                 user 
-                  ? "bg-cream/10 text-cream hover:bg-cream/20" 
-                  : "bg-accent text-white hover:bg-accent/90"
+                  ? "bg-cream/5 text-cream border border-cream/20 hover:bg-cream/10" 
+                  : "bg-accent text-white hover:scale-[1.02] active:scale-95"
               }`}
             >
-              {user ? "Mon compte" : "Connexion / Inscription"}
+              {user ? "Accéder à mon espace" : "Se connecter / S'inscrire"}
             </Link>
-            <Link
-              href="/menu"
-              onClick={() => setOpen(false)}
-              className="btn btn-lg btn-primary mt-4 w-full"
-            >
-              Commander maintenant
-            </Link>
+            
+            {!isCustomer && (
+              <Link
+                href="/menu"
+                onClick={() => setOpen(false)}
+                className="btn btn-lg btn-primary mt-4 w-full shadow-glow"
+              >
+                Commander maintenant
+              </Link>
+            )}
           </nav>
         </div>
       )}
@@ -143,7 +159,7 @@ function BurgerIcon({ open }: { open: boolean }) {
       height="22"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
       aria-hidden="true"
     >
@@ -155,7 +171,7 @@ function BurgerIcon({ open }: { open: boolean }) {
       ) : (
         <>
           <path d="M4 7h16" />
-          <path d="M4 12h16" />
+          <path d="M4 12h12" />
           <path d="M4 17h16" />
         </>
       )}
