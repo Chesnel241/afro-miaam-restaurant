@@ -54,6 +54,12 @@ export function Header() {
               {item.label}
             </Link>
           ))}
+          <Link
+            href={userLink}
+            className="text-sm font-semibold text-accent transition hover:text-white"
+          >
+            {user ? "Mon Compte" : "Connexion"}
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -101,6 +107,13 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href={userLink}
+              onClick={() => setOpen(false)}
+              className="rounded-md px-2 py-3 text-base font-semibold text-cream/90 hover:bg-cream/5 hover:text-accent"
+            >
+              {user ? "Mon compte" : "Connexion / Inscription"}
+            </Link>
             <Link
               href="/menu"
               onClick={() => setOpen(false)}
