@@ -79,6 +79,7 @@ export function AdminMenuManager() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const sanitizedForm = {
       ...form,
       price: parseFloat(String(form.price)) || 0,
