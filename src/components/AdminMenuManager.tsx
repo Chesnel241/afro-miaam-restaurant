@@ -91,15 +91,19 @@ export function AdminMenuManager() {
     }
   };
 
-  const handleSeed = async () => {
-    if (confirm("Voulez-vous initialiser la carte avec les plats par défaut ? Cela ne sera fait que si la base est vide.")) {
+  const handleSeed = async (force = false) => {
+    const msg = force 
+      ? "Êtes-vous sûr ? Cela va EFFACER le menu actuel et restaurer tous les plats par défaut (Garba, Tièp, Mafé...)."
+      : "Voulez-vous initialiser la carte avec les plats par défaut ?";
+      
+    if (confirm(msg)) {
       setIsSeeding(true);
       try {
-        await seedMenu();
-        alert("Menu initialisé avec succès !");
+        await seedMenu(force);
+        alert("Menu rétabli avec succès ! Rafraîchissez la page si nécessaire.");
       } catch (err) {
         console.error("Seed error:", err);
-        alert("Erreur lors de l'initialisation. La base est peut-être déjà remplie.");
+        alert("Erreur lors de l'initialisation.");
       } finally {
         setIsSeeding(false);
       }
@@ -112,18 +116,19 @@ export function AdminMenuManager() {
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-3xl shadow-soft ring-1 ring-cream/20">
         <div>
           <h2 className="heading-display text-2xl text-primary sm:text-3xl">Gestion de la Carte</h2>
-          <p className="text-sm text-primary/50 mt-1 italic">Ajoutez, modifiez ou gérez la disponibilité de vos plats.</p>
+          <p className="text-sm text-primary/50 mt-1 italic">
+            {dynamicMenu.length} plat{dynamicMenu.length > 1 ? 's' : ''} en ligne.
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          {dynamicMenu.length === 0 && (
-            <button 
-              onClick={handleSeed}
-              disabled={isSeeding}
-              className="btn btn-md bg-primary text-white px-6 shadow-md hover:scale-[1.02] active:scale-95 transition-all"
-            >
-              {isSeeding ? "Initialisation..." : "Initialiser le menu"}
-            </button>
-          )}
+          <button 
+            onClick={() => handleSeed(true)}
+            disabled={isSeeding}
+            className="btn btn-md bg-primary text-white px-6 shadow-md hover:bg-primaryDark transition-all"
+          >
+            {isSeeding ? "Opération..." : dynamicMenu.length === 0 ? "Initialiser le menu" : "Rétablir le menu par défaut"}
+          </button>
+          
           {!isAdding && !editingId && (
             <button 
               onClick={() => {
@@ -138,7 +143,7 @@ export function AdminMenuManager() {
                   available: true,
                 });
               }}
-              className="btn btn-md bg-accent text-white px-6 shadow-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
+              className="btn btn-md bg-accent text-white px-6 shadow-glow flex items-center gap-2"
             >
               <PlusIcon className="h-5 w-5" /> Ajouter un plat
             </button>
