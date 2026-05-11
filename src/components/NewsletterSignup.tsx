@@ -36,7 +36,7 @@ export function NewsletterSignup() {
   if (done) {
     return (
       <p className="rounded-xl bg-cream/10 px-4 py-3 text-sm text-cream">
-        Merci ! On vous écrit dès qu&apos;un nouveau créneau s&apos;ouvre.
+        Merci pour votre inscription ! Vous recevrez nos nouveautés et offres exclusives par email. 🎉
       </p>
     );
   }

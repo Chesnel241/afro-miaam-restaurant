@@ -13,8 +13,8 @@ export const CATEGORY_LABELS: Record<MenuCategory, string> = {
 
 export const CATEGORY_ORDER: MenuCategory[] = [
   "signature",
-  "plat",
   "entree",
+  "plat",
   "accompagnement",
   "sauce",
   "dessert",

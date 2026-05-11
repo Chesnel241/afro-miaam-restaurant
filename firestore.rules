@@ -83,5 +83,20 @@ service cloud.firestore {
       // Personne ne peut modifier ou supprimer un email
       allow update, delete: if false;
     }
+
+    // ─── Demandes de Prestation ───
+    match /prestations/{prestationId} {
+      // Tout le monde peut soumettre une demande de prestation
+      allow create: if true;
+
+      // Seul l'admin peut consulter les demandes
+      allow read: if isAdmin();
+
+      // Seul l'admin peut mettre à jour le statut
+      allow update: if isAdmin();
+
+      // Pas de suppression
+      allow delete: if false;
+    }
   }
 }
