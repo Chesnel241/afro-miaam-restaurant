@@ -4,7 +4,7 @@ import path from "path";
 
 // Server Component pour lire les images dynamiquement
 export default function PrestationServicePage() {
-  const imagesDir = path.join(process.cwd(), "public", "Anniversaire");
+  const imagesDir = path.join(process.cwd(), "public", "img", "anniversaire");
   let images: string[] = [];
 
   try {
@@ -98,7 +98,7 @@ export default function PrestationServicePage() {
               {images.map((img) => (
                 <div key={img} className="group overflow-hidden rounded-xl shadow-card bg-creamSoft flex items-center justify-center">
                   <Image
-                    src={`/Anniversaire/${img}`}
+                    src={`/img/anniversaire/${img}`}
                     alt={`Pâtisserie ${img}`}
                     width={600}
                     height={600}

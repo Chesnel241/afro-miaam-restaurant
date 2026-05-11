@@ -23,14 +23,14 @@ export const CATEGORY_ORDER: MenuCategory[] = [
 ];
 
 export const menuItems: MenuItem[] = [
-  // Plats (dossier public/menu)
+  // Plats (dossier public/img/menu)
   {
     id: "garba",
     category: "plat",
     name: "Garba",
     description: "Plat traditionnel ivoirien avec attiéké et thon.",
     price: 13,
-    image: "/menu/Garba.png",
+    image: "/img/menu/garba.png",
     tags: ["Populaire"],
   },
   {
@@ -39,7 +39,7 @@ export const menuItems: MenuItem[] = [
     name: "Tièp poulet",
     description: "Riz au gras sénégalais avec poulet et légumes.",
     price: 14,
-    image: "/menu/Tièp poulet.png",
+    image: "/img/menu/tiep-poulet.png",
   },
   {
     id: "mafe-poulet",
@@ -47,7 +47,7 @@ export const menuItems: MenuItem[] = [
     name: "Mafé poulet",
     description: "Poulet mijoté dans une sauce onctueuse à la pâte d'arachide.",
     price: 13,
-    image: "/menu/Mafé poulet.png",
+    image: "/img/menu/mafe-poulet.png",
   },
   {
     id: "tiep-poisson",
@@ -55,7 +55,7 @@ export const menuItems: MenuItem[] = [
     name: "Tièp poisson",
     description: "Riz au gras avec poisson, plat emblématique d'Afrique de l'Ouest.",
     price: 15,
-    image: "/menu/Tièp poisson.png",
+    image: "/img/menu/tiep-poisson.png",
   },
   {
     id: "odika-poulet",
@@ -63,7 +63,7 @@ export const menuItems: MenuItem[] = [
     name: "Odika poulet",
     description: "Poulet au chocolat indigène (sauce odika) du Gabon.",
     price: 19.90,
-    image: "/menu/Odika poulet.png",
+    image: "/img/menu/odika-poulet.png",
   },
   {
     id: "poulet-mayo",
@@ -71,7 +71,7 @@ export const menuItems: MenuItem[] = [
     name: "Poulet mayo",
     description: "Poulet braisé avec sa sauce mayonnaise maison.",
     price: 14,
-    image: "/menu/Poulet mayo.png",
+    image: "/img/menu/poulet-mayo.png",
   },
   {
     id: "haricot-beignets",
@@ -79,7 +79,7 @@ export const menuItems: MenuItem[] = [
     name: "Haricot beignets",
     description: "Haricots rouges mijotés servis avec beignets croustillants.",
     price: 12,
-    image: "/menu/Haricot beignets.png",
+    image: "/img/menu/haricot-beignets.png",
   },
   {
     id: "poulet-yassa",
@@ -87,7 +87,7 @@ export const menuItems: MenuItem[] = [
     name: "Poulet yassa",
     description: "Poulet mariné au citron et oignons confits.",
     price: 14,
-    image: "/menu/Poulet yassa.png",
+    image: "/img/menu/poulet-yassa.png",
   },
   {
     id: "mafe-boeuf",
@@ -95,7 +95,7 @@ export const menuItems: MenuItem[] = [
     name: "Mafé boeuf",
     description: "Bœuf fondant dans une sauce onctueuse à l'arachide.",
     price: 14,
-    image: "/menu/Mafé boeuf.png",
+    image: "/img/menu/mafe-boeuf.png",
     tags: ["Le plus commandé"],
   },
   {
@@ -104,7 +104,7 @@ export const menuItems: MenuItem[] = [
     name: "Poisson salé",
     description: "Poisson salé mijoté aux légumes.",
     price: 16.90,
-    image: "/menu/Poisson salé.png",
+    image: "/img/menu/poisson-sale.png",
   },
   {
     id: "feuilles-manioc",
@@ -112,17 +112,17 @@ export const menuItems: MenuItem[] = [
     name: "Feuilles de manioc",
     description: "Feuilles de manioc pilées et mijotées.",
     price: 13,
-    image: "/menu/Feuilles de manioc.png",
+    image: "/img/menu/feuilles-manioc.png",
   },
 
-  // Entrées (dossier public/Entrées)
+  // Entrées (dossier public/img/entrees)
   {
     id: "samoussa-boeuf",
     category: "entree",
     name: "Samoussa boeuf",
     description: "Triangles croustillants garnis de viande de boeuf hachée et épicée.",
     price: 5,
-    image: "/Entrées/Samoussa boeuf.png",
+    image: "/img/entrees/samoussa-boeuf.png",
   },
   {
     id: "pastels",
@@ -130,7 +130,7 @@ export const menuItems: MenuItem[] = [
     name: "Pastels",
     description: "Beignets farcis accompagnés d'une sauce relevée.",
     price: 5,
-    image: "/Entrées/Pastels.png",
+    image: "/img/entrees/pastels.png",
   },
   {
     id: "samoussa-thon",
@@ -138,17 +138,17 @@ export const menuItems: MenuItem[] = [
     name: "Samoussa thon",
     description: "Triangles croustillants garnis de thon.",
     price: 5,
-    image: "/Entrées/Samoussa thon.png",
+    image: "/img/entrees/samoussa-thon.png",
   },
 
-  // Accompagnements (dossier public/Accompagnements)
+  // Accompagnements (dossier public/img/accompagnements)
   {
     id: "frites-patates-douces",
     category: "accompagnement",
     name: "Frites de patates douces",
     description: "Frites de patates douces croustillantes.",
     price: 4.5,
-    image: "/Accompagnements/Frites de patates douces.png",
+    image: "/img/accompagnements/frites-patates-douces.png",
   },
   {
     id: "banane-bouillie",
@@ -156,7 +156,7 @@ export const menuItems: MenuItem[] = [
     name: "Banane bouillie",
     description: "Banane plantain bouillie nature.",
     price: 4,
-    image: "/Accompagnements/Banane bouilliepng.png",
+    image: "/img/accompagnements/banane-bouillie.png",
   },
   {
     id: "riz",
@@ -164,7 +164,7 @@ export const menuItems: MenuItem[] = [
     name: "Riz",
     description: "Portion de riz parfumé.",
     price: 3.5,
-    image: "/Accompagnements/Riz.png",
+    image: "/img/accompagnements/riz.png",
   },
   {
     id: "attieke",
@@ -172,7 +172,7 @@ export const menuItems: MenuItem[] = [
     name: "Attiéké",
     description: "Semoule de manioc cuite à la vapeur.",
     price: 3,
-    image: "/Accompagnements/Attiéké.png",
+    image: "/img/accompagnements/attieke.png",
   },
   {
     id: "beignets",
@@ -180,7 +180,7 @@ export const menuItems: MenuItem[] = [
     name: "Beignets",
     description: "Frites de bananes plantain.",
     price: 4,
-    image: "/Accompagnements/Beignets.png",
+    image: "/img/accompagnements/beignets.png",
   },
   {
     id: "frites",
@@ -188,7 +188,7 @@ export const menuItems: MenuItem[] = [
     name: "Frites",
     description: "Frites classiques de pomme de terre.",
     price: 3.5,
-    image: "/Accompagnements/Frites.png",
+    image: "/img/accompagnements/frites.png",
   },
   {
     id: "manioc",
@@ -196,17 +196,17 @@ export const menuItems: MenuItem[] = [
     name: "Manioc",
     description: "Tubercule de manioc bouilli.",
     price: 3.5,
-    image: "/Accompagnements/Manioc.png",
+    image: "/img/accompagnements/manioc.png",
   },
 
-  // Desserts (dossier public/Désserts)
+  // Desserts (dossier public/img/desserts)
   {
     id: "pancakes",
     category: "dessert",
     name: "Pancakes",
     description: "Pancakes moelleux et sirop.",
     price: 6,
-    image: "/Désserts/Pancakes.png",
+    image: "/img/desserts/pancakes.png",
   },
   {
     id: "tiramisu",
@@ -214,7 +214,7 @@ export const menuItems: MenuItem[] = [
     name: "Tiramisu",
     description: "Tiramisu onctueux revisité.",
     price: 6.5,
-    image: "/Désserts/Tiramisu.png",
+    image: "/img/desserts/tiramisu.png",
   },
   {
     id: "degue",
@@ -222,7 +222,7 @@ export const menuItems: MenuItem[] = [
     name: "Dégué",
     description: "Dessert rafraîchissant au yaourt et grains de mil.",
     price: 4,
-    image: "/Désserts/Dégué.png",
+    image: "/img/desserts/degue.png",
   },
   {
     id: "crepes",
@@ -230,7 +230,7 @@ export const menuItems: MenuItem[] = [
     name: "Crêpes",
     description: "Crêpes fondantes et gourmandes.",
     price: 5,
-    image: "/Désserts/Crêpes.png",
+    image: "/img/desserts/crepes.png",
   },
   {
     id: "fondant-chocolat",
@@ -238,17 +238,17 @@ export const menuItems: MenuItem[] = [
     name: "Fondant chocolat",
     description: "Gâteau au coeur coulant de chocolat.",
     price: 5,
-    image: "/Désserts/Fondant chocolat.png",
+    image: "/img/desserts/fondant-chocolat.png",
   },
 
-  // + de Gourmandises (dossier public/+ de Gourmandises)
+  // + de Gourmandises (dossier public/img/gourmandises)
   {
     id: "gateau-banane",
     category: "gourmandise",
     name: "Gâteau banane",
     description: "Cake moelleux à la banane.",
     price: 4,
-    image: "/+ de Gourmandises/Gâteau banane.png",
+    image: "/img/gourmandises/gateau-banane.png",
   },
   {
     id: "gateau-farine",
@@ -256,17 +256,17 @@ export const menuItems: MenuItem[] = [
     name: "Gâteau farine",
     description: "Douceur locale à découvrir.",
     price: 4,
-    image: "/+ de Gourmandises/Gâteau farine.png",
+    image: "/img/gourmandises/gateau-farine.png",
   },
 
-  // Boissons (dossier public/Boissons)
+  // Boissons (dossier public/img/boissons)
   {
     id: "boisson-detox",
     category: "boisson",
     name: "Boisson détox",
     description: "Mélange frais et sain pour se revitaliser.",
     price: 5.50,
-    image: "/Boissons/Boisson détox.png",
+    image: "/img/boissons/boisson-detox.png",
   },
   {
     id: "bissap",
@@ -274,7 +274,7 @@ export const menuItems: MenuItem[] = [
     name: "Bissap",
     description: "Infusion de fleurs d'hibiscus.",
     price: 3.5,
-    image: "/Boissons/Bissap.png",
+    image: "/img/boissons/bissap.png",
   },
   {
     id: "jus-orange-presse",
@@ -282,7 +282,7 @@ export const menuItems: MenuItem[] = [
     name: "Jus orange pressé",
     description: "Oranges fraîchement pressées.",
     price: 3.50,
-    image: "/Boissons/Jus orange pressé.png",
+    image: "/img/boissons/jus-orange-presse.png",
   },
   {
     id: "eau",
@@ -290,7 +290,7 @@ export const menuItems: MenuItem[] = [
     name: "Eau",
     description: "Bouteille d'eau plate.",
     price: 2,
-    image: "/Boissons/Eau.png",
+    image: "/img/boissons/eau.png",
   },
   {
     id: "jus-gingembre",
@@ -298,7 +298,7 @@ export const menuItems: MenuItem[] = [
     name: "Jus de Gingembre",
     description: "Boisson tonifiante au gingembre et citron.",
     price: 3.5,
-    image: "/Boissons/Jus de Gingembre.png",
+    image: "/img/boissons/jus-gingembre.png",
   },
 ];
 
