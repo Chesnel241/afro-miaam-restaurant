@@ -359,7 +359,7 @@ function KPI({ title, value, sub, variant = "white", progress, trend }: { title:
   );
 }
 
-function OrderRow({ order, onStatusChange }: { order: any, onStatusChange: any }) {
+function OrderRow({ order, onStatusChange }: { order: unknown, onStatusChange: unknown }) {
   return (
     <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -374,7 +374,7 @@ function OrderRow({ order, onStatusChange }: { order: any, onStatusChange: any }
         </div>
         <p className="mt-1 text-sm text-primary/70">{order.userName} ({order.userEmail})</p>
         <p className="mt-1 text-xs text-primary/60">
-          {order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ")}
+          {order.items.map((i: unknown) => `${i.quantity}x ${i.name}`).join(", ")}
         </p>
       </div>
       <div className="flex items-center gap-4">
