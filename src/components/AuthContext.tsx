@@ -24,7 +24,6 @@ import {
   increment,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { seedMenu } from "@/lib/seed";
 
 // ─── Constants ──────────────────────────────────────────────
 const googleProvider = new GoogleAuthProvider();
@@ -174,11 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [allCustomers, setAllCustomers] = useState<UserProfile[]>([]);
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [dynamicMenu, setDynamicMenu] = useState<MenuItemDynamic[]>([]);
-
-  // ── Initialisation (Seed) ──
-  useEffect(() => {
-    seedMenu();
-  }, []);
 
   // ── Écouter l'état d'authentification Firebase ──
   useEffect(() => {
