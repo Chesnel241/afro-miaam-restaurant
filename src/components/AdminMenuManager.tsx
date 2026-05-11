@@ -236,6 +236,15 @@ export function AdminMenuManager() {
             
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-primary/60">Image du plat</label>
+              
+              {/* Preview Image */}
+              {form.image && (
+                <div className="mb-3 h-32 w-32 overflow-hidden rounded-2xl bg-cream shadow-inner border border-cream/30">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.image} alt="Preview" className="h-full w-full object-cover" />
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <input 
                   type="text" 
