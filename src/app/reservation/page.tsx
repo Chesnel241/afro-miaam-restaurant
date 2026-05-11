@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartContext";
+import { useAuth } from "@/components/AuthContext";
 import { TIME_SLOTS, formatHumanDate, minBookingDate } from "@/lib/booking";
 import { formatPrice } from "@/lib/utils";
 import { CalendarIcon, ClockIcon } from "@/components/Icons";
