@@ -126,7 +126,7 @@ export default function AdminPage() {
             await logout();
             router.push("/login");
           }}
-          className="btn btn-md bg-cream text-primary shadow-sm hover:bg-cream/80"
+          className="btn btn-md btn-danger"
         >
           Se déconnecter
         </button>

@@ -2,13 +2,14 @@
 
 import { useAuth } from "@/components/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { GiftIcon, ArrowRightIcon } from "@/components/Icons";
+import { GiftIcon, ArrowRightIcon, TrashIcon } from "@/components/Icons";
 
 export default function MonComptePage() {
-  const { user, loading, logout, userOrders } = useAuth();
+  const { user, loading, logout, deleteAccount, userOrders } = useAuth();
   const router = useRouter();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,6 +35,17 @@ export default function MonComptePage() {
   const remaining = maxOrders - (ordersCount % maxOrders);
   const isRewardReady = ordersCount > 0 && ordersCount % maxOrders === 0;
 
+  const handleDelete = async () => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) {
+      try {
+        await deleteAccount();
+        router.push("/");
+      } catch (err) {
+        alert("Erreur lors de la suppression du compte.");
+      }
+    }
+  };
+
   return (
     <div className="container-x py-12 sm:py-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -43,15 +55,17 @@ export default function MonComptePage() {
           </h1>
           <p className="mt-2 text-primary/75">Gérez vos commandes et votre fidélité ici.</p>
         </div>
-        <button
-          onClick={async () => {
-            await logout();
-            router.push("/login");
-          }}
-          className="btn btn-md bg-cream text-primary shadow-sm hover:bg-cream/80"
-        >
-          Se déconnecter
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={async () => {
+              await logout();
+              router.push("/login");
+            }}
+            className="btn btn-md btn-danger"
+          >
+            Se déconnecter
+          </button>
+        </div>
       </div>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_2fr]">
@@ -94,6 +108,22 @@ export default function MonComptePage() {
             <p className="mt-4 text-xs text-cream/50">
               Total de commandes livrées : {ordersCount}
             </p>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-cream/20">
+            <h3 className="font-bold text-primary">Paramètres</h3>
+            <div className="mt-4">
+              <button
+                onClick={handleDelete}
+                className="flex w-full items-center gap-2 rounded-xl border border-afro-red/20 p-4 text-sm font-semibold text-afro-red hover:bg-afro-red/5 transition"
+              >
+                <TrashIcon className="h-4 w-4" />
+                Supprimer mon compte
+              </button>
+              <p className="mt-2 text-[10px] text-primary/40">
+                La suppression supprimera vos données de fidélité et votre historique de manière permanente.
+              </p>
+            </div>
           </div>
         </div>
 

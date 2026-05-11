@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const { loginWithEmail, signUpWithEmail, loginWithGoogle, user } = useAuth();
@@ -33,7 +34,7 @@ export default function LoginPage() {
           setBusy(false);
           return;
         }
-        await signUpWithEmail(email, password, name || email.split("@")[0], subscribeNewsletter);
+        await signUpWithEmail(email, password, name || email.split("@")[0], phone, subscribeNewsletter);
       } else {
         await loginWithEmail(email, password);
       }
@@ -101,19 +102,35 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
           {mode === "signup" && (
-            <div>
-              <label htmlFor="name" className="block text-sm font-bold text-primary">
-                Votre prénom
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-2 block w-full rounded-md border-0 bg-white px-4 py-3 text-primary shadow-sm ring-1 ring-inset ring-cream/20 focus:ring-2 focus:ring-inset focus:ring-accent"
-                placeholder="Ex: Fatou"
-              />
-            </div>
+            <>
+              <div>
+                <label htmlFor="name" className="block text-sm font-bold text-primary">
+                  Votre prénom
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-2 block w-full rounded-md border-0 bg-white px-4 py-3 text-primary shadow-sm ring-1 ring-inset ring-cream/20 focus:ring-2 focus:ring-inset focus:ring-accent"
+                  placeholder="Ex: Fatou"
+                />
+              </div>
+              <div>
+                <label htmlFor="phone" className="block text-sm font-bold text-primary">
+                  Téléphone
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="mt-2 block w-full rounded-md border-0 bg-white px-4 py-3 text-primary shadow-sm ring-1 ring-inset ring-cream/20 focus:ring-2 focus:ring-inset focus:ring-accent"
+                  placeholder="06 12 34 56 78"
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div>

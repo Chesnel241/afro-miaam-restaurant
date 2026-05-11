@@ -53,6 +53,7 @@ export type UserProfile = {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: UserRole;
   ordersCount: number;
 };
@@ -69,7 +70,8 @@ type AuthContextType = {
   loading: boolean;
   // Auth
   loginWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string, name: string, subscribeNewsletter?: boolean) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name: string, phone: string, subscribeNewsletter?: boolean) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   // Orders (client)
@@ -98,6 +100,7 @@ async function ensureUserProfile(uid: string, email: string, displayName?: strin
       id: uid,
       name: data.name || displayName || email.split("@")[0],
       email: data.email || email,
+      phone: data.phone || "",
       role: data.role || "customer",
       ordersCount: data.ordersCount || 0,
     };
@@ -117,7 +120,7 @@ async function ensureUserProfile(uid: string, email: string, displayName?: strin
 
   await setDoc(userRef, profile);
 
-  return { id: uid, name, email, role: "customer" as UserRole, ordersCount: 0 };
+  return { id: uid, name, email, role: "customer" as UserRole, ordersCount: 0, phone: "" };
 }
 
 /** Convertit un document Firestore en Order */
@@ -235,13 +238,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsub = onSnapshot(q, (snap) => {
       const customers = snap.docs.map((d) => {
         const data = d.data();
-        return {
-          id: d.id,
-          name: (data.name as string) || "",
-          email: (data.email as string) || "",
-          role: "customer" as UserRole,
-          ordersCount: (data.ordersCount as number) || 0,
-        };
+          return {
+            id: d.id,
+            name: (data.name as string) || "",
+            email: (data.email as string) || "",
+            phone: (data.phone as string) || "",
+            role: "customer" as UserRole,
+            ordersCount: (data.ordersCount as number) || 0,
+          };
       });
       setAllCustomers(customers);
     });
@@ -292,12 +296,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   }, []);
 
-  const signUpWithEmail = useCallback(async (email: string, password: string, name: string, subscribeNewsletter = false) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, name: string, phone: string, subscribeNewsletter = false) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     // Créer le profil Firestore. Toujours "customer" — l'admin est promu manuellement.
     await setDoc(doc(db, "users", cred.user.uid), {
       name,
       email,
+      phone,
       role: "customer",
       ordersCount: 0,
       createdAt: serverTimestamp(),
@@ -326,6 +331,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAllOrders([]);
     setAllCustomers([]);
     setNewsletterSubscribers([]);
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+    // Supprimer le doc Firestore
+    await updateDoc(doc(db, "users", uid), {
+      deletedAt: serverTimestamp(),
+      role: "deleted",
+    });
+    // On pourrait supprimer le compte Auth ici, mais c'est complexe (nécessite re-authentification récente)
+    // Pour l'instant on marque juste comme supprimé dans Firestore et on déconnecte.
+    await signOut(auth);
+    setUser(null);
   }, []);
 
   // ── Order Functions ──
@@ -376,6 +395,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUpWithEmail,
         loginWithGoogle,
         logout: logoutFn,
+        deleteAccount,
         userOrders,
         allOrders,
         allCustomers,

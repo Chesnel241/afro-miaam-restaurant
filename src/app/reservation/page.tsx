@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartContext";
@@ -45,6 +45,21 @@ export default function ReservationPage() {
 
   const minDate = minBookingDate();
   const [date, setDate] = useState(() => minBookingDate());
+
+  const { user } = useAuth();
+
+  // Pré-remplir avec les infos du compte
+  useEffect(() => {
+    if (user) {
+      setForm((f) => ({
+        ...f,
+        firstName: user.name.split(" ")[0] || "",
+        lastName: user.name.split(" ").slice(1).join(" ") || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      }));
+    }
+  }, [user]);
 
   const canSubmit =
     lines.length > 0 &&

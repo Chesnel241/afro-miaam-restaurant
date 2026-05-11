@@ -59,9 +59,9 @@ export function Footer() {
           </ul>
 
           <div className="mt-5 flex items-center gap-3">
-            <Social label="Instagram" href="https://instagram.com/afromiaam"><InstagramIcon className="h-5 w-5" /></Social>
-            <Social label="Facebook" href="https://facebook.com/afromiaam"><FacebookIcon className="h-5 w-5" /></Social>
-            <Social label="TikTok" href="https://tiktok.com/@afromiaam"><TiktokIcon className="h-5 w-5" /></Social>
+            <Social label="Instagram" href="https://www.instagram.com/afro_miaam?igsh=amV1YXZjc3lhNTV3"><InstagramIcon className="h-5 w-5" /></Social>
+            <Social label="Facebook" href="https://www.facebook.com/share/1Kr7G9GA3d/?mibextid=wwXIfr"><FacebookIcon className="h-5 w-5" /></Social>
+            <Social label="TikTok" href="https://www.tiktok.com/@afro_miaam?_r=1&_t=ZS-96GwYiFGd09"><TiktokIcon className="h-5 w-5" /></Social>
           </div>
         </div>
 

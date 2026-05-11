@@ -31,11 +31,11 @@ body {
   }
 
   .btn-md {
-    @apply min-h-12 px-6 text-base;
+    @apply min-h-12 px-8 text-base;
   }
 
   .btn-lg {
-    @apply min-h-14 px-8 text-lg;
+    @apply min-h-14 px-10 text-lg;
   }
 
   .btn-primary {
@@ -48,6 +48,10 @@ body {
 
   .btn-ghost-dark {
     @apply border border-primary/20 bg-white text-primary hover:bg-cream;
+  }
+
+  .btn-danger {
+    @apply bg-accent text-white shadow-glow hover:opacity-90;
   }
 
   .chip {
@@ -140,7 +144,7 @@ select {
   border-radius: 12px;
   border: 1px solid rgba(31, 61, 43, 0.15);
   background: #fff;
-  padding: 0 14px;
+  padding: 0 20px;
   color: #1a1a1a;
   font-size: 16px;
   transition: border-color 0.15s, box-shadow 0.15s;
