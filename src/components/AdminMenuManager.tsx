@@ -39,6 +39,7 @@ export function AdminMenuManager() {
       category: item.category,
       tags: item.tags || [],
       available: item.available,
+      flavors: item.flavors || [],
     });
     setIsAdding(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -55,6 +56,7 @@ export function AdminMenuManager() {
       category: "signature",
       tags: [],
       available: true,
+      flavors: [],
     });
   };
 
@@ -243,6 +245,71 @@ export function AdminMenuManager() {
                   accept="image/*"
                 />
               </div>
+            </div>
+
+            <div className="sm:col-span-2 space-y-4 pt-4 border-t border-cream/20">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black uppercase tracking-widest text-primary/60">Saveurs / Options (Optionnel)</label>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const flavors = form.flavors || [];
+                    setForm({ ...form, flavors: [...flavors, { name: "", supplement: 0 }] });
+                  }}
+                  className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline"
+                >
+                  + Ajouter une saveur
+                </button>
+              </div>
+              
+              {form.flavors && form.flavors.length > 0 && (
+                <div className="grid gap-3">
+                  {form.flavors.map((f, i) => (
+                    <div key={i} className="flex gap-3 items-center animate-fade-in">
+                      <input 
+                        type="text" 
+                        placeholder="Nom (ex: Épicé, Vanille...)"
+                        value={f.name}
+                        onChange={e => {
+                          const newFlavors = [...(form.flavors || [])];
+                          newFlavors[i].name = e.target.value;
+                          setForm({ ...form, flavors: newFlavors });
+                        }}
+                        className="field h-10 flex-1"
+                      />
+                      <div className="relative w-28">
+                        <input 
+                          type="number" 
+                          step="0.1" 
+                          placeholder="0.00"
+                          value={f.supplement}
+                          onChange={e => {
+                            const newFlavors = [...(form.flavors || [])];
+                            newFlavors[i].supplement = parseFloat(e.target.value) || 0;
+                            setForm({ ...form, flavors: newFlavors });
+                          }}
+                          className="field h-10 w-full pl-7"
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-primary/40">+</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-primary/40">€</span>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newFlavors = form.flavors?.filter((_, idx) => idx !== i);
+                          setForm({ ...form, flavors: newFlavors });
+                        }}
+                        className="text-afro-red/40 hover:text-afro-red transition-colors"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(!form.flavors || form.flavors.length === 0) && (
+                <p className="text-[10px] text-primary/30 italic">Aucune saveur configurée pour ce plat.</p>
+              )}
             </div>
 
             <div className="sm:col-span-2 flex items-center justify-end gap-4 mt-4 pt-6 border-t border-cream/20">

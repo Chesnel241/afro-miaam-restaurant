@@ -8,6 +8,11 @@ export type MenuCategory =
   | "gourmandise"
   | "boisson";
 
+export type Flavor = {
+  name: string;
+  supplement: number; // 0 si pas de supplément
+};
+
 export type MenuItem = {
   id: string;
   category: MenuCategory;
@@ -17,14 +22,17 @@ export type MenuItem = {
   image: string;
   tags?: string[];
   available?: boolean;
+  flavors?: Flavor[];
 };
 
 export type CartLine = {
-  id: string;
+  id: string;       // identifiant unique dans le panier (peut inclure la saveur)
+  itemId: string;    // identifiant du plat d'origine
   name: string;
-  price: number;
+  price: number;     // prix final (base + supplément saveur)
   image: string;
   quantity: number;
+  flavor?: string;   // nom de la saveur choisie
 };
 
 export type DeliveryMode = "retrait" | "livraison";

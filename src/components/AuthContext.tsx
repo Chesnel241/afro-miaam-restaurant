@@ -58,6 +58,11 @@ export type UserProfile = {
   ordersCount: number;
 };
 
+export type Flavor = {
+  name: string;
+  supplement: number;
+};
+
 export type MenuItemDynamic = {
   id: string;
   name: string;
@@ -67,6 +72,7 @@ export type MenuItemDynamic = {
   category: string;
   tags?: string[];
   available: boolean;
+  flavors?: Flavor[];
 };
 
 export type NewsletterSubscriber = {

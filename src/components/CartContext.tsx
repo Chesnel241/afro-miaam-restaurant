@@ -12,11 +12,20 @@ import {
 import type { CartLine, DeliveryMode } from "@/lib/types";
 import { DELIVERY_FEE } from "@/lib/booking";
 
-const STORAGE_KEY = "afro-miaam-cart-v1";
+const STORAGE_KEY = "afro-miaam-cart-v2";
 
 type CartState = {
   lines: CartLine[];
   deliveryMode: DeliveryMode;
+};
+
+type AddItemInput = {
+  id: string;        // id du plat d'origine
+  name: string;
+  price: number;     // prix de base
+  image: string;
+  flavor?: string;   // nom de la saveur (optionnel)
+  flavorSupplement?: number; // supplément prix saveur
 };
 
 type CartContextValue = CartState & {
@@ -24,11 +33,13 @@ type CartContextValue = CartState & {
   subtotal: number;
   deliveryFee: number;
   total: number;
-  addItem: (line: Omit<CartLine, "quantity">, qty?: number) => void;
+  cart: CartLine[];
+  addItem: (item: AddItemInput, qty?: number) => void;
   removeItem: (id: string) => void;
   setQuantity: (id: string, qty: number) => void;
   setDeliveryMode: (mode: DeliveryMode) => void;
   clear: () => void;
+  clearCart: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -60,14 +71,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  const addItem: CartContextValue["addItem"] = useCallback((line, qty = 1) => {
+  const addItem: CartContextValue["addItem"] = useCallback((item, qty = 1) => {
     setState((prev) => {
-      const existing = prev.lines.find((l) => l.id === line.id);
+      // Clé unique : combine l'id du plat + la saveur pour permettre le même plat avec différentes saveurs
+      const cartId = item.flavor ? `${item.id}__${item.flavor}` : item.id;
+      const finalPrice = item.price + (item.flavorSupplement || 0);
+      
+      const existing = prev.lines.find((l) => l.id === cartId);
       const lines = existing
         ? prev.lines.map((l) =>
-            l.id === line.id ? { ...l, quantity: l.quantity + qty } : l,
+            l.id === cartId ? { ...l, quantity: l.quantity + qty } : l,
           )
-        : [...prev.lines, { ...line, quantity: qty }];
+        : [...prev.lines, {
+            id: cartId,
+            itemId: item.id,
+            name: item.name,
+            price: finalPrice,
+            image: item.image,
+            quantity: qty,
+            flavor: item.flavor,
+          }];
       return { ...prev, lines };
     });
   }, []);
@@ -104,6 +127,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const total = subtotal + deliveryFee;
     return {
       ...state,
+      cart: state.lines,
       itemCount,
       subtotal,
       deliveryFee,
@@ -113,6 +137,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setQuantity,
       setDeliveryMode,
       clear,
+      clearCart: clear,
     };
   }, [state, addItem, removeItem, setQuantity, setDeliveryMode, clear]);
 

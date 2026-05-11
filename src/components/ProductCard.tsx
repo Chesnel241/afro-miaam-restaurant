@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { MenuItem } from "@/lib/types";
 import { useCart } from "./CartContext";
 import { formatPrice } from "@/lib/utils";
@@ -10,14 +10,31 @@ import { CheckIcon, PlusIcon } from "./Icons";
 export function ProductCard({ item }: { item: MenuItem }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
+  const [selectedFlavor, setSelectedFlavor] = useState<string>("");
+
+  const hasFlavors = item.flavors && item.flavors.length > 0;
+  
+  const currentFlavor = useMemo(() => {
+    if (!hasFlavors || !selectedFlavor) return null;
+    return item.flavors?.find(f => f.name === selectedFlavor);
+  }, [hasFlavors, selectedFlavor, item.flavors]);
+
+  const currentPrice = item.price + (currentFlavor?.supplement || 0);
 
   function handleAdd() {
+    // Si des saveurs sont dispo et aucune n'est sélectionnée, on pourrait forcer le choix
+    // Ici on prend la première par défaut si non sélectionnée ? 
+    // Ou on laisse vide. L'utilisateur a demandé que le champ se développe.
+    
     addItem({
       id: item.id,
       name: item.name,
       price: item.price,
       image: item.image,
+      flavor: selectedFlavor || undefined,
+      flavorSupplement: currentFlavor?.supplement || 0
     });
+    
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1400);
   }
@@ -56,22 +73,46 @@ export function ProductCard({ item }: { item: MenuItem }) {
         <h3 className="font-display text-lg font-bold text-primary">
           {item.name}
         </h3>
-        <p className="text-sm text-primary/65">{item.description}</p>
+        <p className="text-sm text-primary/65 line-clamp-2">{item.description}</p>
 
-        <div className="mt-auto flex items-center justify-between pt-3">
-          <span className="font-display text-xl font-extrabold text-primary">
-            {formatPrice(item.price)}
-          </span>
+        {/* Sélecteur de saveurs */}
+        {hasFlavors && isAvailable && (
+          <div className="mt-2 space-y-2 animate-fade-in">
+            <label className="text-[10px] font-black uppercase tracking-widest text-primary/40">Choisir une saveur :</label>
+            <select 
+              value={selectedFlavor}
+              onChange={(e) => setSelectedFlavor(e.target.value)}
+              className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
+            >
+              <option value="">Standard</option>
+              {item.flavors?.map((f) => (
+                <option key={f.name} value={f.name}>
+                  {f.name} {f.supplement > 0 ? `(+${f.supplement.toFixed(2)}€)` : '(+0€)'}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-cream/10">
+          <div className="flex flex-col">
+            <span className="font-display text-xl font-extrabold text-primary">
+              {formatPrice(currentPrice)}
+            </span>
+            {currentFlavor && currentFlavor.supplement > 0 && (
+              <span className="text-[10px] font-bold text-accent">Dont {formatPrice(currentFlavor.supplement)} de supplément</span>
+            )}
+          </div>
           <button
             type="button"
             onClick={handleAdd}
             disabled={!isAvailable}
             aria-label={isAvailable ? `Ajouter ${item.name} au panier` : `${item.name} est épuisé`}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition focus-ring ${
-              !isAvailable ? "bg-primary/20 cursor-not-allowed" : added ? "bg-primary" : "bg-accent hover:opacity-90"
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-white transition shadow-md focus-ring ${
+              !isAvailable ? "bg-primary/20 cursor-not-allowed" : added ? "bg-primary" : "bg-accent hover:scale-110 active:scale-95"
             }`}
           >
-            {added ? <CheckIcon className="h-5 w-5" /> : <PlusIcon className="h-5 w-5" />}
+            {added ? <CheckIcon className="h-6 w-6" /> : <PlusIcon className="h-6 w-6" />}
           </button>
         </div>
       </div>
