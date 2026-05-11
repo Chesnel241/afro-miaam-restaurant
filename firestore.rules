@@ -59,6 +59,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ─── Menu (carte des plats) ───
+    match /menu/{menuItemId} {
+      // Tout le monde peut lire le menu (visiteurs, clients, admin)
+      allow read: if true;
+
+      // Seul l'admin peut créer, modifier ou supprimer un plat
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
     // ─── Newsletter ───
     match /newsletter/{emailId} {
       // N'importe qui peut s'inscrire (même non-authentifié)

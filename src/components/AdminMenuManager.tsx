@@ -85,9 +85,14 @@ export function AdminMenuManager() {
         await addMenuItem(form);
       }
       handleCancel();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Save error:", err);
-      alert("Erreur lors de l'enregistrement. Vérifiez votre connexion.");
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      if (errorMsg.includes("permission") || errorMsg.includes("PERMISSION_DENIED")) {
+        alert("⛔ Accès refusé.\n\nMettez à jour les règles Firestore pour autoriser l'écriture dans la collection 'menu' (voir fichier firestore.rules).");
+      } else {
+        alert("Erreur lors de l'enregistrement :\n" + errorMsg);
+      }
     }
   };
 
@@ -101,9 +106,14 @@ export function AdminMenuManager() {
       try {
         await seedMenu(force);
         alert("Menu rétabli avec succès ! Rafraîchissez la page si nécessaire.");
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Seed error:", err);
-        alert("Erreur lors de l'initialisation.");
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        if (errorMsg.includes("permission") || errorMsg.includes("PERMISSION_DENIED")) {
+          alert("⛔ Accès refusé par Firestore.\n\nLes règles de sécurité Firestore ne permettent pas d'écrire dans la collection 'menu'.\n\nAllez dans Firebase Console → Firestore → Règles, et ajoutez les règles pour la collection 'menu' (voir le fichier firestore.rules du projet).");
+        } else {
+          alert("Erreur lors de l'initialisation :\n" + errorMsg);
+        }
       } finally {
         setIsSeeding(false);
       }
