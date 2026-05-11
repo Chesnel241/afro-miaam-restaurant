@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const { loginWithEmail, signUpWithEmail, loginWithGoogle, user } = useAuth();
@@ -32,7 +33,7 @@ export default function LoginPage() {
           setBusy(false);
           return;
         }
-        await signUpWithEmail(email, password, name || email.split("@")[0]);
+        await signUpWithEmail(email, password, name || email.split("@")[0], subscribeNewsletter);
       } else {
         await loginWithEmail(email, password);
       }
@@ -145,6 +146,21 @@ export default function LoginPage() {
               minLength={6}
             />
           </div>
+
+          {mode === "signup" && (
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="newsletter"
+                checked={subscribeNewsletter}
+                onChange={(e) => setSubscribeNewsletter(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-cream/20 text-accent focus:ring-accent"
+              />
+              <label htmlFor="newsletter" className="text-sm text-primary/80 leading-snug">
+                Je souhaite recevoir les offres et la newsletter d&apos;Afro Miaam
+              </label>
+            </div>
+          )}
 
           <button
             type="submit"

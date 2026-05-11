@@ -57,12 +57,19 @@ export type UserProfile = {
   ordersCount: number;
 };
 
+export type NewsletterSubscriber = {
+  id: string;
+  email: string;
+  createdAt: string;
+  source: string;
+};
+
 type AuthContextType = {
   user: UserProfile | null;
   loading: boolean;
   // Auth
   loginWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name: string, subscribeNewsletter?: boolean) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   // Orders (client)
@@ -70,6 +77,7 @@ type AuthContextType = {
   // Orders (admin)
   allOrders: Order[];
   allCustomers: UserProfile[];
+  newsletterSubscribers: NewsletterSubscriber[];
   // Actions
   placeOrder: (items: OrderItem[], total: number) => Promise<void>;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<void>;
@@ -144,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [allCustomers, setAllCustomers] = useState<UserProfile[]>([]);
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
 
   // ── Écouter l'état d'authentification Firebase ──
   useEffect(() => {
@@ -165,6 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserOrders([]);
         setAllOrders([]);
         setAllCustomers([]);
+        setNewsletterSubscribers([]);
       }
       setLoading(false);
     });
@@ -242,13 +252,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user]);
 
+  // ── Charger les inscrits newsletter (admin uniquement) ──
+  useEffect(() => {
+    if (!user || user.role !== "admin") {
+      return;
+    }
+
+    const q = query(collection(db, "newsletter"), orderBy("createdAt", "desc"));
+
+    const unsub = onSnapshot(q, (snap) => {
+      const subs = snap.docs.map((d) => {
+        const data = d.data();
+        let dateStr = "";
+        const ts = data.createdAt as { toDate?: () => Date } | undefined;
+        if (ts && typeof ts.toDate === "function") {
+          dateStr = ts.toDate().toISOString().split("T")[0];
+        } else {
+          dateStr = new Date().toISOString().split("T")[0];
+        }
+        return {
+          id: d.id,
+          email: (data.email as string) || "",
+          createdAt: dateStr,
+          source: (data.source as string) || "inconnu",
+        };
+      });
+      setNewsletterSubscribers(subs);
+    });
+
+    return () => {
+      unsub();
+      setNewsletterSubscribers([]);
+    };
+  }, [user]);
+
   // ── Auth Functions ──
 
   const loginWithEmail = useCallback(async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
   }, []);
 
-  const signUpWithEmail = useCallback(async (email: string, password: string, name: string) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, name: string, subscribeNewsletter = false) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     // Créer le profil Firestore. Toujours "customer" — l'admin est promu manuellement.
     await setDoc(doc(db, "users", cred.user.uid), {
@@ -257,7 +301,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: "customer",
       ordersCount: 0,
       createdAt: serverTimestamp(),
+      subscribeNewsletter,
     });
+
+    // Si coché, ajouter aussi à la collection newsletter
+    if (subscribeNewsletter) {
+      await addDoc(collection(db, "newsletter"), {
+        email: email.trim().toLowerCase(),
+        createdAt: serverTimestamp(),
+        source: "inscription",
+      });
+    }
   }, []);
 
   const loginWithGoogle = useCallback(async () => {
@@ -271,6 +325,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserOrders([]);
     setAllOrders([]);
     setAllCustomers([]);
+    setNewsletterSubscribers([]);
   }, []);
 
   // ── Order Functions ──
@@ -324,6 +379,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userOrders,
         allOrders,
         allCustomers,
+        newsletterSubscribers,
         placeOrder,
         updateOrderStatus,
       }}
