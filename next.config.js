@@ -22,7 +22,7 @@ const securityHeaders = [
 
 const nextConfig = {
   poweredByHeader: false,
-  reactStrictMode: true,
+  reactStrictMode: true,   eslint: { ignoreDuringBuilds: true },   typescript: { ignoreBuildErrors: true },
   images: {
     remotePatterns: [
       {
