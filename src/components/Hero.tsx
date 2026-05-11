@@ -111,7 +111,7 @@ function Pill({
 
 function CircularBadge() {
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full" aria-label="Badge 24h à l'avance" role="img">
       <svg
         viewBox="0 0 200 200"
         className="spin-slow absolute inset-0 h-full w-full"

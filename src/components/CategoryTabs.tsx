@@ -29,6 +29,8 @@ export function CategoryTabs({
             key={it.id}
             type="button"
             onClick={() => onChange(it.id)}
+            aria-pressed={active === it.id}
+            aria-label={`Filtrer par ${it.label}`}
             className={classNames(
               "chip focus-ring",
               active === it.id && "chip-active",

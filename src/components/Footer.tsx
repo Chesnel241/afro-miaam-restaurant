@@ -59,9 +59,9 @@ export function Footer() {
           </ul>
 
           <div className="mt-5 flex items-center gap-3">
-            <Social label="Instagram"><InstagramIcon className="h-5 w-5" /></Social>
-            <Social label="Facebook"><FacebookIcon className="h-5 w-5" /></Social>
-            <Social label="TikTok"><TiktokIcon className="h-5 w-5" /></Social>
+            <Social label="Instagram" href="https://instagram.com/afromiaam"><InstagramIcon className="h-5 w-5" /></Social>
+            <Social label="Facebook" href="https://facebook.com/afromiaam"><FacebookIcon className="h-5 w-5" /></Social>
+            <Social label="TikTok" href="https://tiktok.com/@afromiaam"><TiktokIcon className="h-5 w-5" /></Social>
           </div>
         </div>
 
@@ -94,10 +94,12 @@ export function Footer() {
   );
 }
 
-function Social({ label, children }: { label: string; children: React.ReactNode }) {
+function Social({ label, href, children }: { label: string; href: string; children: React.ReactNode }) {
   return (
     <a
-      href="#"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label={label}
       className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-accent"
     >

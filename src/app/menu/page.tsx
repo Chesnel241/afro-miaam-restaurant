@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CategoryTabs, type CategoryFilter } from "@/components/CategoryTabs";
 import { ProductCard } from "@/components/ProductCard";
@@ -12,6 +12,25 @@ import { CartIcon } from "@/components/Icons";
 export default function MenuPage() {
   const [filter, setFilter] = useState<CategoryFilter>("all");
   const { itemCount, total } = useCart();
+
+  // Remonter en haut du menu lors du changement de catégorie
+  useEffect(() => {
+    if (filter !== "all") {
+      const menuSection = document.getElementById("menu-content");
+      if (menuSection) {
+        const offset = 120; // compensation pour le header sticky
+        const bodyRect = document.body.getBoundingClientRect().top;
+        const elementRect = menuSection.getBoundingClientRect().top;
+        const elementPosition = elementRect - bodyRect;
+        const offsetPosition = elementPosition - offset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    }
+  }, [filter]);
 
   const visible = useMemo(() => {
     if (filter === "all") return menuItems;
@@ -50,7 +69,7 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <section className="py-12 sm:py-16">
+      <section id="menu-content" className="py-12 sm:py-16">
         <div className="container-x space-y-14">
           {grouped.map(({ category, items }) => (
             <div key={category}>

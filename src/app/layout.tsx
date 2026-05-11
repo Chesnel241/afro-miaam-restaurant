@@ -48,11 +48,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className={`${display.variable} ${body.variable}`}>
       <body className="font-sans antialiased">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-white">
+          Aller au contenu principal
+        </a>
         <LoadingScreen />
         <AuthProvider>
           <CartProvider>
             <Header />
-            <main className="min-h-[60vh]">{children}</main>
+            <main id="main-content" role="main" className="min-h-[60vh]">{children}</main>
             <Footer />
             <Chatbot />
             <WhatsAppButton />

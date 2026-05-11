@@ -172,7 +172,7 @@ export default function ReservationPage() {
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     required
-                    className="field"
+                    className="field max-w-[180px] sm:max-w-none"
                   />
                 </Field>
                 <Field label="Mode" htmlFor="mode">
