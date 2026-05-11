@@ -200,3 +200,6 @@ export function GiftIcon(props: Props) {
     </svg>
   );
 }
+
+// Alias for backward compatibility
+export const MapPinIcon = PinIcon;
