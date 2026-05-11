@@ -69,7 +69,6 @@ export function Hero() {
                 className="btn btn-lg btn-primary justify-center"
               >
                 Commander maintenant
-                <ArrowRightIcon className="h-5 w-5" />
               </Link>
               <Link
                 href="/menu"

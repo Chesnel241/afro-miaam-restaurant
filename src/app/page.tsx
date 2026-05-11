@@ -30,10 +30,10 @@ export default function HomePage() {
                 l&apos;avance.
               </p>
             </div>
-          <div className="flex justify-center sm:justify-end w-full sm:w-auto mt-4 sm:mt-0">
+          <div className="flex justify-center w-full mt-8">
             <Link
               href="/menu"
-              className="btn btn-md btn-ghost-dark w-full sm:w-auto text-center"
+              className="btn btn-md btn-ghost-dark px-10"
             >
               Voir tout le menu
             </Link>

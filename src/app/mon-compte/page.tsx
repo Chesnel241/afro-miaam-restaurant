@@ -215,10 +215,10 @@ export default function MonComptePage() {
               ))}
             </div>
           ) : (
-            <div className="mt-10 text-center">
+            <div className="mt-10 flex flex-col items-center text-center">
               <p className="text-primary/60">Vous n&apos;avez pas encore passé de commande.</p>
-              <Link href="/menu" className="btn btn-primary mt-4 inline-flex">
-                Voir le menu <ArrowRightIcon className="ml-2 h-4 w-4" />
+              <Link href="/menu" className="btn btn-md bg-accent text-white mt-6 px-10">
+                Voir le menu
               </Link>
             </div>
           )}
