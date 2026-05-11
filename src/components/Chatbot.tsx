@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CHAT_TOPICS, answerFor, type ChatCta } from "@/data/chatbot";
 
+import { usePathname } from "next/navigation";
+import { useAuth } from "./AuthContext";
+
 type Sender = "bot" | "user";
 
 type Message = {
@@ -31,7 +34,15 @@ function uid() {
 }
 
 export function Chatbot() {
+  const pathname = usePathname();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+
+  // Cacher le chatbot pour l'admin ou sur les pages admin
+  if (pathname?.startsWith("/admin") || user?.role === "admin") {
+    return null;
+  }
+
   const [tooltip, setTooltip] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
     try {

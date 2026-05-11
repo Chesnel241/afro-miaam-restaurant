@@ -63,13 +63,15 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Toujours visible sur mobile et desktop pour encourager la connexion */}
           <Link
             href={userLink}
-            aria-label="Compte / contact"
-            className="hidden h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 sm:inline-flex"
+            aria-label={user ? "Mon Compte" : "Connexion / Inscription"}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
           >
             <UserIcon className="h-5 w-5" />
           </Link>
+
           <Link
             href="/panier"
             aria-label={`Panier, ${itemCount} article${itemCount > 1 ? "s" : ""}`}
@@ -107,17 +109,22 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            {/* Bouton de connexion mis en avant dans le menu burger */}
             <Link
               href={userLink}
               onClick={() => setOpen(false)}
-              className="rounded-md px-2 py-3 text-base font-semibold text-cream/90 hover:bg-cream/5 hover:text-accent"
+              className={`mt-2 rounded-xl px-4 py-4 text-center text-lg font-bold shadow-sm transition-all ${
+                user 
+                  ? "bg-cream/10 text-cream hover:bg-cream/20" 
+                  : "bg-accent text-white hover:bg-accent/90"
+              }`}
             >
               {user ? "Mon compte" : "Connexion / Inscription"}
             </Link>
             <Link
               href="/menu"
               onClick={() => setOpen(false)}
-              className="btn btn-md btn-primary mt-3 self-start"
+              className="btn btn-lg btn-primary mt-4 w-full"
             >
               Commander maintenant
             </Link>

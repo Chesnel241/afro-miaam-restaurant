@@ -29,7 +29,7 @@ import { auth, db } from "@/lib/firebase";
 const googleProvider = new GoogleAuthProvider();
 
 // ─── Types ──────────────────────────────────────────────────
-export type UserRole = "customer" | "admin";
+export type UserRole = "customer" | "admin" | "deleted";
 export type OrderStatus = "En attente" | "En cours" | "Livré";
 
 export type OrderItem = {
@@ -82,6 +82,7 @@ type AuthContextType = {
   // Auth
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name: string, phone: string, subscribeNewsletter?: boolean) => Promise<void>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   deleteAccount: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -105,41 +106,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ─── Helpers ────────────────────────────────────────────────
 
-/** Crée ou met à jour le profil utilisateur dans Firestore */
-async function ensureUserProfile(uid: string, email: string, displayName?: string | null): Promise<UserProfile> {
-  const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
-
-  if (snap.exists()) {
-    const data = snap.data();
-    return {
-      id: uid,
-      name: data.name || displayName || email.split("@")[0],
-      email: data.email || email,
-      phone: data.phone || "",
-      role: data.role || "customer",
-      ordersCount: data.ordersCount || 0,
-    };
-  }
-
-  // Nouveau compte : toujours créé comme "customer".
-  // Le rôle "admin" doit être attribué manuellement dans la console Firestore.
+async function createInitialProfile(uid: string, email: string, displayName?: string | null): Promise<UserProfile> {
   const name = displayName || email.split("@")[0];
-
-  const profile: Omit<UserProfile, "id"> & { createdAt: ReturnType<typeof serverTimestamp> } = {
+  const userRef = doc(db, "users", uid);
+  
+  const profile = {
     name,
     email,
+    phone: "",
     role: "customer" as UserRole,
     ordersCount: 0,
     createdAt: serverTimestamp(),
   };
 
   await setDoc(userRef, profile);
-
-  return { id: uid, name, email, role: "customer" as UserRole, ordersCount: 0, phone: "" };
+  return { id: uid, ...profile };
 }
 
-/** Convertit un document Firestore en Order */
 function docToOrder(id: string, data: Record<string, unknown>): Order {
   let dateStr = "";
   const ts = data.createdAt as { toDate?: () => Date } | undefined;
@@ -174,32 +157,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [dynamicMenu, setDynamicMenu] = useState<MenuItemDynamic[]>([]);
 
-  // ── Écouter l'état d'authentification Firebase ──
+  // ── Écouter l'état d'authentification Firebase et le Profil ──
   useEffect(() => {
+    let unsubProfile: (() => void) | null = null;
+
     const unsubAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        try {
-          const profile = await ensureUserProfile(
-            firebaseUser.uid,
-            firebaseUser.email || "",
-            firebaseUser.displayName
-          );
-          setUser(profile);
-        } catch (err: unknown) {
-          console.error("Erreur chargement profil:", err);
-          setUser(null);
-        }
+        // Écouter le document profil en temps réel
+        const userRef = doc(db, "users", firebaseUser.uid);
+        
+        unsubProfile = onSnapshot(userRef, async (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            setUser({
+              id: firebaseUser.uid,
+              name: data.name || "",
+              email: data.email || firebaseUser.email || "",
+              phone: data.phone || "",
+              role: data.role || "customer",
+              ordersCount: data.ordersCount || 0,
+            });
+          } else {
+            // Créer le profil s'il n'existe pas
+            const newProfile = await createInitialProfile(
+              firebaseUser.uid,
+              firebaseUser.email || "",
+              firebaseUser.displayName
+            );
+            setUser(newProfile);
+          }
+          setLoading(false);
+        });
       } else {
+        if (unsubProfile) unsubProfile();
         setUser(null);
-        setUserOrders([]);
-        setAllOrders([]);
-        setAllCustomers([]);
-        setNewsletterSubscribers([]);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubAuth();
+    return () => {
+      unsubAuth();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
   // ── Écouter les commandes de l'utilisateur courant ──
@@ -328,7 +327,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpWithEmail = useCallback(async (email: string, password: string, name: string, phone: string, subscribeNewsletter = false) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    // Créer le profil Firestore. Toujours "customer" — l'admin est promu manuellement.
     await setDoc(doc(db, "users", cred.user.uid), {
       name,
       email,
@@ -339,7 +337,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscribeNewsletter,
     });
 
-    // Si coché, ajouter aussi à la collection newsletter
     if (subscribeNewsletter) {
       await addDoc(collection(db, "newsletter"), {
         email: email.trim().toLowerCase(),
@@ -349,9 +346,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
+    if (!user) return;
+    await updateDoc(doc(db, "users", user.id), {
+      ...data,
+      updatedAt: serverTimestamp(),
+    });
+  }, [user]);
+
   const loginWithGoogle = useCallback(async () => {
     await signInWithPopup(auth, googleProvider);
-    // Le profil sera créé par ensureUserProfile dans onAuthStateChanged
   }, []);
 
   const logoutFn = useCallback(async () => {
@@ -364,18 +368,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(async () => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !user) return;
     const uid = auth.currentUser.uid;
-    // Supprimer le doc Firestore
     await updateDoc(doc(db, "users", uid), {
       deletedAt: serverTimestamp(),
       role: "deleted",
     });
-    // On pourrait supprimer le compte Auth ici, mais c'est complexe (nécessite re-authentification récente)
-    // Pour l'instant on marque juste comme supprimé dans Firestore et on déconnecte.
     await signOut(auth);
     setUser(null);
-  }, []);
+  }, [user]);
 
   // ── Order Functions ──
 
@@ -401,7 +402,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatedAt: serverTimestamp(),
     });
 
-    // Quand une commande est marquée "Livré", incrémenter le compteur de fidélité du client
     if (newStatus === "Livré") {
       const orderSnap = await getDoc(orderRef);
       if (orderSnap.exists()) {
@@ -436,7 +436,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteMenuItem = useCallback(async (id: string) => {
     if (!user || user.role !== "admin") return;
-    // On utilise updateDoc pour marquer comme non disponible (soft delete)
     await updateDoc(doc(db, "menu", id), { available: false, deletedAt: serverTimestamp() });
   }, [user]);
 
@@ -447,6 +446,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         loginWithEmail,
         signUpWithEmail,
+        updateProfile,
         loginWithGoogle,
         logout: logoutFn,
         deleteAccount,
