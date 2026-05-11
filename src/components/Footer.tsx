@@ -49,11 +49,11 @@ export function Footer() {
             </li>
             <li className="flex items-start gap-2">
               <PhoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                +33652875281
+                +33751019452
             </li>
             <li className="flex items-start gap-2">
               <MailIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-              contactnkumu241@gmail.com
+              afromiaam@gmail.com
             </li>
             <li className="text-cream/70">Précommande 24h minimum · Paiement après validation</li>
           </ul>

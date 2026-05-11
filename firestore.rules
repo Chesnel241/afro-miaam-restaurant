@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Fonctions utilitaires ───
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // ─── Profils utilisateurs ───
+    match /users/{userId} {
+      // Un utilisateur peut lire son propre profil
+      allow read: if isOwner(userId);
+
+      // L'admin peut lire tous les profils
+      allow read: if isAdmin();
+
+      // Création de profil à l'inscription uniquement
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && request.resource.data.role == "customer";
+
+      // Le profil admin est créé manuellement ou par le code serveur
+      // Un utilisateur ne peut PAS se donner le rôle admin
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role; // Le rôle ne peut pas changer
+
+      // L'admin peut mettre à jour n'importe quel profil (ex: ordersCount)
+      allow update: if isAdmin();
+    }
+
+    // ─── Commandes ───
+    match /orders/{orderId} {
+      // Un client peut créer une commande (liée à son propre userId)
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      // Un client peut lire SES commandes uniquement
+      allow read: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+
+      // L'admin peut tout lire
+      allow read: if isAdmin();
+
+      // Seul l'admin peut mettre à jour le statut d'une commande
+      allow update: if isAdmin();
+
+      // Aucune suppression autorisée
+      allow delete: if false;
+    }
+  }
+}

@@ -5,10 +5,12 @@ import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { useCart } from "./CartContext";
 import { CartIcon, UserIcon } from "./Icons";
+import { useAuth } from "./AuthContext";
 
 const NAV_ITEMS = [
   { href: "/", label: "Accueil" },
   { href: "/menu", label: "Menu" },
+  { href: "/prestation-service", label: "Prestation Service" },
   { href: "/comment-ca-marche", label: "Comment ça marche" },
   { href: "/a-propos", label: "À propos" },
   { href: "/faq", label: "FAQ" },
@@ -17,6 +19,7 @@ const NAV_ITEMS = [
 
 export function Header() {
   const { itemCount } = useCart();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -26,6 +29,8 @@ export function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const userLink = user ? (user.role === "admin" ? "/admin" : "/mon-compte") : "/login";
 
   return (
     <header
@@ -53,7 +58,7 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <Link
-            href="/contact"
+            href={userLink}
             aria-label="Compte / contact"
             className="hidden h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 sm:inline-flex"
           >

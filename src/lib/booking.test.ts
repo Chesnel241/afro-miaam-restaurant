@@ -24,6 +24,6 @@ describe("booking helpers", () => {
   });
 
   it("exports the delivery fee constant", () => {
-    expect(DELIVERY_FEE).toBe(2);
+    expect(DELIVERY_FEE).toBe(3);
   });
 });

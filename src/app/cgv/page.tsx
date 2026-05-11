@@ -28,7 +28,7 @@ export default function CgvPage() {
 
         <Block title="Retrait & livraison">
           Le retrait sur place est gratuit. La livraison à Lyon est facturée
-          2 €. L&apos;adresse de retrait ou la fenêtre de livraison vous
+          3 €. L&apos;adresse de retrait ou la fenêtre de livraison vous
           sont communiquées par téléphone après validation.
         </Block>
 

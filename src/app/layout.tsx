@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Chatbot } from "@/components/Chatbot";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -27,12 +28,12 @@ export const metadata: Metadata = {
     template: "%s · Afro Miaam",
   },
   description:
-    "Cuisine afro gastronomique à Lyon, en précommande 24h à l'avance. Commande en ligne, retrait sur place ou livraison à 2 € dans Lyon. Paiement après validation par téléphone.",
+    "Cuisine afro gastronomique à Lyon, en précommande 24h à l'avance. Commande en ligne, retrait sur place ou livraison à 3 € dans Lyon. Paiement après validation par téléphone.",
   metadataBase: new URL("https://afro-miaam.fr"),
   openGraph: {
     title: "Afro Miaam, Ça mijote, ça régale",
     description:
-      "Précommande 24h à l'avance. Retrait à Lyon ou livraison à 2 €.",
+      "Précommande 24h à l'avance. Retrait à Lyon ou livraison à 3 €.",
     type: "website",
     locale: "fr_FR",
   },
@@ -41,17 +42,22 @@ export const metadata: Metadata = {
   },
 };
 
+import { AuthProvider } from "@/components/AuthContext";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${display.variable} ${body.variable}`}>
       <body className="font-sans antialiased">
         <LoadingScreen />
-        <CartProvider>
-          <Header />
-          <main className="min-h-[60vh]">{children}</main>
-          <Footer />
-          <Chatbot />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Header />
+            <main className="min-h-[60vh]">{children}</main>
+            <Footer />
+            <Chatbot />
+            <WhatsAppButton />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

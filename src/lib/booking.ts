@@ -37,4 +37,4 @@ export function formatHumanDate(iso: string): string {
   });
 }
 
-export const DELIVERY_FEE = 2;
+export const DELIVERY_FEE = 3;

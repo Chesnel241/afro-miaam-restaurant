@@ -31,7 +31,7 @@ export default function PrivacyPage() {
         <Block title="Vos droits">
           Vous disposez d&apos;un droit d&apos;accès, de rectification et de
           suppression de vos données. Pour l&apos;exercer, contactez-nous à
-          contactnkumu241@gmail.com.
+          afromiaam@gmail.com.
         </Block>
       </div>
     </section>

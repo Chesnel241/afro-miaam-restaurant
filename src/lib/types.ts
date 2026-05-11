@@ -1,9 +1,11 @@
 export type MenuCategory =
   | "signature"
   | "plat"
+  | "entree"
   | "accompagnement"
   | "sauce"
   | "dessert"
+  | "gourmandise"
   | "boisson";
 
 export type MenuItem = {

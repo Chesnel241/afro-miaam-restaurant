@@ -31,17 +31,17 @@ export default function ContactPage() {
           <div className="space-y-4">
             <InfoCard
               title="Téléphone"
-              value="+33652875281"
+              value="+33751019452"
               note="Lun – Sam, 10h – 19h"
             />
             <InfoCard
               title="Email"
-              value="contactnkumu241@gmail.com"
+              value="afromiaam@gmail.com"
               note="Réponse sous 24h"
             />
             <InfoCard
               title="Zone de livraison"
-              value="Lyon, 2 € de frais"
+              value="Lyon, 3 € de frais"
               note="Tous les arrondissements"
             />
             <InfoCard

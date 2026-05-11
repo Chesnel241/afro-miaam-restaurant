@@ -11,7 +11,7 @@ const FAQ = [
   },
   {
     q: "Puis-je me faire livrer ?",
-    a: "Oui. Nous livrons dans Lyon pour 2 € seulement. Vous renseignez votre adresse au moment de la réservation.",
+    a: "Oui. Nous livrons dans Lyon pour 3 € seulement. Vous renseignez votre adresse au moment de la réservation.",
   },
   {
     q: "Puis-je retirer ma commande ?",

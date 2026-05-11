@@ -56,10 +56,22 @@ const config: Config = {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
         },
+        pivot: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "25%": { transform: "rotate(2deg)" },
+          "75%": { transform: "rotate(-2deg)" },
+        },
+        simmer: {
+          "0%, 100%": { transform: "translateY(0) scale(1) rotate(0deg)" },
+          "30%": { transform: "translateY(-2px) scale(1.02) rotate(1deg)" },
+          "60%": { transform: "translateY(1px) scale(0.98) rotate(-1deg)" },
+        },
       },
       animation: {
         floaty: "floaty 6s ease-in-out infinite",
         "rotate-slow": "rotate 20s linear infinite",
+        "pivot-slow": "pivot 5s ease-in-out infinite",
+        simmer: "simmer 3s ease-in-out infinite",
       },
     },
   },

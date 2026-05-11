@@ -44,11 +44,11 @@ export default function HowItWorksPage() {
               Livraison à Lyon
             </h2>
             <p className="mt-3 text-primary/75">
-              On livre dans Lyon pour 2 € seulement. Pratique pour partager
+              On livre dans Lyon pour 3 € seulement. Pratique pour partager
               le repas en famille ou entre collègues.
             </p>
             <ul className="mt-4 space-y-2 text-sm text-primary/75">
-              <li>• 2 € de frais de livraison</li>
+              <li>• 3 € de frais de livraison</li>
               <li>• Tous les arrondissements de Lyon</li>
               <li>• Fenêtre confirmée par téléphone</li>
             </ul>

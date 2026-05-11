@@ -32,10 +32,10 @@ export function Hero() {
             </p>
 
             <h1 className="heading-display mt-3 text-[40px] leading-[1.05] sm:text-5xl md:text-6xl lg:text-7xl xl:text-[80px]">
-              Ça mijote,
+              Ça <span className="inline-block animate-simmer">mijote</span>,
               <br />
-              ça <span className="italic text-accent">régale</span>
-              <span className="text-accent"> !</span>
+              ça <span className="inline-block animate-simmer italic text-accent" style={{ animationDelay: "1s" }}>régale</span>
+              <span className="inline-block animate-simmer text-accent" style={{ animationDelay: "0.5s" }}> !</span>
             </h1>
           </div>
 

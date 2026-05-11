@@ -63,7 +63,7 @@ export function HowItWorks({ withCta = true }: { withCta?: boolean }) {
               <p className="mt-4 font-display text-xl font-extrabold leading-tight sm:mt-5 sm:text-2xl">
                 Livraison à Lyon
                 <br />
-                <span className="text-accent">2 €</span> seulement
+                <span className="text-accent">3 €</span> seulement
               </p>
               <p className="mt-2 text-sm text-cream/75">
                 Retrait sur place gratuit. L&apos;adresse exacte vous est

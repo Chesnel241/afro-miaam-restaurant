@@ -45,7 +45,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "venir",
     ],
     answer:
-      "On livre dans Lyon pour 2 € seulement. Le retrait sur place est gratuit, l'adresse exacte vous est communiquée après confirmation par téléphone.",
+      "On livre dans Lyon pour 3 € seulement. Le retrait sur place est gratuit, l'adresse exacte vous est communiquée après confirmation par téléphone.",
     cta: { label: "Comment ça marche", href: "/comment-ca-marche" },
   },
   {
@@ -83,7 +83,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "mail",
     ],
     answer:
-      "Par téléphone au +33652875281 (Lun, Sam, 10h, 19h) ou par email à contactnkumu241@gmail.com.",
+      "Par téléphone au +33751019452 (Lun, Sam, 10h, 19h) ou par email à afromiaam@gmail.com.",
     cta: { label: "Page contact", href: "/contact" },
   },
   {
@@ -400,7 +400,7 @@ export function answerFor(input: string): { answer: string; cta?: ChatCta } {
   const phone = extractPhone(input);
   if (phone) {
     return {
-      answer: `Merci ! On a bien noté votre numéro (${phone}). Un membre de l'équipe Afro Miaam vous rappelle dans la journée (Lun à Sam, 10h à 19h). Si c'est urgent, vous pouvez aussi nous joindre au +33652875281.`,
+      answer: `Merci ! On a bien noté votre numéro (${phone}). Un membre de l'équipe Afro Miaam vous rappelle dans la journée (Lun à Sam, 10h à 19h). Si c'est urgent, vous pouvez aussi nous joindre au +33751019452.`,
       cta: { label: "Voir le menu en attendant", href: "/menu" },
     };
   }

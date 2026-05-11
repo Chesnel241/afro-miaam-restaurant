@@ -86,22 +86,12 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="w-full h-full min-h-[400px] animate-pivot-slow">
               <ImgTile
-                src="https://images.unsplash.com/photo-1547928576-b822bc410bdf?auto=format&fit=crop&w=700&q=80"
-                alt="Mafé fumant"
+                src="/promo-afromiaam.jpg"
+                alt="Affiche Promotionnelle Afro Miaam"
                 tall
               />
-              <div className="grid gap-4">
-                <ImgTile
-                  src="https://images.unsplash.com/photo-1542367592-8849eb950fd8?auto=format&fit=crop&w=700&q=80"
-                  alt="Cuisine authentique"
-                />
-                <ImgTile
-                  src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=700&q=80"
-                  alt="Détail d'un plat"
-                />
-              </div>
             </div>
           </div>
         </div>
