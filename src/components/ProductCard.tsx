@@ -22,8 +22,10 @@ export function ProductCard({ item }: { item: MenuItem }) {
     window.setTimeout(() => setAdded(false), 1400);
   }
 
+  const isAvailable = (item as any).available !== false;
+
   return (
-    <article className="group flex flex-col rounded-2xl bg-white p-4 shadow-card transition hover:shadow-soft">
+    <article className={`group flex flex-col rounded-2xl bg-white p-4 shadow-card transition hover:shadow-soft ${!isAvailable ? 'opacity-60 grayscale-[0.5]' : ''}`}>
       <div className="relative aspect-[5/4] w-full overflow-hidden rounded-xl bg-creamSoft">
         <Image
           src={item.image}
@@ -32,6 +34,13 @@ export function ProductCard({ item }: { item: MenuItem }) {
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
+        {!isAvailable && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+            <span className="rounded-full bg-accent px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
+              Épuisé, bientôt de retour !
+            </span>
+          </div>
+        )}
         {item.tags && item.tags.length > 0 && (
           <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
             {item.tags.map((t) => (
@@ -56,9 +65,10 @@ export function ProductCard({ item }: { item: MenuItem }) {
           <button
             type="button"
             onClick={handleAdd}
-            aria-label={`Ajouter ${item.name} au panier`}
+            disabled={!isAvailable}
+            aria-label={isAvailable ? `Ajouter ${item.name} au panier` : `${item.name} est épuisé`}
             className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-white transition focus-ring ${
-              added ? "bg-primary" : "bg-accent hover:opacity-90"
+              !isAvailable ? "bg-primary/20 cursor-not-allowed" : added ? "bg-primary" : "bg-accent hover:opacity-90"
             }`}
           >
             {added ? <CheckIcon className="h-5 w-5" /> : <PlusIcon className="h-5 w-5" />}

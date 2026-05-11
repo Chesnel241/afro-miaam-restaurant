@@ -36,7 +36,7 @@ export default function MenuPage() {
 
   // Utiliser le menu dynamique de Firestore
   const menuItems = useMemo(() => {
-    return dynamicMenu.filter(item => item.available);
+    return dynamicMenu;
   }, [dynamicMenu]);
 
   const visible = useMemo(() => {

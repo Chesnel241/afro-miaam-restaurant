@@ -30,12 +30,14 @@ export default function HomePage() {
                 l&apos;avance.
               </p>
             </div>
+          <div className="flex justify-center sm:justify-end w-full sm:w-auto mt-4 sm:mt-0">
             <Link
               href="/menu"
-              className="text-sm font-bold uppercase tracking-[0.18em] text-primary underline-offset-4 hover:text-accent hover:underline"
+              className="btn btn-md btn-ghost-dark w-full sm:w-auto text-center"
             >
-              Voir tout le menu →
+              Voir tout le menu
             </Link>
+          </div>
           </div>
 
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
