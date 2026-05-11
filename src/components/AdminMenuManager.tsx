@@ -225,7 +225,7 @@ export function AdminMenuManager() {
             ))}
           </tbody>
         </table>
-        {dynamicMenu.length === 0 && <p className="p-10 text-center text-primary/50 italic">La carte est vide. Cliquez sur "Initialiser le menu" pour commencer.</p>}
+        {dynamicMenu.length === 0 && <p className="p-10 text-center text-primary/50 italic">La carte est vide. Cliquez sur &quot;Initialiser le menu&quot; pour commencer.</p>}
       </div>
     </div>
   );

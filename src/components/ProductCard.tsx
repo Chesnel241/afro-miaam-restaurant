@@ -22,7 +22,7 @@ export function ProductCard({ item }: { item: MenuItem }) {
     window.setTimeout(() => setAdded(false), 1400);
   }
 
-  const isAvailable = (item as any).available !== false;
+  const isAvailable = item.available !== false;
 
   return (
     <article className={`group flex flex-col rounded-2xl bg-white p-4 shadow-card transition hover:shadow-soft ${!isAvailable ? 'opacity-60 grayscale-[0.5]' : ''}`}>

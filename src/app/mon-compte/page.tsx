@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth, type Order } from "@/components/AuthContext";
+import { useAuth, type Order, type MenuItemDynamic } from "@/components/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
@@ -307,7 +307,7 @@ function TabBtn({ active, onClick, label }: { active: boolean, onClick: () => vo
   );
 }
 
-function StatCard({ title, value, sub }: { title: string, value: any, sub: string }) {
+function StatCard({ title, value, sub }: { title: string, value: string | number, sub: string }) {
   return (
     <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-cream/20 text-center sm:text-left">
       <p className="text-xs font-bold uppercase tracking-widest text-primary/40 mb-2">{title}</p>
@@ -317,10 +317,11 @@ function StatCard({ title, value, sub }: { title: string, value: any, sub: strin
   );
 }
 
-function MiniProductCard({ item, label }: { item: any, label: string }) {
+function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string }) {
   return (
     <div className="group rounded-3xl bg-white p-4 shadow-sm ring-1 ring-cream/20 hover:shadow-soft transition-all">
       <div className="aspect-square w-full overflow-hidden rounded-2xl bg-creamSoft mb-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.image} alt={item.name} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
       </div>
       <h3 className="font-bold text-primary text-base mb-1 truncate">{item.name}</h3>

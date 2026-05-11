@@ -37,19 +37,15 @@ export function Chatbot() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-
-  // Cacher le chatbot pour l'admin ou sur les pages admin
-  if (pathname?.startsWith("/admin") || user?.role === "admin") {
-    return null;
-  }
-
   const [tooltip, setTooltip] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Message[];
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (typeof sessionStorage !== "undefined") {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as Message[];
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
       }
     } catch {
       /* ignore */
@@ -61,44 +57,51 @@ export function Chatbot() {
   const [imgFailed, setImgFailed] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
+  const isAdmin = pathname?.startsWith("/admin") || user?.role === "admin";
+
   // Persist history
   useEffect(() => {
+    if (isAdmin) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     } catch {
       /* ignore */
     }
-  }, [messages]);
+  }, [messages, isAdmin]);
 
   // Tease tooltip after 3s on first visit
   useEffect(() => {
-    if (open) return;
+    if (isAdmin || open) return;
     const t = window.setTimeout(() => setTooltip(true), 3000);
     const t2 = window.setTimeout(() => setTooltip(false), 9000);
     return () => {
       window.clearTimeout(t);
       window.clearTimeout(t2);
     };
-  }, [open]);
+  }, [open, isAdmin]);
 
   // Autoscroll to bottom on new messages
   useEffect(() => {
-    if (!open) return;
+    if (isAdmin || !open) return;
     scrollerRef.current?.scrollTo({
       top: scrollerRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages, open, typing]);
+  }, [messages, open, typing, isAdmin]);
 
   // Esc closes
   useEffect(() => {
-    if (!open) return;
+    if (isAdmin || !open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, isAdmin]);
+
+  if (isAdmin) {
+    return null;
+  }
 
   function pushUser(text: string) {
     setMessages((m) => [...m, { id: uid(), sender: "user", text }]);

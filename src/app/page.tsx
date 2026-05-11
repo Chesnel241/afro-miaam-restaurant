@@ -6,7 +6,7 @@ import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { ProductCard } from "@/components/ProductCard";
 import { useAuth } from "@/components/AuthContext";
-import { CheckIcon, HeartIcon, LeafIcon, PotIcon, GiftIcon, ArrowRightIcon } from "@/components/Icons";
+import { CheckIcon, HeartIcon, LeafIcon, PotIcon, GiftIcon } from "@/components/Icons";
 import { useMemo } from "react";
 
 export default function HomePage() {

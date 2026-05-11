@@ -1,57 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCart } from "@/components/CartContext";
 import { useAuth } from "@/components/AuthContext";
-import { TIME_SLOTS, formatHumanDate, minBookingDate } from "@/lib/booking";
+import { useCart } from "@/components/CartContext";
+import { db } from "@/lib/firebase";
 import { formatPrice } from "@/lib/utils";
-import { CalendarIcon, ClockIcon } from "@/components/Icons";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { CheckIcon, ClockIcon, MapPinIcon, PhoneIcon, UserIcon } from "@/components/Icons";
 
-type FormState = {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email: string;
-  address: string;
-  notes: string;
-};
-
-const EMPTY_FORM: FormState = {
-  firstName: "",
-  lastName: "",
-  phone: "",
-  email: "",
-  address: "",
-  notes: "",
-};
+const DELIVERY_FEE = 2.5;
 
 export default function ReservationPage() {
-  const router = useRouter();
-  const {
-    lines,
-    subtotal,
-    deliveryMode,
-    deliveryFee,
-    total,
-    clear,
-  } = useCart();
-
-  
-  const [slot, setSlot] = useState("");
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const minDate = minBookingDate();
-  const [date, setDate] = useState(() => minBookingDate());
-
+  const { cart, subtotal, clearCart } = useCart();
   const { user } = useAuth();
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    deliveryMode: "retrait" as "retrait" | "livraison",
+    date: "",
+    slot: "",
+    notes: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   // Pré-remplir avec les infos du compte
   useEffect(() => {
-    if (user) {
+    if (user && !form.firstName && !form.lastName) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm((f) => ({
         ...f,
         firstName: user.name.split(" ")[0] || "",
@@ -60,336 +44,294 @@ export default function ReservationPage() {
         phone: user.phone || "",
       }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const canSubmit =
-    lines.length > 0 &&
-    !!date &&
-    !!slot &&
-    form.firstName.trim() &&
-    form.lastName.trim() &&
-    form.phone.trim().length >= 8 &&
-    (deliveryMode !== "livraison" || form.address.trim().length > 5);
+    cart.length > 0 &&
+    form.firstName &&
+    form.lastName &&
+    form.phone &&
+    form.date &&
+    form.slot &&
+    (form.deliveryMode === "retrait" || form.address);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const total = subtotal + (form.deliveryMode === "livraison" ? DELIVERY_FEE : 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    setSubmitting(true);
-    setError(null);
+
+    setLoading(true);
     try {
-      const payload = {
-        items: lines,
-        deliveryMode,
-        deliveryFee,
+      const orderData = {
+        userId: user?.uid || null,
+        items: cart,
         subtotal,
+        deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
         total,
-        date,
-        slot,
+        status: "En attente",
+        createdAt: serverTimestamp(),
         customer: {
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          phone: form.phone.trim(),
-          email: form.email.trim() || undefined,
-          address: deliveryMode === "livraison" ? form.address.trim() : undefined,
-          notes: form.notes.trim() || undefined,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone,
+          address: form.address,
+          deliveryMode: form.deliveryMode,
+          date: form.date,
+          slot: form.slot,
+          notes: form.notes,
         },
       };
-      const res = await fetch("/api/reservation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "Échec de l'envoi.");
-      }
-      const data = (await res.json()) as { reference: string };
 
-      try {
-        sessionStorage.setItem(
-          "afro-miaam-last-reservation",
-          JSON.stringify({
-            reference: data.reference,
-            date,
-            slot,
-            deliveryMode,
-            customer: payload.customer,
-            total,
-          }),
-        );
-      } catch {
-        /* ignore */
+      await addDoc(collection(db, "orders"), orderData);
+
+      // Si client connecté, incrémenter son compteur de fidélité
+      if (user?.uid) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, {
+          ordersCount: increment(1)
+        });
       }
 
-      clear();
-      router.push("/confirmation");
+      setSuccess(true);
+      clearCart();
+      window.scrollTo(0, 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue.");
+      alert("Erreur lors de la réservation. Veuillez réessayer.");
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
-  }
+  };
 
-  if (lines.length === 0) {
+  if (success) {
     return (
-      <section className="py-20">
-        <div className="container-x text-center">
-          <p className="eyebrow">Réservation</p>
-          <h1 className="heading-display mt-2 text-3xl text-primary sm:text-4xl lg:text-5xl">
-            Votre panier est vide
-          </h1>
-          <p className="mt-3 text-primary/70">
-            Choisissez d&apos;abord vos plats avant de réserver un créneau.
-          </p>
-          <Link href="/menu" className="btn btn-md btn-primary mt-6">
-            Voir le menu
-          </Link>
+      <div className="container-x py-20 text-center">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600">
+          <CheckIcon className="h-10 w-10" />
         </div>
-      </section>
+        <h1 className="heading-display text-3xl text-primary sm:text-4xl">Commande reçue !</h1>
+        <p className="mt-4 text-primary/75">
+          Merci <strong className="text-primary">{form.firstName}</strong>. Nous vous appellerons au{" "}
+          <strong className="text-primary">{form.phone}</strong> pour confirmer votre commande.
+        </p>
+        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link href="/menu" className="btn btn-primary px-10">Retour au menu</Link>
+          {user && <Link href="/mon-compte" className="btn btn-secondary px-10">Suivre ma commande</Link>}
+        </div>
+      </div>
     );
   }
 
   return (
-    <section className="py-12 sm:py-16">
-      <div className="container-x">
-        <p className="eyebrow">Réservation</p>
-        <h1 className="heading-display mt-2 text-3xl text-primary sm:text-4xl lg:text-5xl">
-          Date, heure et coordonnées
-        </h1>
-        <p className="mt-3 max-w-2xl text-primary/75">
-          Commande à l&apos;avance, paiement après validation par téléphone.
-          Choisissez votre créneau, on s&apos;occupe du reste.
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
-          className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_1fr]"
-        >
-          <div className="space-y-6">
-            <div className="rounded-2xl bg-white p-6 shadow-card">
-              <h2 className="flex items-center gap-2 font-display text-xl font-bold text-primary">
-                <CalendarIcon className="h-5 w-5 shrink-0 text-accent" />
-                Date de retrait ou livraison
-              </h2>
-              <p className="mt-1 text-sm text-primary/65">
-                Minimum 24h à l&apos;avance, la première date disponible est
-                {" "}
-                <span className="font-semibold text-primary">
-                  {formatHumanDate(minDate)}
-                </span>
-                .
-              </p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <Field label="Date" htmlFor="date" required>
-                  <input
-                    id="date"
-                    type="date"
-                    min={minDate}
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
-                    className="field max-w-[180px] sm:max-w-none"
-                  />
-                </Field>
-                <Field label="Mode" htmlFor="mode">
-                  <input
-                    id="mode"
-                    type="text"
-                    readOnly
-                    value={deliveryMode === "livraison" ? "Livraison à Lyon" : "Retrait sur place"}
-                    className="field bg-creamSoft"
-                  />
-                </Field>
-              </div>
-
-              <div className="mt-6">
-                <p className="inline-flex items-center gap-2 font-display text-base font-bold text-primary">
-                  <ClockIcon className="h-5 w-5 text-accent" />
-                  Choisir un créneau
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {TIME_SLOTS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setSlot(s)}
-                      aria-pressed={slot === s}
-                      className={`min-h-12 rounded-xl border px-3 text-sm font-semibold transition focus-ring ${
-                        slot === s
-                          ? "border-accent bg-accent text-white"
-                          : "border-primary/15 bg-creamSoft text-primary hover:border-primary/40"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-white p-6 shadow-card">
-              <h2 className="font-display text-xl font-bold text-primary">
-                Vos coordonnées
-              </h2>
-              <p className="mt-1 text-sm text-primary/65">
-                C&apos;est sur ce numéro qu&apos;on vous rappelle pour finaliser.
-              </p>
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <Field label="Prénom" htmlFor="firstName" required>
-                  <input
-                    id="firstName"
-                    type="text"
-                    autoComplete="given-name"
-                    required
-                    value={form.firstName}
-                    onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                    className="field"
-                  />
-                </Field>
-                <Field label="Nom" htmlFor="lastName" required>
-                  <input
-                    id="lastName"
-                    type="text"
-                    autoComplete="family-name"
-                    required
-                    value={form.lastName}
-                    onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                    className="field"
-                  />
-                </Field>
-                <Field label="Téléphone" htmlFor="phone" required>
-                  <input
-                    id="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    required
-                    placeholder="06 12 34 56 78"
-                    value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                    className="field"
-                  />
-                </Field>
-                <Field label="Email (optionnel)" htmlFor="email">
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className="field"
-                  />
-                </Field>
-                {deliveryMode === "livraison" && (
-                  <Field label="Adresse de livraison (Lyon)" htmlFor="address" required full>
-                    <input
-                      id="address"
-                      type="text"
-                      autoComplete="street-address"
-                      required
-                      placeholder="12 rue de la République, 69002 Lyon"
-                      value={form.address}
-                      onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                      className="field"
-                    />
-                  </Field>
-                )}
-                <Field label="Note (allergies, occasion…)" htmlFor="notes" full>
-                  <textarea
-                    id="notes"
-                    rows={3}
-                    value={form.notes}
-                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                    className="field min-h-[88px] resize-y py-3"
-                  />
-                </Field>
-              </div>
-            </div>
+    <div className="container-x py-12 sm:py-20">
+      <div className="grid gap-12 lg:grid-cols-2">
+        {/* Formulaire */}
+        <div className="space-y-8">
+          <div>
+            <h1 className="heading-display text-3xl text-primary sm:text-4xl">Finaliser ma commande</h1>
+            <p className="mt-2 text-primary/70 italic">Vérifiez vos informations avant de confirmer.</p>
           </div>
 
-          <aside className="space-y-4">
-            <div className="rounded-2xl bg-primary-gradient p-6 text-cream shadow-soft bg-grain">
-              <h2 className="font-display text-xl font-bold">Votre commande</h2>
-              <ul className="mt-4 space-y-2 text-sm">
-                {lines.map((l) => (
-                  <li key={l.id} className="flex items-start justify-between gap-4">
-                    <span className="text-cream/85">
-                      {l.quantity} × {l.name}
-                    </span>
-                    <span className="whitespace-nowrap font-semibold">
-                      {formatPrice(l.price * l.quantity)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 space-y-1 border-t border-cream/15 pt-4 text-sm text-cream/80">
-                <div className="flex items-center justify-between">
-                  <span>Sous-total</span>
-                  <span>{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{deliveryMode === "livraison" ? "Livraison Lyon" : "Retrait"}</span>
-                  <span>{deliveryFee === 0 ? "Gratuit" : formatPrice(deliveryFee)}</span>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-between border-t border-cream/15 pt-3">
-                <span className="font-display text-lg">Total</span>
-                <span className="font-display text-2xl font-extrabold text-accentSoft">
-                  {formatPrice(total)}
-                </span>
-              </div>
-              <p className="mt-3 text-xs text-cream/70">
-                Paiement à finaliser au téléphone après confirmation de votre
-                commande par notre équipe.
-              </p>
+          <form onSubmit={handleSubmit} className="grid gap-6 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+               <h2 className="flex items-center gap-2 text-lg font-bold text-primary">
+                 <UserIcon className="h-5 w-5 text-accent" /> Vos coordonnées
+               </h2>
+            </div>
+            
+            <div>
+              <label htmlFor="firstName" className="label">Prénom</label>
+              <input
+                id="firstName"
+                type="text"
+                required
+                className="field"
+                value={form.firstName}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="lastName" className="label">Nom</label>
+              <input
+                id="lastName"
+                type="text"
+                required
+                className="field"
+                value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="phone" className="label">Téléphone</label>
+              <input
+                id="phone"
+                type="tel"
+                required
+                className="field"
+                placeholder="06 00 00 00 00"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="label">Email (Optionnel)</label>
+              <input
+                id="email"
+                type="email"
+                className="field"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
             </div>
 
-            {error && (
-              <p className="rounded-xl border border-afro-red/30 bg-afro-red/10 p-3 text-sm text-afro-red">
-                {error}
-              </p>
+            <div className="sm:col-span-2 mt-4">
+               <h2 className="flex items-center gap-2 text-lg font-bold text-primary">
+                 <MapPinIcon className="h-5 w-5 text-accent" /> Livraison ou Retrait
+               </h2>
+            </div>
+
+            <div className="sm:col-span-2 flex gap-4">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, deliveryMode: "retrait" })}
+                className={`flex-1 rounded-xl border-2 p-4 text-center transition ${
+                  form.deliveryMode === "retrait" ? "border-accent bg-accent/5" : "border-cream/30 hover:border-accent/50"
+                }`}
+              >
+                <p className="font-bold text-primary">Retrait sur place</p>
+                <p className="text-xs text-primary/60">Gratuit</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, deliveryMode: "livraison" })}
+                className={`flex-1 rounded-xl border-2 p-4 text-center transition ${
+                  form.deliveryMode === "livraison" ? "border-accent bg-accent/5" : "border-cream/30 hover:border-accent/50"
+                }`}
+              >
+                <p className="font-bold text-primary">Livraison</p>
+                <p className="text-xs text-primary/60">+{DELIVERY_FEE}€</p>
+              </button>
+            </div>
+
+            {form.deliveryMode === "livraison" && (
+              <div className="sm:col-span-2">
+                <label htmlFor="address" className="label">Adresse de livraison</label>
+                <input
+                  id="address"
+                  type="text"
+                  required
+                  placeholder="Numéro, rue, ville, code postal"
+                  className="field"
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                />
+              </div>
             )}
 
-            <button
-              type="submit"
-              disabled={!canSubmit || submitting}
-              className="btn btn-lg btn-primary w-full"
-            >
-              {submitting ? "Envoi en cours…" : "Réserver, on vous rappelle"}
-            </button>
-            <p className="text-center text-xs text-primary/55">
-              En réservant, vous acceptez d&apos;être recontacté pour
-              finaliser votre commande.
-            </p>
-          </aside>
-        </form>
-      </div>
-    </section>
-  );
-}
+            <div className="sm:col-span-2 mt-4">
+               <h2 className="flex items-center gap-2 text-lg font-bold text-primary">
+                 <ClockIcon className="h-5 w-5 text-accent" /> Date et Heure
+               </h2>
+            </div>
 
-function Field({
-  label,
-  htmlFor,
-  required,
-  full,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  full?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className={`flex flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}
-    >
-      <span className="text-sm font-semibold text-primary">
-        {label} {required && <span className="text-accent">*</span>}
-      </span>
-      {children}
-    </label>
+            <div>
+              <label htmlFor="date" className="label">Date</label>
+              <input
+                id="date"
+                type="date"
+                required
+                className="field"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="slot" className="label">Créneau horaire</label>
+              <select
+                id="slot"
+                required
+                className="field bg-white"
+                value={form.slot}
+                onChange={(e) => setForm({ ...form, slot: e.target.value })}
+              >
+                <option value="">Choisir...</option>
+                <option value="12h00 - 12h30">12h00 - 12h30</option>
+                <option value="12h30 - 13h00">12h30 - 13h00</option>
+                <option value="13h00 - 13h30">13h00 - 13h30</option>
+                <option value="19h00 - 19h30">19h00 - 19h30</option>
+                <option value="19h30 - 20h00">19h30 - 20h00</option>
+                <option value="20h00 - 20h30">20h00 - 20h30</option>
+                <option value="20h30 - 21h00">20h30 - 21h00</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2 mt-4">
+              <label htmlFor="notes" className="label text-primary font-bold">Notes ou allergènes (Optionnel)</label>
+              <textarea
+                id="notes"
+                rows={3}
+                className="field"
+                placeholder="Ex: Pas de piment, code porte 1234..."
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
+            </div>
+
+            <div className="sm:col-span-2 pt-6">
+              <button
+                type="submit"
+                disabled={!canSubmit || loading}
+                className="btn btn-primary w-full py-4 text-lg"
+              >
+                {loading ? "Confirmation..." : `Confirmer ma commande (${formatPrice(total)})`}
+              </button>
+              <p className="mt-4 text-center text-xs text-primary/50">
+                Paiement sécurisé lors de la livraison ou du retrait.
+              </p>
+            </div>
+          </form>
+        </div>
+
+        {/* Récapitulatif */}
+        <div className="lg:sticky lg:top-24 h-fit">
+          <div className="rounded-3xl bg-creamSoft p-8 shadow-card ring-1 ring-cream/20">
+            <h2 className="heading-display text-2xl text-primary">Récapitulatif</h2>
+            <div className="mt-8 space-y-4">
+              {cart.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span className="text-primary/75">
+                    {item.quantity}x <span className="font-bold text-primary">{item.name}</span>
+                  </span>
+                  <span className="font-bold text-primary">{formatPrice(item.price * item.quantity)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 border-t border-cream/30 pt-6 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-primary/60">Sous-total</span>
+                <span className="font-bold text-primary">{formatPrice(subtotal)}</span>
+              </div>
+              {form.deliveryMode === "livraison" && (
+                <div className="flex justify-between text-sm text-accent">
+                  <span>Frais de livraison</span>
+                  <span className="font-bold">{formatPrice(DELIVERY_FEE)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-cream/30 pt-4 text-xl">
+                <span className="heading-display text-primary">Total</span>
+                <span className="font-black text-accent">{formatPrice(total)}</span>
+              </div>
+            </div>
+
+            <div className="mt-10 rounded-2xl bg-white/50 p-4 text-xs text-primary/60 italic leading-relaxed">
+              * Une fois la commande confirmée, nous vous appellerons pour valider les derniers détails et l'heure précise.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

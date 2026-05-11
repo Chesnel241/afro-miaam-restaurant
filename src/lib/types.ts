@@ -16,6 +16,7 @@ export type MenuItem = {
   price: number;
   image: string;
   tags?: string[];
+  available?: boolean;
 };
 
 export type CartLine = {
