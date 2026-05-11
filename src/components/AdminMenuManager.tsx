@@ -5,11 +5,13 @@ import { useAuth, type MenuItemDynamic } from "@/components/AuthContext";
 import { formatPrice } from "@/lib/utils";
 import { TrashIcon, PlusIcon, ClockIcon } from "@/components/Icons";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/data/menu";
+import { seedMenu } from "@/lib/seed";
 
 export function AdminMenuManager() {
   const { dynamicMenu, addMenuItem, updateMenuItem, deleteMenuItem } = useAuth();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Form state
   const [form, setForm] = useState<Omit<MenuItemDynamic, "id">>({
@@ -55,29 +57,54 @@ export function AdminMenuManager() {
     }
   };
 
+  const handleSeed = async () => {
+    if (confirm("Voulez-vous initialiser la carte avec les plats par défaut ? Cela ne sera fait que si la base est vide.")) {
+      setIsSeeding(true);
+      try {
+        await seedMenu();
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de l'initialisation.");
+      } finally {
+        setIsSeeding(false);
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="heading-display text-2xl text-primary">Gestion de la Carte</h2>
-        {!isAdding && !editingId && (
-          <button 
-            onClick={() => {
-              setIsAdding(true);
-              setForm({
-                name: "",
-                description: "",
-                price: 0,
-                image: "/img/signatures/mafe.jpg",
-                category: "signature",
-                tags: [],
-                available: true,
-              });
-            }}
-            className="btn btn-sm bg-accent text-white"
-          >
-            <PlusIcon className="h-4 w-4" /> Ajouter un plat
-          </button>
-        )}
+        <div className="flex gap-2">
+          {dynamicMenu.length === 0 && (
+            <button 
+              onClick={handleSeed}
+              disabled={isSeeding}
+              className="btn btn-sm bg-primary text-white"
+            >
+              {isSeeding ? "Initialisation..." : "Initialiser le menu"}
+            </button>
+          )}
+          {!isAdding && !editingId && (
+            <button 
+              onClick={() => {
+                setIsAdding(true);
+                setForm({
+                  name: "",
+                  description: "",
+                  price: 0,
+                  image: "/img/signatures/mafe.jpg",
+                  category: "signature",
+                  tags: [],
+                  available: true,
+                });
+              }}
+              className="btn btn-sm bg-accent text-white"
+            >
+              <PlusIcon className="h-4 w-4" /> Ajouter un plat
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Formulaire Ajout / Edition */}
@@ -160,8 +187,8 @@ export function AdminMenuManager() {
             </tr>
           </thead>
           <tbody className="divide-y divide-cream/20">
-            {dynamicMenu.filter(i => i.available || editingId === i.id).map(item => (
-              <tr key={item.id} className="text-sm hover:bg-cream/5">
+            {dynamicMenu.map(item => (
+              <tr key={item.id} className={`text-sm hover:bg-cream/5 ${!item.available ? 'opacity-40' : ''}`}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 overflow-hidden rounded-lg bg-cream">
@@ -198,7 +225,7 @@ export function AdminMenuManager() {
             ))}
           </tbody>
         </table>
-        {dynamicMenu.length === 0 && <p className="p-10 text-center text-primary/50 italic">Aucun plat dans la base.</p>}
+        {dynamicMenu.length === 0 && <p className="p-10 text-center text-primary/50 italic">La carte est vide. Cliquez sur "Initialiser le menu" pour commencer.</p>}
       </div>
     </div>
   );
