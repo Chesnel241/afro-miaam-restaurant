@@ -74,7 +74,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code || "";
       if (code !== "auth/popup-closed-by-user") {
-        setError("Erreur lors de la connexion Google.");
+        setError(`Erreur Google (${code}). Vérifiez que l'option est activée dans Firebase.`);
         console.error(err);
       }
     } finally {

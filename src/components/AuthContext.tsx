@@ -24,6 +24,7 @@ import {
   increment,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { seedMenu } from "@/lib/seed";
 
 // ─── Constants ──────────────────────────────────────────────
 const googleProvider = new GoogleAuthProvider();
@@ -58,6 +59,17 @@ export type UserProfile = {
   ordersCount: number;
 };
 
+export type MenuItemDynamic = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  tags?: string[];
+  available: boolean;
+};
+
 export type NewsletterSubscriber = {
   id: string;
   email: string;
@@ -80,9 +92,14 @@ type AuthContextType = {
   allOrders: Order[];
   allCustomers: UserProfile[];
   newsletterSubscribers: NewsletterSubscriber[];
+  dynamicMenu: MenuItemDynamic[];
   // Actions
   placeOrder: (items: OrderItem[], total: number) => Promise<void>;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<void>;
+  // Menu Actions
+  addMenuItem: (item: Omit<MenuItemDynamic, "id">) => Promise<void>;
+  updateMenuItem: (id: string, item: Partial<MenuItemDynamic>) => Promise<void>;
+  deleteMenuItem: (id: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -156,6 +173,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [allCustomers, setAllCustomers] = useState<UserProfile[]>([]);
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
+  const [dynamicMenu, setDynamicMenu] = useState<MenuItemDynamic[]>([]);
+
+  // ── Initialisation (Seed) ──
+  useEffect(() => {
+    seedMenu();
+  }, []);
 
   // ── Écouter l'état d'authentification Firebase ──
   useEffect(() => {
@@ -168,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             firebaseUser.displayName
           );
           setUser(profile);
-        } catch (err) {
+        } catch (err: unknown) {
           console.error("Erreur chargement profil:", err);
           setUser(null);
         }
@@ -290,6 +313,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user]);
 
+  // ── Charger le menu (pour tout le monde) ──
+  useEffect(() => {
+    const q = query(collection(db, "menu"));
+    const unsub = onSnapshot(q, (snap) => {
+      const items = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<MenuItemDynamic, "id">),
+      }));
+      setDynamicMenu(items);
+    });
+    return () => unsub();
+  }, []);
+
   // ── Auth Functions ──
 
   const loginWithEmail = useCallback(async (email: string, password: string) => {
@@ -386,6 +422,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // ── Menu Actions ──
+
+  const addMenuItem = useCallback(async (item: Omit<MenuItemDynamic, "id">) => {
+    if (!user || user.role !== "admin") return;
+    await addDoc(collection(db, "menu"), {
+      ...item,
+      createdAt: serverTimestamp(),
+    });
+  }, [user]);
+
+  const updateMenuItem = useCallback(async (id: string, item: Partial<MenuItemDynamic>) => {
+    if (!user || user.role !== "admin") return;
+    await updateDoc(doc(db, "menu", id), {
+      ...item,
+      updatedAt: serverTimestamp(),
+    });
+  }, [user]);
+
+  const deleteMenuItem = useCallback(async (id: string) => {
+    if (!user || user.role !== "admin") return;
+    // On utilise updateDoc pour marquer comme non disponible (soft delete)
+    await updateDoc(doc(db, "menu", id), { available: false, deletedAt: serverTimestamp() });
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -400,8 +460,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         allOrders,
         allCustomers,
         newsletterSubscribers,
+        dynamicMenu,
         placeOrder,
         updateOrderStatus,
+        addMenuItem,
+        updateMenuItem,
+        deleteMenuItem,
       }}
     >
       {children}

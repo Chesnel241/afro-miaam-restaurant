@@ -5,13 +5,15 @@ import Link from "next/link";
 import { CategoryTabs, type CategoryFilter } from "@/components/CategoryTabs";
 import { ProductCard } from "@/components/ProductCard";
 import { useCart } from "@/components/CartContext";
-import { CATEGORY_LABELS, CATEGORY_ORDER, menuItems } from "@/data/menu";
+import { useAuth } from "@/components/AuthContext";
+import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/data/menu";
 import { formatPrice } from "@/lib/utils";
 import { CartIcon } from "@/components/Icons";
 
 export default function MenuPage() {
   const [filter, setFilter] = useState<CategoryFilter>("all");
   const { itemCount, total } = useCart();
+  const { dynamicMenu } = useAuth();
 
   // Remonter en haut du menu lors du changement de catégorie
   useEffect(() => {
@@ -32,10 +34,15 @@ export default function MenuPage() {
     }
   }, [filter]);
 
+  // Utiliser le menu dynamique de Firestore
+  const menuItems = useMemo(() => {
+    return dynamicMenu.filter(item => item.available);
+  }, [dynamicMenu]);
+
   const visible = useMemo(() => {
     if (filter === "all") return menuItems;
     return menuItems.filter((i) => i.category === filter);
-  }, [filter]);
+  }, [filter, menuItems]);
 
   const grouped = useMemo(() => {
     if (filter !== "all") {
@@ -45,7 +52,7 @@ export default function MenuPage() {
       category,
       items: menuItems.filter((i) => i.category === category),
     })).filter((g) => g.items.length > 0);
-  }, [filter, visible]);
+  }, [filter, visible, menuItems]);
 
   return (
     <>
@@ -88,6 +95,11 @@ export default function MenuPage() {
               </div>
             </div>
           ))}
+          {menuItems.length === 0 && (
+            <div className="py-20 text-center">
+              <p className="text-primary/60 italic">Le menu est en cours de mise à jour...</p>
+            </div>
+          )}
         </div>
       </section>
 

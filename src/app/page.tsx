@@ -113,8 +113,8 @@ export default function HomePage() {
                   vous rappelle.
                 </p>
               </div>
-              <Link href="/menu" className="btn btn-lg btn-primary justify-center">
-                Composer ma commande
+              <Link href="/menu" className="btn btn-md btn-primary">
+                Commander maintenant
               </Link>
             </div>
           </div>

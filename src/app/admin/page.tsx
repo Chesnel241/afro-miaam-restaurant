@@ -4,8 +4,9 @@ import { useAuth } from "@/components/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GiftIcon, CheckIcon, ClockIcon, MailIcon } from "@/components/Icons";
+import { AdminMenuManager } from "@/components/AdminMenuManager";
 
-type Tab = "overview" | "orders" | "customers" | "newsletter";
+type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu";
 
 export default function AdminPage() {
   const { 
@@ -114,7 +115,7 @@ export default function AdminPage() {
   return (
     <div className="container-x py-12 sm:py-20">
       {/* Header Admin */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-cream/20 pb-8">
         <div>
           <h1 className="heading-display text-3xl text-primary sm:text-4xl">
             Panel <span className="text-accent">Administrateur</span>
@@ -138,6 +139,7 @@ export default function AdminPage() {
         <TabButton id="orders" active={activeTab === "orders"} onClick={setActiveTab} label={`Commandes (${activeOrders.length})`} />
         <TabButton id="customers" active={activeTab === "customers"} onClick={setActiveTab} label="Clients & Fidélité" />
         <TabButton id="newsletter" active={activeTab === "newsletter"} onClick={setActiveTab} label="Newsletter" />
+        <TabButton id="menu" active={activeTab === "menu"} onClick={setActiveTab} label="La Carte" />
       </div>
 
       <div className="mt-8">
@@ -235,6 +237,7 @@ export default function AdminPage() {
                     <div>
                       <h3 className="font-bold text-primary">{customer.name}</h3>
                       <p className="text-xs text-primary/60">{customer.email}</p>
+                      <p className="text-xs text-primary/60 mt-1 font-semibold">{customer.phone || "Pas de tel."}</p>
                     </div>
                     {isEligible && <GiftIcon className="h-6 w-6 text-accent animate-bounce" />}
                   </div>
@@ -315,6 +318,9 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* --- ONGLET : LA CARTE (MENU) --- */}
+        {activeTab === "menu" && <AdminMenuManager />}
       </div>
     </div>
   );
@@ -359,7 +365,7 @@ function KPI({ title, value, sub, variant = "white", progress, trend }: { title:
   );
 }
 
-function OrderRow({ order, onStatusChange }: { order: unknown, onStatusChange: unknown }) {
+function OrderRow({ order, onStatusChange }: { order: any, onStatusChange: any }) {
   return (
     <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -374,7 +380,7 @@ function OrderRow({ order, onStatusChange }: { order: unknown, onStatusChange: u
         </div>
         <p className="mt-1 text-sm text-primary/70">{order.userName} ({order.userEmail})</p>
         <p className="mt-1 text-xs text-primary/60">
-          {order.items.map((i: unknown) => `${i.quantity}x ${i.name}`).join(", ")}
+          {order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ")}
         </p>
       </div>
       <div className="flex items-center gap-4">

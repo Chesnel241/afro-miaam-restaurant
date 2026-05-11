@@ -70,7 +70,7 @@ export default function HowItWorksPage() {
           </p>
           <div className="mt-6">
             <Link href="/menu" className="btn btn-md btn-primary">
-              Composer ma commande
+              Commander maintenant
             </Link>
           </div>
         </div>
