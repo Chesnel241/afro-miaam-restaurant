@@ -1,24 +1,38 @@
 import { db } from "./firebase";
-import { collection, addDoc, getDocs, query, limit } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, limit, serverTimestamp } from "firebase/firestore";
 import { menuItems } from "../data/menu";
 
 export async function seedMenu() {
-  const q = query(collection(db, "menu"), limit(1));
-  const snap = await getDocs(q);
-  
-  if (snap.empty) {
-    console.log("Seeding menu...");
-    for (const item of menuItems) {
-      await addDoc(collection(db, "menu"), {
-        name: item.name,
-        description: item.description,
-        price: item.price,
-        image: item.image,
-        category: item.category,
-        tags: item.tags || [],
-        available: true,
-      });
+  try {
+    const q = query(collection(db, "menu"), limit(1));
+    const snap = await getDocs(q);
+    
+    if (snap.empty) {
+      console.log("Seeding menu starting...");
+      let count = 0;
+      
+      for (const item of menuItems) {
+        await addDoc(collection(db, "menu"), {
+          name: item.name || "Sans nom",
+          description: item.description || "",
+          price: item.price || 0,
+          image: item.image || "/img/placeholder.jpg",
+          category: item.category || "plat",
+          tags: item.tags || [],
+          available: true,
+          createdAt: serverTimestamp(),
+        });
+        count++;
+      }
+      
+      console.log(`Menu seeded successfully with ${count} items!`);
+      return true;
+    } else {
+      console.log("Menu collection already has data. Skipping seed.");
+      return false;
     }
-    console.log("Menu seeded !");
+  } catch (error) {
+    console.error("Critical error during seedMenu:", error);
+    throw error;
   }
 }
