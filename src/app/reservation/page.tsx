@@ -299,7 +299,7 @@ export default function ReservationPage() {
           <div className="rounded-3xl bg-creamSoft p-8 shadow-card ring-1 ring-cream/20">
             <h2 className="heading-display text-2xl text-primary">Récapitulatif</h2>
             <div className="mt-8 space-y-4">
-              {cart.map((item) => (
+              {(cart ?? []).map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <span className="text-primary/75">
                     {item.quantity}x <span className="font-bold text-primary">{item.name}</span>
