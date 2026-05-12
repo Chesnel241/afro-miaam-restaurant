@@ -18,17 +18,16 @@ export function LoadingScreen() {
     // Stage 1: Text "Tout commence par une odeur..."
     t1.current = setTimeout(() => {
       setStage("video");
-    }, 3000);
+      // Apparition presque immédiate du logo avec la vidéo
+      t2.current = setTimeout(() => {
+        setStage("logo");
+      }, 1000);
+    }, 2500);
 
-    // Stage 2: Video sequence starts, then logo (Auto fallback if no interaction)
-    t2.current = setTimeout(() => {
-      setStage("logo");
-    }, 8000);
-
-    // Stage 3: Complete (Auto fallback)
+    // Stage 3: Transition vers le site après avoir bien vu le logo
     t3.current = setTimeout(() => {
       setStage("complete");
-    }, 12000);
+    }, 8500);
 
     return () => {
       if (t1.current) clearTimeout(t1.current);
@@ -47,28 +46,10 @@ export function LoadingScreen() {
 
   const handleStart = () => {
     setHasInteracted(true);
-    
-    // Clear previous auto timeouts
-    if (t2.current) clearTimeout(t2.current);
-    if (t3.current) clearTimeout(t3.current);
-
     if (audioRef.current) {
       audioRef.current.volume = 0.3;
       audioRef.current.play().catch(e => console.log("Audio play blocked", e));
     }
-    if (videoRef.current) {
-      videoRef.current.play().catch(e => console.log("Video play blocked", e));
-    }
-
-    // Trigger logo exactly 1s after interaction as requested
-    setTimeout(() => {
-      setStage("logo");
-    }, 1000);
-
-    // Transition to site 4s after logo
-    setTimeout(() => {
-      setStage("complete");
-    }, 5000);
   };
 
   if (stage === "complete") return null;
@@ -82,15 +63,15 @@ export function LoadingScreen() {
         loop 
       />
 
-      {/* Interaction Layer for Audio (Browsers require interaction) */}
+      {/* Interaction Layer for Audio (Visuals are auto, but audio needs interaction) */}
       {!hasInteracted && stage !== "text1" && (
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={handleStart}
-          className="absolute z-[10000] px-8 py-3 rounded-full border border-cream/30 text-cream bg-black/40 backdrop-blur-md hover:bg-cream hover:text-black transition-all font-display uppercase tracking-[0.2em] text-xs"
+          className="absolute bottom-24 z-[10000] px-6 py-2.5 rounded-full border border-cream/20 text-cream/80 bg-white/5 backdrop-blur-sm hover:bg-cream hover:text-black hover:border-cream transition-all font-display uppercase tracking-[0.2em] text-[10px]"
         >
-          Entrer dans la cuisine
+          🔊 Activer le son immersif
         </motion.button>
       )}
 
