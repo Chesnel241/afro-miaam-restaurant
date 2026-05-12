@@ -59,6 +59,14 @@ export default function ReservationPage() {
   const total = subtotal + (form.deliveryMode === "livraison" ? DELIVERY_FEE : 0);
   const depositAmount = total * 0.3;
 
+  // Calcul de la date minimale (Demain)
+  const [minDate, setMinDate] = useState("");
+  useEffect(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setMinDate(tomorrow.toISOString().split("T")[0]);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
@@ -67,7 +75,16 @@ export default function ReservationPage() {
     try {
       const orderData = {
         userId: user?.uid || null,
-        items: cart,
+        userName: user?.name || `${form.firstName} ${form.lastName}`,
+        userEmail: user?.email || form.email || "",
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          flavor: item.flavor || null,
+          image: item.image
+        })),
         subtotal,
         deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
         total,
@@ -100,6 +117,7 @@ export default function ReservationPage() {
       clearCart();
       window.scrollTo(0, 0);
     } catch (err) {
+      console.error("Booking Error:", err);
       alert("Erreur lors de la réservation. Veuillez réessayer.");
     } finally {
       setLoading(false);
@@ -277,6 +295,7 @@ export default function ReservationPage() {
                 id="date"
                 type="date"
                 required
+                min={minDate}
                 className="field"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
