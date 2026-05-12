@@ -41,9 +41,8 @@ service cloud.firestore {
 
     // ─── Commandes ───
     match /orders/{orderId} {
-      // Un client peut créer une commande (liée à son propre userId)
-      allow create: if isAuthenticated()
-        && request.resource.data.userId == request.auth.uid;
+      // Tout le monde peut créer une commande (invités ou clients connectés)
+      allow create: if true;
 
       // Un client peut lire SES commandes uniquement
       allow read: if isAuthenticated()
