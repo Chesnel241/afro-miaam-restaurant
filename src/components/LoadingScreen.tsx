@@ -7,7 +7,6 @@ const INTRO_SHOWN_KEY = "afro_miaam_intro_v1";
 
 export function LoadingScreen() {
   const [stage, setStage] = useState<"text1" | "video" | "logo" | "complete">("text1");
-  const [hasInteracted, setHasInteracted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const t1 = useRef<NodeJS.Timeout | null>(null);
@@ -44,11 +43,25 @@ export function LoadingScreen() {
     }
   }, [stage]);
 
+  const [soundBlocked, setSoundBlocked] = useState(false);
+
+  useEffect(() => {
+    if (stage === "video" && audioRef.current) {
+      audioRef.current.volume = 0.3;
+      audioRef.current.play()
+        .then(() => setSoundBlocked(false))
+        .catch(() => {
+          console.log("Autoplay blocked by browser");
+          setSoundBlocked(true);
+        });
+    }
+  }, [stage]);
+
   const handleStart = () => {
-    setHasInteracted(true);
+    setSoundBlocked(false);
     if (audioRef.current) {
       audioRef.current.volume = 0.3;
-      audioRef.current.play().catch(e => console.log("Audio play blocked", e));
+      audioRef.current.play().catch(e => console.log("Audio play failed", e));
     }
   };
 
@@ -64,7 +77,7 @@ export function LoadingScreen() {
       />
 
       {/* Interaction Layer for Audio (Visuals are auto, but audio needs interaction) */}
-      {!hasInteracted && stage !== "text1" && (
+      {soundBlocked && (stage === "video" || stage === "logo") && (
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -122,7 +135,7 @@ export function LoadingScreen() {
             <video
               ref={videoRef}
               autoPlay
-              muted={!hasInteracted}
+              muted
               loop
               playsInline
               className="absolute inset-0 w-full h-full object-cover opacity-60 scale-105 animate-slow-zoom"
