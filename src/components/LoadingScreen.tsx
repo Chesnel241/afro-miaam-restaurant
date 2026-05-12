@@ -76,17 +76,6 @@ export function LoadingScreen() {
         loop 
       />
 
-      {/* Interaction Layer for Audio (Visuals are auto, but audio needs interaction) */}
-      {soundBlocked && (stage === "video" || stage === "logo") && (
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onClick={handleStart}
-          className="absolute bottom-24 z-[10000] px-6 py-2.5 rounded-full border border-cream/20 text-cream/80 bg-white/5 backdrop-blur-sm hover:bg-cream hover:text-black hover:border-cream transition-all font-display uppercase tracking-[0.2em] text-[10px]"
-        >
-          🔊 Activer le son immersif
-        </motion.button>
-      )}
 
       {/* Vapor / Smoke particles overlay */}
       <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
@@ -155,6 +144,39 @@ export function LoadingScreen() {
                 className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
               >
                 <div className="flex flex-col items-center gap-4">
+                   {/* Person Cooking Animation */}
+                   <motion.div 
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ delay: 0.5, duration: 1 }}
+                     className="mb-2"
+                   >
+                     <svg viewBox="0 0 100 100" className="w-20 h-20 text-cream/80" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        {/* Pot */}
+                        <path d="M30 70 h40 L65 90 H35 Z" fill="currentColor" opacity="0.2" />
+                        <path d="M30 70 Q25 70 25 65" />
+                        <path d="M70 70 Q75 70 75 65" />
+                        <rect x="30" y="68" width="40" height="4" rx="2" fill="currentColor" />
+                        
+                        {/* Person / Arm stirring */}
+                        <motion.g
+                          animate={{ rotate: [0, 10, -10, 0], x: [0, 2, -2, 0] }}
+                          transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                          style={{ transformOrigin: "50% 30%" }}
+                        >
+                          {/* Arm */}
+                          <path d="M50 20 L55 50" strokeWidth="4" />
+                          {/* Ladle */}
+                          <path d="M55 50 L58 75" strokeWidth="2" />
+                          <circle cx="58" cy="75" r="5" fill="currentColor" />
+                        </motion.g>
+                        
+                        {/* Steam bubbles */}
+                        <motion.circle cx="40" cy="60" r="2" fill="currentColor" animate={{ y: [0, -15], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2, delay: 0.5 }} />
+                        <motion.circle cx="60" cy="60" r="1.5" fill="currentColor" animate={{ y: [0, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 2.5, delay: 1 }} />
+                     </svg>
+                   </motion.div>
+
                    <div className="relative">
                       <h1 className="font-display text-6xl sm:text-8xl md:text-9xl font-extrabold text-cream uppercase tracking-widest drop-shadow-2xl">
                         Afro
