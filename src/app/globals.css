@@ -171,42 +171,30 @@ select {
   animation: logo-pop 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Animation marmite : vapeur, ingrédients qui tombent, bulles */
-@keyframes cook-steam {
-  0%   { transform: translateY(0)     scaleX(1);   opacity: 0; }
-  20%  { opacity: 0.7; }
-  100% { transform: translateY(-26px) scaleX(1.4); opacity: 0; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.cook-steam {
-  transform-box: fill-box;
-  transform-origin: bottom center;
-  animation: cook-steam 2.4s ease-out infinite;
+.animate-fade-in {
+  animation: fade-in 1s ease-out forwards;
 }
-.cook-steam-2 { animation-delay: 0.7s; }
-.cook-steam-3 { animation-delay: 1.4s; }
 
-@keyframes cook-fall {
-  0%        { transform: translateY(-30px); opacity: 0; }
-  10%       { opacity: 1; }
-  60%       { transform: translateY(50px);  opacity: 1; }
-  78%       { transform: translateY(58px);  opacity: 0.5; }
-  90%, 100% { transform: translateY(60px);  opacity: 0; }
+@keyframes steam-slow {
+  0% { transform: translateY(0) scaleX(1); opacity: 0; }
+  25% { opacity: 0.4; }
+  100% { transform: translateY(-100px) scaleX(2); opacity: 0; }
 }
-.cook-fall {
-  animation: cook-fall 2.2s ease-in infinite;
-}
-.cook-fall-2 { animation-delay: 0.6s; }
-.cook-fall-3 { animation-delay: 1.2s; }
 
-@keyframes cook-bubble {
-  0%, 100% { transform: scale(0)   translateY(0);    opacity: 0; }
-  40%      { transform: scale(1)   translateY(-2px); opacity: 0.9; }
-  70%      { transform: scale(0.8) translateY(-3px); opacity: 0; }
+@keyframes smoke-drift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  50% { transform: translate(20px, -10px) scale(1.1); opacity: 0.4; }
+  100% { transform: translate(-10px, -20px) scale(1); opacity: 0.2; }
 }
-.cook-bubble {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: cook-bubble 1.8s ease-in-out infinite;
+
+.smoke-particle {
+  position: absolute;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(20px);
+  animation: steam-slow 8s infinite linear;
 }
-.cook-bubble-2 { animation-delay: 0.4s; }
-.cook-bubble-3 { animation-delay: 0.9s; }

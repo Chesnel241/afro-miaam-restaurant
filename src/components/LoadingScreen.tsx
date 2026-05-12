@@ -1,263 +1,197 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const MIN_DISPLAY_MS = 1200;
-const FADE_OUT_MS = 500;
+const INTRO_SHOWN_KEY = "afro_miaam_intro_v1";
 
 export function LoadingScreen() {
-  const [visible, setVisible] = useState(true);
-  const [fading, setFading] = useState(false);
+  const [stage, setStage] = useState<"text1" | "video" | "logo" | "complete">("text1");
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    const startedAt = performance.now();
+    // Stage 1: Text "Tout commence par une odeur..."
+    const t1 = setTimeout(() => {
+      setStage("video");
+    }, 3000);
 
-    const dismiss = () => {
-      const elapsed = performance.now() - startedAt;
-      const wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
-      window.setTimeout(() => {
-        setFading(true);
-        window.setTimeout(() => setVisible(false), FADE_OUT_MS);
-      }, wait);
+    // Stage 2: Video sequence starts, then logo
+    const t2 = setTimeout(() => {
+      setStage("logo");
+    }, 7000);
+
+    // Stage 3: Complete
+    const t3 = setTimeout(() => {
+      setStage("complete");
+    }, 11000);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
     };
-
-    if (document.readyState === "complete") {
-      dismiss();
-      return;
-    }
-
-    window.addEventListener("load", dismiss, { once: true });
-    return () => window.removeEventListener("load", dismiss);
   }, []);
 
   useEffect(() => {
-    if (visible) {
-      const previous = document.body.style.overflow;
+    if (stage === "complete") {
+      document.body.style.overflow = "auto";
+    } else {
       document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = previous;
-      };
     }
-  }, [visible]);
+  }, [stage]);
 
-  if (!visible) return null;
+  const handleStart = () => {
+    setHasInteracted(true);
+    if (audioRef.current) {
+      audioRef.current.volume = 0.3;
+      audioRef.current.play().catch(e => console.log("Audio play blocked", e));
+    }
+    if (videoRef.current) {
+      videoRef.current.play().catch(e => console.log("Video play blocked", e));
+    }
+  };
+
+  if (stage === "complete") return null;
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-label="Chargement d’Afro Miaam"
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-primary transition-opacity duration-500 ease-out ${
-        fading ? "opacity-0" : "opacity-100"
-      }`}
-    >
-      <div className="flex flex-col items-center gap-8 px-6">
-        <svg
-          viewBox="0 0 900 420"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-[min(80vw,560px)] h-auto animate-logo-pop"
-          role="img"
-          aria-hidden="true"
+    <div className="fixed inset-0 z-[9999] bg-black overflow-hidden flex items-center justify-center">
+      {/* Audio hidden */}
+      <audio 
+        ref={audioRef} 
+        src="https://cdn.pixabay.com/audio/2022/03/10/audio_c8e9d3d9e8.mp3" // Sizzling sound
+        loop 
+      />
+
+      {/* Interaction Layer for Audio (Browsers require interaction) */}
+      {!hasInteracted && stage !== "text1" && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={handleStart}
+          className="absolute z-[10000] px-8 py-3 rounded-full border border-cream/30 text-cream bg-black/40 backdrop-blur-md hover:bg-cream hover:text-black transition-all font-display uppercase tracking-[0.2em] text-xs"
         >
-          <text
-            x="140"
-            y="160"
-            fontFamily="var(--font-display), Poppins, Arial, sans-serif"
-            fontSize="110"
-            fontWeight="600"
-            fill="#F2EFEA"
-            letterSpacing="2"
-          >
-            Afr
-          </text>
+          Entrer dans la cuisine
+        </motion.button>
+      )}
 
-          <circle cx="405" cy="125" r="48" fill="#F7931E" />
-
-          <ellipse
-            cx="415"
-            cy="70"
-            rx="12"
-            ry="22"
-            fill="#8BC34A"
-            transform="rotate(25 415 70)"
+      {/* Vapor / Smoke particles overlay */}
+      <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="smoke-particle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              bottom: "-5%",
+              width: `${150 + Math.random() * 200}px`,
+              height: `${150 + Math.random() * 200}px`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${10 + Math.random() * 5}s`,
+            }}
           />
-          <ellipse
-            cx="450"
-            cy="85"
-            rx="12"
-            ry="22"
-            fill="#8BC34A"
-            transform="rotate(70 450 85)"
-          />
-
-          <text
-            x="120"
-            y="300"
-            fontFamily="var(--font-display), Poppins, Arial, sans-serif"
-            fontSize="120"
-            fontWeight="600"
-            fill="#F2EFEA"
-          >
-            M
-          </text>
-
-          <g transform="translate(245,185)">
-            <rect x="6" y="40" width="10" height="75" fill="#F7931E" rx="3" />
-            <rect x="0" y="0" width="6" height="40" fill="#F7931E" />
-            <rect x="10" y="0" width="6" height="40" fill="#F7931E" />
-            <rect x="20" y="0" width="6" height="40" fill="#F7931E" />
-            <circle cx="11" cy="-12" r="7" fill="#F7931E" />
-          </g>
-
-          <text
-            x="285"
-            y="300"
-            fontFamily="var(--font-display), Poppins, Arial, sans-serif"
-            fontSize="120"
-            fontWeight="600"
-            fill="#F2EFEA"
-            letterSpacing="1"
-          >
-            aam
-          </text>
-
-          <text
-            x="180"
-            y="365"
-            fontFamily="var(--font-body), Arial, sans-serif"
-            fontSize="24"
-            fill="#A3C24F"
-            letterSpacing="4"
-          >
-            • RESTAURANT AFRO GASTRONOMIQUE •
-          </text>
-        </svg>
-
-        <svg
-          viewBox="0 0 200 180"
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-36 w-44"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="potGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#F4814F" />
-              <stop offset="1" stopColor="#C44820" />
-            </linearGradient>
-          </defs>
-
-          {/* Vapeur */}
-          <g
-            fill="none"
-            stroke="#F4EDE4"
-            strokeWidth="3"
-            strokeLinecap="round"
-          >
-            <path
-              d="M75 60 Q72 50 75 38 Q78 28 75 20"
-              className="cook-steam cook-steam-1"
-            />
-            <path
-              d="M100 58 Q97 48 100 36 Q103 26 100 18"
-              className="cook-steam cook-steam-2"
-            />
-            <path
-              d="M125 60 Q122 50 125 38 Q128 28 125 20"
-              className="cook-steam cook-steam-3"
-            />
-          </g>
-
-          {/* Tomate */}
-          <g className="cook-fall cook-fall-1">
-            <circle cx="68" cy="14" r="6" fill="#E85D2A" />
-            <path
-              d="M66 7 Q68 3 71 7"
-              stroke="#6BAA75"
-              strokeWidth="1.6"
-              fill="none"
-              strokeLinecap="round"
-            />
-          </g>
-
-          {/* Feuille d'herbe */}
-          <g className="cook-fall cook-fall-2">
-            <ellipse
-              cx="100"
-              cy="14"
-              rx="4"
-              ry="7"
-              fill="#8BC34A"
-              transform="rotate(25 100 14)"
-            />
-            <line
-              x1="100"
-              y1="20"
-              x2="100"
-              y2="24"
-              stroke="#3F6B45"
-              strokeWidth="1"
-            />
-          </g>
-
-          {/* Piment */}
-          <g className="cook-fall cook-fall-3">
-            <ellipse cx="132" cy="14" rx="3" ry="7" fill="#F7931E" />
-            <path
-              d="M130 6 L132 3 L134 6"
-              stroke="#6BAA75"
-              strokeWidth="1.5"
-              fill="none"
-              strokeLinecap="round"
-            />
-          </g>
-
-          {/* Marmite */}
-          <g>
-            <ellipse cx="44" cy="73" rx="7" ry="4" fill="#C44820" />
-            <ellipse cx="156" cy="73" rx="7" ry="4" fill="#C44820" />
-            <path
-              d="M52 70 L148 70 L146 135 Q146 145 136 145 L64 145 Q54 145 54 135 Z"
-              fill="url(#potGrad)"
-            />
-            <rect
-              x="60"
-              y="82"
-              width="3"
-              height="36"
-              rx="1.5"
-              fill="#F4EDE4"
-              opacity="0.3"
-            />
-            <ellipse cx="100" cy="68" rx="52" ry="7" fill="#1F3D2B" />
-            <ellipse cx="100" cy="68" rx="46" ry="5" fill="#3A6E48" />
-          </g>
-
-          {/* Bulles à la surface */}
-          <circle
-            cx="86"
-            cy="68"
-            r="2.5"
-            fill="#A3C24F"
-            className="cook-bubble cook-bubble-1"
-          />
-          <circle
-            cx="100"
-            cy="68"
-            r="3"
-            fill="#A3C24F"
-            className="cook-bubble cook-bubble-2"
-          />
-          <circle
-            cx="114"
-            cy="68"
-            r="2"
-            fill="#A3C24F"
-            className="cook-bubble cook-bubble-3"
-          />
-        </svg>
-
-        <span className="sr-only">Chargement, ça mijote…</span>
+        ))}
       </div>
+
+      <AnimatePresence mode="wait">
+        {stage === "text1" && (
+          <motion.div
+            key="text1"
+            initial={{ opacity: 0, letterSpacing: "0.2em" }}
+            animate={{ opacity: 1, letterSpacing: "0.05em" }}
+            exit={{ opacity: 0, filter: "blur(10px)" }}
+            transition={{ duration: 2, ease: "easeInOut" }}
+            className="relative z-20 text-center px-6"
+          >
+            <p className="font-display text-2xl sm:text-4xl text-cream font-extralight italic tracking-wide drop-shadow-lg">
+              “Tout commence par une odeur…”
+            </p>
+          </motion.div>
+        )}
+
+        {(stage === "video" || stage === "logo") && (
+          <motion.div
+            key="cinematic"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2 }}
+            className="absolute inset-0 w-full h-full"
+          >
+            {/* Background Cinematic Video */}
+            <video
+              ref={videoRef}
+              autoPlay
+              muted={!hasInteracted}
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover opacity-60 scale-105 animate-slow-zoom"
+              src="https://assets.mixkit.co/videos/preview/mixkit-sizzling-meat-on-a-hot-grill-41165-large.mp4"
+            />
+            
+            {/* Dark overlay for depth */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black opacity-80" />
+            <div className="absolute inset-0 bg-black/40" />
+
+            {/* Logo Overlay */}
+            {stage === "logo" && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, letterSpacing: "0.5em" }}
+                animate={{ opacity: 1, scale: 1, letterSpacing: "0.2em" }}
+                transition={{ duration: 2, ease: "easeOut" }}
+                className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
+              >
+                <div className="flex flex-col items-center gap-4">
+                   <div className="relative">
+                      <h1 className="font-display text-6xl sm:text-8xl md:text-9xl font-extrabold text-cream uppercase tracking-widest drop-shadow-2xl">
+                        Afro
+                      </h1>
+                      <div className="absolute -top-8 -right-8 w-20 h-20 bg-accent rounded-full blur-2xl opacity-50 animate-pulse" />
+                   </div>
+                   <h2 className="font-display text-6xl sm:text-8xl md:text-9xl font-extrabold text-cream uppercase tracking-widest -mt-4 sm:-mt-8">
+                     Miaam
+                   </h2>
+                </div>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1, duration: 1 }}
+                  className="mt-8 text-accent font-body font-bold uppercase tracking-[0.4em] text-xs sm:text-sm"
+                >
+                  Restaurant Afro Gastronomique
+                </motion.p>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Steam / Vapor Overlay (Always present after first stage) */}
+      {stage !== "text1" && (
+        <div className="absolute inset-0 pointer-events-none z-20">
+          <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent opacity-60" />
+          {/* CSS based steam particles could be added here for extra depth */}
+        </div>
+      )}
+
+      {/* Skip Button */}
+      <button 
+        onClick={() => setStage("complete")}
+        className="absolute bottom-10 right-10 z-50 text-[10px] font-black uppercase tracking-widest text-cream/30 hover:text-cream transition-colors"
+      >
+        Passer l&apos;intro
+      </button>
+
+      <style jsx global>{`
+        @keyframes slow-zoom {
+          from { transform: scale(1.05); }
+          to { transform: scale(1.15); }
+        }
+        .animate-slow-zoom {
+          animation: slow-zoom 20s ease-in-out infinite alternate;
+        }
+      `}</style>
     </div>
   );
 }
