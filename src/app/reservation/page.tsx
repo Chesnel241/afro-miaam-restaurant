@@ -30,6 +30,7 @@ export default function ReservationPage() {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [finalDeposit, setFinalDeposit] = useState(0);
 
   // Pré-remplir avec les infos du compte
   useEffect(() => {
@@ -112,6 +113,7 @@ export default function ReservationPage() {
       await addDoc(collection(db, "orders"), orderData);
 
       // Succès immédiat pour éviter d'attendre l'updateDoc (plus optionnel)
+      setFinalDeposit(depositAmount);
       setSuccess(true);
       clearCart();
       window.scrollTo(0, 0);
@@ -146,7 +148,7 @@ export default function ReservationPage() {
 
         <div className="mt-10 rounded-3xl bg-primary-gradient bg-grain p-8 text-cream shadow-xl">
           <p className="text-sm uppercase tracking-widest opacity-80">Montant de l&apos;acompte à régler</p>
-          <p className="mt-2 text-5xl font-black text-accentSoft">{formatPrice(depositAmount)}</p>
+          <p className="mt-2 text-5xl font-black text-accentSoft">{formatPrice(finalDeposit)}</p>
           
           <div className="mt-8 space-y-4 text-left border-t border-cream/10 pt-6">
             <p className="text-sm font-medium flex items-start gap-3">
@@ -155,7 +157,7 @@ export default function ReservationPage() {
             </p>
             <p className="text-sm font-medium flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">2</span>
-              Saisissez manuellement le montant de <strong className="text-accentSoft">{formatPrice(depositAmount)}</strong>.
+              Saisissez manuellement le montant de <strong className="text-accentSoft">{formatPrice(finalDeposit)}</strong>.
             </p>
             <p className="text-sm font-medium flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">3</span>
