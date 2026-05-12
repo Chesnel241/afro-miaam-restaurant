@@ -57,6 +57,7 @@ export default function ReservationPage() {
     (form.deliveryMode === "retrait" || form.address);
 
   const total = subtotal + (form.deliveryMode === "livraison" ? DELIVERY_FEE : 0);
+  const depositAmount = total * 0.3;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +71,8 @@ export default function ReservationPage() {
         subtotal,
         deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
         total,
-        status: "En attente",
+        depositAmount,
+        status: "Attente Acompte",
         createdAt: serverTimestamp(),
         customer: {
           firstName: form.firstName,
@@ -87,7 +89,6 @@ export default function ReservationPage() {
 
       await addDoc(collection(db, "orders"), orderData);
 
-      // Si client connecté, incrémenter son compteur de fidélité
       if (user?.uid) {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, {
@@ -107,18 +108,52 @@ export default function ReservationPage() {
 
   if (success) {
     return (
-      <div className="container-x py-20 text-center">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600">
-          <CheckIcon className="h-10 w-10" />
+      <div className="container-x py-16 sm:py-24 max-w-2xl mx-auto text-center">
+        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-accent/10 text-accent animate-bounce">
+          <CheckIcon className="h-12 w-12" />
         </div>
-        <h1 className="heading-display text-3xl text-primary sm:text-4xl">Commande reçue !</h1>
-        <p className="mt-4 text-primary/75">
-          Merci <strong className="text-primary">{form.firstName}</strong>. Nous vous appellerons au{" "}
-          <strong className="text-primary">{form.phone}</strong> pour confirmer votre commande.
+        
+        <h1 className="heading-display text-4xl text-primary">Presque fini !</h1>
+        <p className="mt-4 text-lg text-primary/70">
+          Pour valider votre commande, un acompte de <span className="font-black text-accent">30%</span> est requis.
         </p>
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link href="/menu" className="btn btn-primary px-10">Retour au menu</Link>
-          {user && <Link href="/mon-compte" className="btn btn-secondary px-10">Suivre ma commande</Link>}
+
+        <div className="mt-10 rounded-3xl bg-primary-gradient bg-grain p-8 text-cream shadow-xl">
+          <p className="text-sm uppercase tracking-widest opacity-80">Montant de l&apos;acompte à régler</p>
+          <p className="mt-2 text-5xl font-black text-accentSoft">{formatPrice(depositAmount)}</p>
+          
+          <div className="mt-8 space-y-4 text-left border-t border-cream/10 pt-6">
+            <p className="text-sm font-medium flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">1</span>
+              Cliquez sur le bouton ci-dessous pour ouvrir Revolut.
+            </p>
+            <p className="text-sm font-medium flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">2</span>
+              Saisissez manuellement le montant de <strong className="text-accentSoft">{formatPrice(depositAmount)}</strong>.
+            </p>
+            <p className="text-sm font-medium flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">3</span>
+              Validez le paiement par carte. Votre commande sera alors confirmée par SMS.
+            </p>
+          </div>
+
+          <a 
+            href="https://revolut.me/afromiaam" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="btn btn-lg bg-white text-primary mt-10 w-full hover:bg-cream transition-all shadow-glow"
+          >
+            💳 Payer l&apos;acompte sur Revolut
+          </a>
+        </div>
+
+        <p className="mt-8 text-sm text-primary/50 italic">
+          Une fois le paiement effectué, vous pouvez fermer cette page. Nous vous contacterons dès réception.
+        </p>
+
+        <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link href="/menu" className="btn btn-secondary px-10">Retour au menu</Link>
+          {user && <Link href="/mon-compte" className="btn btn-ghost-dark px-10">Mes commandes</Link>}
         </div>
       </div>
     );
@@ -323,6 +358,16 @@ export default function ReservationPage() {
               <div className="flex justify-between border-t border-cream/30 pt-4 text-xl">
                 <span className="heading-display text-primary">Total</span>
                 <span className="font-black text-accent">{formatPrice(total)}</span>
+              </div>
+              
+              <div className="mt-6 rounded-2xl bg-accent p-4 text-white shadow-lg flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Acompte à régler (30%)</p>
+                  <p className="text-2xl font-black">{formatPrice(depositAmount)}</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
+                   <CheckIcon className="h-6 w-6" />
+                </div>
               </div>
             </div>
 

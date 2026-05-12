@@ -170,9 +170,12 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "régler",
       "regler",
       "prix",
+      "acompte",
+      "revolut",
+      "avance",
     ],
     answer:
-      "Pour cette première version, le paiement se fait par téléphone après validation de votre commande. Aucun paiement n'est demandé sur le site, vous réservez, on vous rappelle.",
+      "Pour valider votre commande, un acompte de 30% est demandé par carte bancaire via Revolut Pro (le lien vous est fourni à la fin de la réservation). Le solde restant se règle ensuite lors du retrait ou de la livraison (espèces ou CB).",
   },
   {
     id: "outside",

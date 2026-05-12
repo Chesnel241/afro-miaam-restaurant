@@ -143,6 +143,10 @@ export default function CartPage() {
                     }
                     value={deliveryFee === 0 ? "Gratuit" : formatPrice(deliveryFee)}
                   />
+                  <div className="flex items-center justify-between text-accentSoft font-bold pt-1">
+                    <span>Acompte à prévoir (30%)</span>
+                    <span>{formatPrice(total * 0.3)}</span>
+                  </div>
                 </dl>
                 <div className="mt-4 flex items-center justify-between border-t border-cream/15 pt-4">
                   <span className="font-display text-lg">Total</span>
@@ -152,8 +156,7 @@ export default function CartPage() {
                 </div>
                 <p className="mt-3 flex items-start gap-2 text-xs text-cream/75">
                   <TruckIcon className="mt-0.5 h-4 w-4 shrink-0 text-accentSoft" />
-                  Paiement après validation par téléphone. Le total ci-dessus
-                  est purement indicatif.
+                  La commande sera validée après réception d&apos;un acompte de 30% (via Revolut).
                 </p>
                 <Link
                   href="/reservation"
