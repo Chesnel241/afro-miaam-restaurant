@@ -155,6 +155,12 @@ select {
 select.field {
   text-align: center;
 }
+.field[type="date"] {
+  width: 85%;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
 .field:focus-visible {
   outline: none;
   border-color: #e85d2a;
