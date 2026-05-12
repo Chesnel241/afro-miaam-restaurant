@@ -75,18 +75,21 @@ export default function ReservationPage() {
 
     setLoading(true);
     try {
+      // Nettoyage des items pour Firestore (éviter les undefined)
+      const sanitizedItems = cart.map(item => ({
+        id: item.id || "unknown",
+        name: item.name || "Plat sans nom",
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        flavor: item.flavor || null,
+        image: item.image || ""
+      }));
+
       const orderData = {
         userId: user?.uid || null,
         userName: user?.name || `${form.firstName} ${form.lastName}`,
         userEmail: user?.email || form.email || "",
-        items: cart.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          flavor: item.flavor || null,
-          image: item.image
-        })),
+        items: sanitizedItems,
         subtotal,
         deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
         total,
@@ -108,19 +111,27 @@ export default function ReservationPage() {
 
       await addDoc(collection(db, "orders"), orderData);
 
-      if (user?.uid) {
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
-          ordersCount: increment(1)
-        });
-      }
-
+      // Succès immédiat pour éviter d'attendre l'updateDoc (plus optionnel)
       setSuccess(true);
       clearCart();
       window.scrollTo(0, 0);
+
+      // Incrémenter la fidélité en arrière-plan sans bloquer
+      if (user?.uid) {
+        const userRef = doc(db, "users", user.uid);
+        updateDoc(userRef, {
+          ordersCount: increment(1)
+        }).catch(e => console.error("Erreur fidélité:", e));
+      }
+
+      // Redirection automatique vers Revolut après 2.5 secondes pour que l'user voit le message
+      setTimeout(() => {
+        window.open("https://revolut.me/keciataf4", "_blank");
+      }, 2500);
+
     } catch (err) {
       console.error("Booking Error:", err);
-      alert("Erreur lors de la réservation. Veuillez réessayer.");
+      alert("Erreur lors de la réservation. Vérifiez votre connexion et réessayez.");
     } finally {
       setLoading(false);
     }

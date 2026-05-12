@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useMemo } from "react";
 import type { MenuItem } from "@/lib/types";
 import { useCart } from "./CartContext";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, getProductImage } from "@/lib/utils";
 import { CheckIcon, PlusIcon } from "./Icons";
 
 export function ProductCard({ item }: { item: MenuItem }) {
@@ -22,15 +22,11 @@ export function ProductCard({ item }: { item: MenuItem }) {
   const currentPrice = item.price + (currentFlavor?.supplement || 0);
 
   function handleAdd() {
-    // Si des saveurs sont dispo et aucune n'est sélectionnée, on pourrait forcer le choix
-    // Ici on prend la première par défaut si non sélectionnée ? 
-    // Ou on laisse vide. L'utilisateur a demandé que le champ se développe.
-    
     addItem({
       id: item.id,
       name: item.name,
       price: item.price,
-      image: item.image,
+      image: getProductImage(item),
       flavor: selectedFlavor || undefined,
       flavorSupplement: currentFlavor?.supplement || 0
     });
@@ -45,7 +41,7 @@ export function ProductCard({ item }: { item: MenuItem }) {
     <article className={`group flex flex-col rounded-2xl bg-white p-4 shadow-card transition hover:shadow-soft ${!isAvailable ? 'opacity-60 grayscale-[0.5]' : ''}`}>
       <div className="relative aspect-[5/4] w-full overflow-hidden rounded-xl bg-creamSoft">
         <Image
-          src={item.image}
+          src={getProductImage(item)}
           alt={item.name}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
