@@ -175,7 +175,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "avance",
     ],
     answer:
-      "Pour valider votre commande, un acompte de 30% est demandé par Carte Bancaire (le lien vous est fourni à la fin de la réservation). Le solde restant se règle ensuite lors du retrait ou de la livraison (espèces ou CB).",
+      "Pour valider votre commande, un acompte de 50% est demandé par Carte Bancaire (le lien vous est fourni à la fin de la réservation). Le solde restant se règle ensuite lors du retrait ou de la livraison (espèces ou CB).",
   },
   {
     id: "outside",

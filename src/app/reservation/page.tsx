@@ -57,7 +57,7 @@ export default function ReservationPage() {
     (form.deliveryMode === "retrait" || form.address);
 
   const total = subtotal + (form.deliveryMode === "livraison" ? DELIVERY_FEE : 0);
-  const depositAmount = total * 0.3;
+  const depositAmount = total * 0.5;
 
   // Calcul de la date minimale (Demain) - Directement au rendu pour éviter le délai d'effet
   const tomorrow = new Date();
@@ -143,7 +143,7 @@ export default function ReservationPage() {
         
         <h1 className="heading-display text-4xl text-primary">Presque fini !</h1>
         <p className="mt-4 text-lg text-primary/70">
-          Pour valider votre commande, un acompte de <span className="font-black text-accent">30%</span> est requis.
+          Pour valider votre commande, un acompte de <span className="font-black text-accent">50%</span> est requis.
         </p>
 
         <div className="mt-10 rounded-3xl bg-primary-gradient bg-grain p-8 text-cream shadow-xl">
@@ -391,7 +391,7 @@ export default function ReservationPage() {
               
               <div className="mt-6 rounded-2xl bg-accent p-4 text-white shadow-lg flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Acompte à régler (30%)</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Acompte à régler (50%)</p>
                   <p className="text-2xl font-black">{formatPrice(depositAmount)}</p>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
