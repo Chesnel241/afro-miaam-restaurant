@@ -62,15 +62,14 @@ export default function ReservationPage() {
   // Calcul de la date minimale (Demain) - Directement au rendu pour éviter le délai d'effet
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split("T")[0];
+  const minDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
-
-    // Vérification de sécurité J+1
+    
+    // Vérification de sécurité pour la date (J+1)
     if (form.date < minDate) {
-      alert("Désolé, les réservations doivent être effectuées au moins 24h à l'avance (à partir de demain).");
+      alert("Désolé, les réservations doivent être effectuées au moins 24h à l'avance. Veuillez choisir une date à partir de demain.");
       return;
     }
 
