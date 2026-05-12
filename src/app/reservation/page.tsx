@@ -9,8 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CheckIcon, ClockIcon, MapPinIcon, PhoneIcon, UserIcon } from "@/components/Icons";
-
-const DELIVERY_FEE = 2.5;
+import { DELIVERY_FEE } from "@/lib/booking";
 
 export default function ReservationPage() {
   const { cart, subtotal, clearCart } = useCart();
