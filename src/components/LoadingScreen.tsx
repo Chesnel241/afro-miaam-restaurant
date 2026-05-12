@@ -6,37 +6,57 @@ import { motion, AnimatePresence } from "framer-motion";
 const INTRO_SHOWN_KEY = "afro_miaam_intro_v1";
 
 export function LoadingScreen() {
-  const [stage, setStage] = useState<"text1" | "video" | "logo" | "complete">("text1");
+  const [stage, setStage] = useState<"text1" | "video" | "logo" | "complete" | "hidden">("hidden");
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const t1 = useRef<NodeJS.Timeout | null>(null);
   const t2 = useRef<NodeJS.Timeout | null>(null);
   const t3 = useRef<NodeJS.Timeout | null>(null);
 
+  // Initialisation : on ne joue l'intro qu'une fois par session
   useEffect(() => {
+    const hasShown = sessionStorage.getItem(INTRO_SHOWN_KEY);
+    if (hasShown) {
+      setStage("complete");
+      return;
+    }
+
+    // Sinon on lance l'intro
+    setStage("text1");
+
     // Stage 1: Text "Tout commence par une odeur..."
     t1.current = setTimeout(() => {
       setStage("video");
-      // Apparition presque immédiate du logo avec la vidéo
       t2.current = setTimeout(() => {
         setStage("logo");
       }, 1000);
     }, 2500);
 
-    // Stage 3: Transition vers le site après avoir bien vu le logo
+    // Stage 3: Transition vers le site
     t3.current = setTimeout(() => {
-      setStage("complete");
-    }, 8500);
+      handleSkip();
+    }, 9500);
 
     return () => {
-      if (t1.current) clearTimeout(t1.current);
-      if (t2.current) clearTimeout(t2.current);
-      if (t3.current) clearTimeout(t3.current);
+      clearAllTimers();
     };
   }, []);
 
+  const clearAllTimers = () => {
+    if (t1.current) clearTimeout(t1.current);
+    if (t2.current) clearTimeout(t2.current);
+    if (t3.current) clearTimeout(t3.current);
+  };
+
+  const handleSkip = () => {
+    clearAllTimers();
+    sessionStorage.setItem(INTRO_SHOWN_KEY, "true");
+    setStage("complete");
+    document.body.style.overflow = "auto";
+  };
+
   useEffect(() => {
-    if (stage === "complete") {
+    if (stage === "complete" || stage === "hidden") {
       document.body.style.overflow = "auto";
     } else {
       document.body.style.overflow = "hidden";
@@ -57,15 +77,7 @@ export function LoadingScreen() {
     }
   }, [stage]);
 
-  const handleStart = () => {
-    setSoundBlocked(false);
-    if (audioRef.current) {
-      audioRef.current.volume = 0.3;
-      audioRef.current.play().catch(e => console.log("Audio play failed", e));
-    }
-  };
-
-  if (stage === "complete") return null;
+  if (stage === "complete" || stage === "hidden") return null;
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black overflow-hidden flex items-center justify-center">
@@ -211,7 +223,7 @@ export function LoadingScreen() {
 
       {/* Skip Button */}
       <button 
-        onClick={() => setStage("complete")}
+        onClick={handleSkip}
         className="absolute bottom-10 right-10 z-50 text-[10px] font-black uppercase tracking-widest text-cream/30 hover:text-cream transition-colors"
       >
         Passer l&apos;intro
