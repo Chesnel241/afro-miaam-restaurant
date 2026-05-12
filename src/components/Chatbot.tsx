@@ -138,7 +138,7 @@ export function Chatbot() {
   return (
     <>
       {/* Bouton flottant : avatar + point vert + animation */}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
+      <div className="pointer-events-none fixed bottom-24 right-6 z-50 sm:bottom-6 sm:right-6">
         <div className="flex flex-col items-end gap-2">
           {tooltip && !open && (
             <div className="pointer-events-auto animate-floaty rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-primary shadow-soft">
