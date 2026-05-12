@@ -30,7 +30,7 @@ const googleProvider = new GoogleAuthProvider();
 
 // ─── Types ──────────────────────────────────────────────────
 export type UserRole = "customer" | "admin" | "deleted";
-export type OrderStatus = "En attente" | "En cours" | "Livré";
+export type OrderStatus = "Attente Acompte" | "Acompte Reçu" | "En attente" | "En cours" | "Livré";
 
 export type OrderItem = {
   name: string;

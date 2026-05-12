@@ -148,6 +148,15 @@ select {
   color: #1a1a1a;
   font-size: 16px;
   transition: border-color 0.15s, box-shadow 0.15s;
+  text-align: left;
+}
+.field[type="date"],
+.field select,
+select.field {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .field:focus-visible {
   outline: none;

@@ -43,7 +43,8 @@ export default function AdminPage() {
   const maxOrders = 10;
 
   // Séparation des commandes
-  const activeOrders = allOrders.filter(o => o.status === "En attente" || o.status === "En cours");
+  const depositPendingOrders = allOrders.filter(o => o.status === "Attente Acompte");
+  const activeOrders = allOrders.filter(o => o.status === "En attente" || o.status === "En cours" || o.status === "Acompte Reçu");
   const historyOrders = allOrders.filter(o => o.status === "Livré");
 
   // Calculs statistiques
@@ -208,7 +209,15 @@ export default function AdminPage() {
              <div className="grid gap-10 xl:grid-cols-[1fr_350px]">
                 <div className="space-y-10">
                   <div>
-                    <h2 className="heading-display mb-6 text-2xl text-primary">En attente / En cours ({activeOrders.length})</h2>
+                    <h2 className="heading-display mb-6 text-2xl text-accent">Attente Acompte ({depositPendingOrders.length})</h2>
+                    <div className="rounded-3xl bg-white shadow-card ring-1 ring-accent/10 overflow-hidden divide-y divide-cream/10 mb-10">
+                      {depositPendingOrders.map(order => (
+                        <OrderRow key={order.id} order={order} onStatusChange={handleStatusChange} />
+                      ))}
+                      {depositPendingOrders.length === 0 && <p className="p-10 text-center text-primary/30 italic font-medium">Aucun acompte en attente.</p>}
+                    </div>
+
+                    <h2 className="heading-display mb-6 text-2xl text-primary">Prêtes à cuisiner / En cours ({activeOrders.length})</h2>
                     <div className="rounded-3xl bg-white shadow-card ring-1 ring-cream/10 overflow-hidden divide-y divide-cream/10">
                       {activeOrders.map(order => (
                         <OrderRow key={order.id} order={order} onStatusChange={handleStatusChange} />
@@ -414,10 +423,15 @@ function OrderRow({ order, onStatusChange }: { order: Order, onStatusChange: (id
       <div className="flex flex-col sm:items-end gap-4">
         <p className="font-display font-black text-primary text-xl">{order.total.toFixed(2)} €</p>
         <div className="flex gap-3">
+          {order.status === "Attente Acompte" && (
+            <button onClick={() => onStatusChange(order.id, "En attente")} className="btn btn-sm bg-accent text-white px-6 shadow-glow">Acompte reçu</button>
+          )}
           {order.status === "En attente" && (
             <button onClick={() => onStatusChange(order.id, "En cours")} className="btn btn-sm bg-primary text-white px-6">Préparer</button>
           )}
-          <button onClick={() => onStatusChange(order.id, "Livré")} className="btn btn-sm bg-accent text-white px-6 shadow-glow">Terminer</button>
+          {(order.status === "En cours" || order.status === "Acompte Reçu") && (
+            <button onClick={() => onStatusChange(order.id, "Livré")} className="btn btn-sm bg-accent text-white px-6 shadow-glow">Terminer</button>
+          )}
         </div>
       </div>
     </div>
