@@ -124,11 +124,6 @@ export default function ReservationPage() {
         }).catch(e => console.error("Erreur fidélité:", e));
       }
 
-      // Redirection automatique vers Revolut après 2.5 secondes pour que l'user voit le message
-      setTimeout(() => {
-        window.open("https://revolut.me/keciataf4", "_blank");
-      }, 2500);
-
     } catch (err) {
       console.error("Booking Error:", err);
       alert("Erreur lors de la réservation. Vérifiez votre connexion et réessayez.");
