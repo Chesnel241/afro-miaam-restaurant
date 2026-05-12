@@ -327,7 +327,7 @@ export function AdminMenuManager() {
                           const newFlavors = form.flavors?.filter((_, idx) => idx !== i);
                           setForm({ ...form, flavors: newFlavors });
                         }}
-                        className="text-afro-red/40 hover:text-afro-red transition-colors"
+                        className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
@@ -403,7 +403,7 @@ export function AdminMenuManager() {
                         onClick={() => {
                           if (confirm("Supprimer ce plat ?")) deleteMenuItem(item.id);
                         }} 
-                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-afro-red/5 text-afro-red hover:bg-afro-red hover:text-white transition-all"
+                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm"
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>

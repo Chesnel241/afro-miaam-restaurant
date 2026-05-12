@@ -101,7 +101,7 @@ export default function CartPage() {
                       type="button"
                       onClick={() => removeItem(line.id)}
                       aria-label={`Retirer ${line.name}`}
-                      className="text-primary/50 transition hover:text-afro-red"
+                      className="ml-2 p-2 rounded-full text-primary/60 hover:text-red-600 hover:bg-red-50 transition-all shadow-sm border border-transparent hover:border-red-100"
                     >
                       <TrashIcon className="h-5 w-5" />
                     </button>
