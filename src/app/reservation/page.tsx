@@ -138,7 +138,7 @@ export default function ReservationPage() {
           </div>
 
           <a 
-            href="https://revolut.me/afromiaam" 
+            href="https://revolut.me/keciataf4" 
             target="_blank" 
             rel="noopener noreferrer"
             className="btn btn-lg bg-white text-primary mt-10 w-full hover:bg-cream transition-all shadow-glow"
