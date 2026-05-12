@@ -10,27 +10,30 @@ export function LoadingScreen() {
   const [hasInteracted, setHasInteracted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const t1 = useRef<NodeJS.Timeout | null>(null);
+  const t2 = useRef<NodeJS.Timeout | null>(null);
+  const t3 = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Stage 1: Text "Tout commence par une odeur..."
-    const t1 = setTimeout(() => {
+    t1.current = setTimeout(() => {
       setStage("video");
     }, 3000);
 
-    // Stage 2: Video sequence starts, then logo
-    const t2 = setTimeout(() => {
+    // Stage 2: Video sequence starts, then logo (Auto fallback if no interaction)
+    t2.current = setTimeout(() => {
       setStage("logo");
-    }, 7000);
+    }, 8000);
 
-    // Stage 3: Complete
-    const t3 = setTimeout(() => {
+    // Stage 3: Complete (Auto fallback)
+    t3.current = setTimeout(() => {
       setStage("complete");
-    }, 11000);
+    }, 12000);
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      if (t1.current) clearTimeout(t1.current);
+      if (t2.current) clearTimeout(t2.current);
+      if (t3.current) clearTimeout(t3.current);
     };
   }, []);
 
@@ -44,6 +47,11 @@ export function LoadingScreen() {
 
   const handleStart = () => {
     setHasInteracted(true);
+    
+    // Clear previous auto timeouts
+    if (t2.current) clearTimeout(t2.current);
+    if (t3.current) clearTimeout(t3.current);
+
     if (audioRef.current) {
       audioRef.current.volume = 0.3;
       audioRef.current.play().catch(e => console.log("Audio play blocked", e));
@@ -51,6 +59,16 @@ export function LoadingScreen() {
     if (videoRef.current) {
       videoRef.current.play().catch(e => console.log("Video play blocked", e));
     }
+
+    // Trigger logo exactly 1s after interaction as requested
+    setTimeout(() => {
+      setStage("logo");
+    }, 1000);
+
+    // Transition to site 4s after logo
+    setTimeout(() => {
+      setStage("complete");
+    }, 5000);
   };
 
   if (stage === "complete") return null;
