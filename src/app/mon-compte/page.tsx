@@ -336,6 +336,13 @@ function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string
 }
 
 function OrderRow({ order }: { order: Order }) {
+  const dateObj = new Date(order.createdAt);
+  const formattedDate = dateObj.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="flex items-center justify-between py-5 first:pt-0 last:pb-0">
       <div className="flex gap-3 sm:gap-4">
@@ -346,7 +353,7 @@ function OrderRow({ order }: { order: Order }) {
         </div>
         <div className="min-w-0">
           <p className="font-bold text-primary text-xs sm:text-base truncate">{order.id.substring(0, 8).toUpperCase()}</p>
-          <p className="text-[10px] sm:text-xs text-primary/50">{order.createdAt}</p>
+          <p className="text-[10px] sm:text-xs text-primary/50">{formattedDate}</p>
           <p className="mt-1 text-[10px] font-medium text-primary/60 leading-tight truncate">
             {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
           </p>
@@ -357,8 +364,10 @@ function OrderRow({ order }: { order: Order }) {
         <span className={`mt-2 inline-block rounded-lg px-2 py-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest ${
           order.status === "Livré"
             ? "bg-accent text-white"
-            : order.status === "En cours"
-            ? "bg-blue-600 text-white"
+            : order.status === "En cours" || order.status === "Acompte Reçu"
+            ? "bg-blue-600 text-white shadow-sm"
+            : order.status === "Attente Acompte"
+            ? "bg-afro-red text-white animate-pulse"
             : "bg-primary text-white"
         }`}>
           {order.status}

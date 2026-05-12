@@ -131,13 +131,20 @@ async function createInitialProfile(uid: string, email: string, displayName?: st
 
 function docToOrder(id: string, data: Record<string, unknown>): Order {
   let dateStr = "";
-  const ts = data.createdAt as { toDate?: () => Date } | undefined;
-  if (ts && typeof ts.toDate === "function") {
-    dateStr = ts.toDate().toISOString().split("T")[0];
-  } else if (typeof data.createdAt === "string") {
-    dateStr = data.createdAt;
+  const createdAt = data.createdAt;
+
+  if (createdAt && typeof (createdAt as any).toDate === "function") {
+    // Cas Firebase Timestamp
+    dateStr = (createdAt as any).toDate().toISOString();
+  } else if (createdAt instanceof Date) {
+    // Cas Date JS
+    dateStr = createdAt.toISOString();
+  } else if (typeof createdAt === "string") {
+    // Cas déjà string
+    dateStr = createdAt;
   } else {
-    dateStr = new Date().toISOString().split("T")[0];
+    // Fallback date actuelle
+    dateStr = new Date().toISOString();
   }
 
   return {
@@ -215,13 +222,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const q = query(
       collection(db, "orders"),
-      where("userId", "==", user.id),
-      orderBy("createdAt", "desc")
+      where("userId", "==", user.id)
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      const orders = snap.docs.map((d) => docToOrder(d.id, d.data()));
+      const orders = snap.docs
+        .map((d) => docToOrder(d.id, d.data()))
+        // Tri manuel en JS pour éviter de devoir créer un index composite userId + createdAt
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
       setUserOrders(orders);
+    }, (err) => {
+      console.error("Erreur Snapshot Orders:", err);
     });
 
     return () => {
