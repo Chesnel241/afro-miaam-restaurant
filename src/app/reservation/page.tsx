@@ -151,7 +151,7 @@ export default function ReservationPage() {
           <div className="mt-8 space-y-4 text-left border-t border-cream/10 pt-6">
             <p className="text-sm font-medium flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">1</span>
-              Cliquez sur le bouton ci-dessous pour ouvrir Revolut.
+              Cliquez sur le bouton ci-dessous pour ouvrir l&apos;interface de paiement.
             </p>
             <p className="text-sm font-medium flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">2</span>
@@ -159,7 +159,7 @@ export default function ReservationPage() {
             </p>
             <p className="text-sm font-medium flex items-start gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold">3</span>
-              Validez le paiement par carte. Votre commande sera alors confirmée par SMS.
+              Validez le règlement par Carte Bancaire. Votre commande sera alors confirmée par SMS.
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export default function ReservationPage() {
             rel="noopener noreferrer"
             className="btn btn-lg bg-white text-primary mt-10 w-full hover:bg-cream transition-all shadow-glow"
           >
-            💳 Payer l&apos;acompte sur Revolut
+            💳 Payer l&apos;acompte par CB
           </a>
         </div>
 
