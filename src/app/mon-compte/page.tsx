@@ -4,8 +4,8 @@ import { useAuth, type Order, type MenuItemDynamic } from "@/components/AuthCont
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { GiftIcon, ArrowRightIcon, TrashIcon, ClockIcon, UserIcon, CartIcon } from "@/components/Icons";
 import { formatPrice } from "@/lib/utils";
+import { QRScannerModal } from "@/components/QRScannerModal";
 
 type Tab = "menu" | "orders" | "dashboard" | "profile";
 
@@ -31,6 +31,7 @@ function MonCompteContent() {
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMsg, setUpdateMsg] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -109,6 +110,7 @@ function MonCompteContent() {
 
   return (
     <div className="container-x py-8 sm:py-16 overflow-hidden max-w-full">
+      {showScanner && <QRScannerModal onClose={() => setShowScanner(null)} />}
       <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
         
         {/* --- SIDEBAR / MOBILE HEADER --- */}
@@ -218,7 +220,7 @@ function MonCompteContent() {
                 {userOrders.length > 0 ? (
                   <div className="divide-y divide-cream/30">
                     {userOrders.map((order) => (
-                      <OrderRow key={order.id} order={order} />
+                      <OrderRow key={order.id} order={order} onScan={() => setShowScanner(true)} />
                     ))}
                   </div>
                 ) : (
@@ -337,7 +339,7 @@ function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string
   );
 }
 
-function OrderRow({ order }: { order: Order }) {
+function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const dateObj = new Date(order.createdAt);
   const formattedDate = dateObj.toLocaleDateString("fr-FR", {
     day: "numeric",
@@ -374,6 +376,15 @@ function OrderRow({ order }: { order: Order }) {
         }`}>
           {order.status}
         </span>
+        
+        {(order.status === "En cours" || order.status === "Acompte Reçu") && (
+          <button 
+            onClick={onScan}
+            className="mt-3 block w-full rounded-xl bg-primary px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-md hover:bg-accent transition-all"
+          >
+            Scanner Livraison
+          </button>
+        )}
       </div>
     </div>
   );
