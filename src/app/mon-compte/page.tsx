@@ -83,12 +83,14 @@ function MonCompteContent() {
 
   if (!user || user.role !== "customer") return null;
 
-  const ordersCount = user.ordersCount;
+  const totalOrders = userOrders.length;
+  const deliveredOrders = userOrders.filter(o => o.status === "Livré").length;
+
   const maxOrders = 10;
-  const currentCycleCount = ordersCount % maxOrders;
+  const currentCycleCount = deliveredOrders % maxOrders;
   const progressPercentage = Math.min((currentCycleCount / maxOrders) * 100, 100);
   const remaining = maxOrders - currentCycleCount;
-  const isRewardReady = ordersCount > 0 && currentCycleCount === 0;
+  const isRewardReady = deliveredOrders > 0 && currentCycleCount === 0;
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,8 +233,8 @@ function MonCompteContent() {
             {/* --- TAB 3: DASHBOARD --- */}
             {activeTab === "dashboard" && (
               <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
-                <StatCard title="Commandes" value={ordersCount} sub="Total passé" />
-                <StatCard title="Fidélité" value={currentCycleCount} sub={`${remaining} restants`} />
+                <StatCard title="Commandes" value={totalOrders} sub="Total passé" />
+                <StatCard title="Fidélité (Repas livrés)" value={deliveredOrders} sub={`${remaining} restants avant cadeau`} />
               </div>
             )}
 
