@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Hero } from "@/components/Hero";
+import { MarketingMarquee } from "@/components/MarketingMarquee";
 import { HowItWorks } from "@/components/HowItWorks";
 import { ProductCard } from "@/components/ProductCard";
 import { useAuth } from "@/components/AuthContext";
@@ -26,6 +27,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <MarketingMarquee />
 
       {/* Section Personnalisée pour Utilisateur Connecté */}
       {user && user.role === "customer" && (

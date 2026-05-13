@@ -57,6 +57,7 @@ export type UserProfile = {
   phone?: string;
   role: UserRole;
   ordersCount: number;
+  isFirstLogin?: boolean;
 };
 
 export type Flavor = {
@@ -123,6 +124,7 @@ async function createInitialProfile(uid: string, email: string, displayName?: st
     phone: "",
     role: "customer" as UserRole,
     ordersCount: 0,
+    isFirstLogin: true,
     createdAt: serverTimestamp(),
   };
 
@@ -190,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               phone: data.phone || "",
               role: data.role || "customer",
               ordersCount: data.ordersCount || 0,
+              isFirstLogin: data.isFirstLogin ?? false,
             });
           } else {
             // Créer le profil s'il n'existe pas
@@ -354,6 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       phone,
       role: "customer",
       ordersCount: 0,
+      isFirstLogin: true,
       createdAt: serverTimestamp(),
       subscribeNewsletter,
     });

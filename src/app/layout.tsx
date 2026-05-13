@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { Chatbot } from "@/components/Chatbot";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { AppOverlay } from "@/components/AppOverlay";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <LoadingScreen />
         <AuthProvider>
+          <AppOverlay />
           <CartProvider>
             <Header />
             <main id="main-content" role="main" className="flex-1">{children}</main>
