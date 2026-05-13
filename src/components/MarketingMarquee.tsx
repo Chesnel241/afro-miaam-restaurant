@@ -3,11 +3,11 @@
 import React from "react";
 
 const MESSAGES = [
-  "✨ Créer un compte pour bénéficier de plus d'avantages",
-  "🎁 Votre 11ème repas est offert avec notre programme de fidélité",
-  "🚀 Suivez vos commandes en temps réel",
-  "📸 Validation Click & Collect sécurisée via QR Code",
-  "💎 Accédez à votre historique et vos plats favoris",
+  "Créer un compte pour bénéficier de plus d'avantages",
+  "Votre 11ème repas est offert avec notre programme de fidélité",
+  "Suivez vos commandes en temps réel",
+  "Validation Click & Collect sécurisée via QR Code",
+  "Accédez à votre historique et vos plats favoris",
   "Afro Miaam : Une expérience gastronomique unique",
 ];
 
@@ -22,11 +22,11 @@ export function MarketingMarquee() {
            }} 
       />
       
-      <div className="flex whitespace-nowrap animate-marquee-fast">
+      <div className="flex animate-marquee-fast w-fit">
         {/* Premier groupe de messages */}
-        <div className="flex items-center gap-16 px-4">
+        <div className="flex items-center">
           {MESSAGES.map((msg, i) => (
-            <div key={i} className="flex items-center gap-6">
+            <div key={i} className="flex items-center gap-6 pr-16">
               <span className="inline-block h-9 w-9 rounded-full bg-white p-2 shadow-md border-2 border-primary/5 rotate-6">
                  <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
               </span>
@@ -37,10 +37,10 @@ export function MarketingMarquee() {
           ))}
         </div>
         
-        {/* Deuxième groupe identique pour l'effet infini */}
-        <div className="flex items-center gap-16 px-4">
+        {/* Deuxième groupe rigoureusement identique */}
+        <div className="flex items-center">
           {MESSAGES.map((msg, i) => (
-            <div key={`clone-${i}`} className="flex items-center gap-6">
+            <div key={`clone-${i}`} className="flex items-center gap-6 pr-16">
               <span className="inline-block h-9 w-9 rounded-full bg-white p-2 shadow-md border-2 border-primary/5 -rotate-6">
                  <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
               </span>
