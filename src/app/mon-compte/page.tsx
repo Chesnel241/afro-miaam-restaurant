@@ -4,8 +4,14 @@ import { useAuth, type Order, type MenuItemDynamic } from "@/components/AuthCont
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
+import { GiftIcon, ArrowRightIcon, TrashIcon, ClockIcon, UserIcon, CartIcon } from "@/components/Icons";
 import { formatPrice } from "@/lib/utils";
-import { QRScannerModal } from "@/components/QRScannerModal";
+import dynamic from "next/dynamic";
+
+const QRScannerModal = dynamic(
+  () => import("@/components/QRScannerModal").then((mod) => mod.QRScannerModal),
+  { ssr: false }
+);
 
 type Tab = "menu" | "orders" | "dashboard" | "profile";
 
@@ -110,7 +116,7 @@ function MonCompteContent() {
 
   return (
     <div className="container-x py-8 sm:py-16 overflow-hidden max-w-full">
-      {showScanner && <QRScannerModal onClose={() => setShowScanner(null)} />}
+      {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} />}
       <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
         
         {/* --- SIDEBAR / MOBILE HEADER --- */}
@@ -175,7 +181,6 @@ function MonCompteContent() {
             <h1 className="heading-display text-2xl sm:text-3xl text-primary">Mon Espace</h1>
           </div>
 
-          {/* Navigation par Onglets (Compacte sur mobile, disparait si trop petit car burger menu prend le relais) */}
           <div className="flex gap-1 sm:gap-4 border-b border-cream/30 overflow-x-auto no-scrollbar scroll-smooth mb-8">
             <TabBtn active={activeTab === "menu"} onClick={() => setActiveTab("menu")} label="Le Menu" />
             <TabBtn active={activeTab === "orders"} onClick={() => setActiveTab("orders")} label="Historique" />
@@ -184,7 +189,6 @@ function MonCompteContent() {
           </div>
 
           <div className="space-y-8">
-            {/* --- TAB 1: MENU --- */}
             {activeTab === "menu" && (
               <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -213,7 +217,6 @@ function MonCompteContent() {
               </div>
             )}
 
-            {/* --- TAB 2: ORDERS --- */}
             {activeTab === "orders" && (
               <div className="rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-soft ring-1 ring-cream/20">
                 <h2 className="heading-display text-xl sm:text-2xl text-primary mb-6">Mes commandes</h2>
@@ -232,7 +235,6 @@ function MonCompteContent() {
               </div>
             )}
 
-            {/* --- TAB 3: DASHBOARD --- */}
             {activeTab === "dashboard" && (
               <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
                 <StatCard title="Commandes" value={totalOrders} sub="Total passé" />
@@ -240,7 +242,6 @@ function MonCompteContent() {
               </div>
             )}
 
-            {/* --- TAB 4: PROFILE --- */}
             {activeTab === "profile" && (
               <div className="space-y-8 max-w-full overflow-hidden">
                 <div className="rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-8 shadow-soft ring-1 ring-cream/20">
@@ -294,8 +295,6 @@ export default function MonComptePage() {
   );
 }
 
-// ─── Composants Internes ──────────────────────────────────────
-
 function TabBtn({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) {
   return (
     <button
@@ -325,7 +324,6 @@ function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string
   return (
     <div className="group rounded-2xl bg-white p-3 sm:p-4 shadow-sm ring-1 ring-cream/20 hover:shadow-soft transition-all">
       <div className="aspect-square w-full overflow-hidden rounded-xl bg-creamSoft mb-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.image} alt={item.name} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
       </div>
       <h3 className="font-bold text-primary text-sm sm:text-base mb-1 truncate">{item.name}</h3>
