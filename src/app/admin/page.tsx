@@ -422,6 +422,17 @@ function KPI({ title, value, sub, variant = "white", progress, trend }: { title:
 }
 
 function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusChange: (id: string, s: OrderStatus) => void, onShowQR: (id: string) => void }) {
+  const { requestOrderDeletion } = useAuth();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (confirm("Voulez-vous demander la suppression de cette commande de l'historique client ?")) {
+      setIsDeleting(true);
+      await requestOrderDeletion(order.id);
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 p-8 sm:flex-row sm:items-center sm:justify-between hover:bg-cream/5 transition-colors group">
       <div className="flex items-start gap-5">
@@ -467,6 +478,13 @@ function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusC
           {(order.status === "En cours" || order.status === "Acompte Reçu") && (
             <button onClick={() => onStatusChange(order.id, "Livré")} className="btn btn-sm bg-accent text-white px-6 shadow-glow">Terminer</button>
           )}
+          <button 
+            onClick={handleDelete} 
+            disabled={isDeleting || (order as any).deletionRequested}
+            className={`btn btn-sm px-3 ${ (order as any).deletionRequested ? 'bg-gray-100 text-gray-400' : 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100'}`}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>

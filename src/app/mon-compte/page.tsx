@@ -16,7 +16,7 @@ const QRScannerModal = dynamic(
 type Tab = "menu" | "orders" | "dashboard" | "profile";
 
 function MonCompteContent() {
-  const { user, loading, logout, deleteAccount, userOrders, dynamicMenu, updateProfile } = useAuth();
+  const { user, loading, logout, deleteAccount, userOrders, dynamicMenu, updateProfile, confirmOrderDeletion } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -112,7 +112,7 @@ function MonCompteContent() {
     } finally {
       setIsUpdating(false);
     }
-  };
+  const pendingDeletions = userOrders.filter(o => (o as any).deletionRequested);
 
   return (
     <div className="container-x py-8 sm:py-16 overflow-hidden max-w-full">
@@ -177,6 +177,38 @@ function MonCompteContent() {
 
         {/* --- ZONE DE CONTENU --- */}
         <main className="min-w-0">
+          {pendingDeletions.length > 0 && (
+            <div className="mb-8 overflow-hidden rounded-3xl bg-blue-600 p-1 shadow-lg">
+              <div className="rounded-[1.4rem] bg-white p-6 sm:p-8">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                    <ClockIcon className="h-8 w-8" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <h3 className="font-display text-xl font-black text-primary">Optimisation de votre espace</h3>
+                    <p className="mt-2 text-sm text-primary/60 leading-relaxed">
+                      Souhaitez-vous archiver <span className="font-bold text-blue-600">{pendingDeletions.length} ancienne(s) commande(s)</span> de votre historique pour plus de clarté ?
+                    </p>
+                  </div>
+                  <div className="flex gap-3 shrink-0">
+                    <button 
+                      onClick={() => pendingDeletions.forEach(o => confirmOrderDeletion(o.id, true))}
+                      className="btn btn-md bg-blue-600 text-white px-8 shadow-glow"
+                    >
+                      Oui, archiver
+                    </button>
+                    <button 
+                      onClick={() => pendingDeletions.forEach(o => confirmOrderDeletion(o.id, false))}
+                      className="btn btn-md bg-creamSoft text-primary border border-cream/20 px-6"
+                    >
+                      Plus tard
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="mb-6">
             <h1 className="heading-display text-2xl sm:text-3xl text-primary">Mon Espace</h1>
           </div>

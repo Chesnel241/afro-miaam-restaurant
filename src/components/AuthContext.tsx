@@ -101,9 +101,11 @@ type AuthContextType = {
   allCustomers: UserProfile[];
   newsletterSubscribers: NewsletterSubscriber[];
   dynamicMenu: MenuItemDynamic[];
-  // Actions
+  // Order Actions
   placeOrder: (items: OrderItem[], total: number) => Promise<void>;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<void>;
+  requestOrderDeletion: (orderId: string) => Promise<void>;
+  confirmOrderDeletion: (orderId: string, approved: boolean) => Promise<void>;
   // Menu Actions
   addMenuItem: (item: Omit<MenuItemDynamic, "id">) => Promise<void>;
   updateMenuItem: (id: string, item: Partial<MenuItemDynamic>) => Promise<void>;
@@ -419,24 +421,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [user]);
 
-  const updateOrderStatus = useCallback(async (orderId: string, newStatus: OrderStatus) => {
-    const orderRef = doc(db, "orders", orderId);
+    }
+  }, []);
 
-    await updateDoc(orderRef, {
-      status: newStatus,
+  const requestOrderDeletion = useCallback(async (orderId: string) => {
+    if (!user || user.role !== "admin") return;
+    await updateDoc(doc(db, "orders", orderId), {
+      deletionRequested: true,
       updatedAt: serverTimestamp(),
     });
+  }, [user]);
 
-    if (newStatus === "Livré") {
-      const orderSnap = await getDoc(orderRef);
-      if (orderSnap.exists()) {
-        const orderData = orderSnap.data();
-        const userId = orderData.userId as string;
-        if (userId) {
-          await updateDoc(doc(db, "users", userId), {
-            ordersCount: increment(1),
-          });
-        }
+  const confirmOrderDeletion = useCallback(async (orderId: string, approved: boolean) => {
+    const orderRef = doc(db, "orders", orderId);
+    
+    if (!approved) {
+      await updateDoc(orderRef, {
+        deletionRequested: false,
+        updatedAt: serverTimestamp(),
+      });
+      return;
+    }
+
+    // Si approuvé, on supprime et on met à jour les stats
+    const orderSnap = await getDoc(orderRef);
+    if (orderSnap.exists()) {
+      const orderData = orderSnap.data();
+      const userId = orderData.userId as string;
+      const wasDelivered = orderData.status === "Livré";
+
+      // On supprime la commande
+      const { deleteDoc } = await import("firebase/firestore");
+      await deleteDoc(orderRef);
+
+      // Si elle était livrée, on baisse le compteur de fidélité
+      if (userId && wasDelivered) {
+        await updateDoc(doc(db, "users", userId), {
+          ordersCount: increment(-1),
+        });
       }
     }
   }, []);
@@ -482,6 +504,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dynamicMenu,
         placeOrder,
         updateOrderStatus,
+        requestOrderDeletion,
+        confirmOrderDeletion,
         addMenuItem,
         updateMenuItem,
         deleteMenuItem,
