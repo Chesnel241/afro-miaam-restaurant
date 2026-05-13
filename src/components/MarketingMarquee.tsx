@@ -13,46 +13,48 @@ const MESSAGES = [
 
 export function MarketingMarquee() {
   return (
-    <div className="relative w-full overflow-hidden bg-accent py-4 sm:py-5 border-y border-primary/10 shadow-lg">
-      <div className="flex whitespace-nowrap animate-marquee">
+    <div className="relative w-full overflow-hidden bg-accent py-4 sm:py-5 border-y border-primary/10 shadow-lg group">
+      {/* Texture Tissu Africain (Wax/Bogolan) en filigrane */}
+      <div className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay" 
+           style={{ 
+             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l30 30-30 30L0 30z' fill='%23000' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")`, 
+             backgroundSize: '30px' 
+           }} 
+      />
+      
+      <div className="flex whitespace-nowrap animate-marquee-fast">
         {/* Premier groupe de messages */}
-        <div className="flex items-center gap-12 px-4">
+        <div className="flex items-center gap-16 px-4">
           {MESSAGES.map((msg, i) => (
-            <React.Fragment key={i}>
-              <div className="flex items-center gap-4">
-                <span className="inline-block h-8 w-8 rounded-full bg-white p-1.5 shadow-sm border-2 border-primary/10 rotate-12">
-                   <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
-                </span>
-                <span className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-primary">
-                  {msg}
-                </span>
-              </div>
-              <span className="h-2 w-2 rounded-full bg-primary/20"></span>
-            </React.Fragment>
+            <div key={i} className="flex items-center gap-6">
+              <span className="inline-block h-9 w-9 rounded-full bg-white p-2 shadow-md border-2 border-primary/5 rotate-6">
+                 <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
+              </span>
+              <span className="text-sm sm:text-base font-black uppercase tracking-[0.25em] text-white drop-shadow-sm">
+                {msg}
+              </span>
+            </div>
           ))}
         </div>
         
         {/* Deuxième groupe identique pour l'effet infini */}
-        <div className="flex items-center gap-12 px-4">
+        <div className="flex items-center gap-16 px-4">
           {MESSAGES.map((msg, i) => (
-            <React.Fragment key={`clone-${i}`}>
-              <div className="flex items-center gap-4">
-                <span className="inline-block h-8 w-8 rounded-full bg-white p-1.5 shadow-sm border-2 border-primary/10 -rotate-12">
-                   <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
-                </span>
-                <span className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-primary">
-                  {msg}
-                </span>
-              </div>
-              <span className="h-2 w-2 rounded-full bg-primary/20"></span>
-            </React.Fragment>
+            <div key={`clone-${i}`} className="flex items-center gap-6">
+              <span className="inline-block h-9 w-9 rounded-full bg-white p-2 shadow-md border-2 border-primary/5 -rotate-6">
+                 <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
+              </span>
+              <span className="text-sm sm:text-base font-black uppercase tracking-[0.25em] text-white drop-shadow-sm">
+                {msg}
+              </span>
+            </div>
           ))}
         </div>
       </div>
 
       <style jsx>{`
-        .animate-marquee {
-          animation: marquee 20s linear infinite;
+        .animate-marquee-fast {
+          animation: marquee 10s linear infinite;
         }
         @keyframes marquee {
           0% { transform: translateX(0); }
