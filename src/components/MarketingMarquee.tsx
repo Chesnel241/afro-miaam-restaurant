@@ -13,33 +13,38 @@ const MESSAGES = [
 
 export function MarketingMarquee() {
   return (
-    <div className="relative w-full overflow-hidden bg-primary py-3 sm:py-4 border-y border-accent/20">
-      {/* Background Pattern Subtil */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-           style={{ backgroundImage: 'url("/img/pattern-african.png")', backgroundSize: '100px' }} 
-      />
-      
+    <div className="relative w-full overflow-hidden bg-accent py-4 sm:py-5 border-y border-primary/10 shadow-lg">
       <div className="flex whitespace-nowrap animate-marquee">
         {/* Premier groupe de messages */}
-        <div className="flex items-center gap-10 px-4">
+        <div className="flex items-center gap-12 px-4">
           {MESSAGES.map((msg, i) => (
             <React.Fragment key={i}>
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-cream">
-                {msg}
-              </span>
-              <span className="text-accent text-lg">✦</span>
+              <div className="flex items-center gap-4">
+                <span className="inline-block h-8 w-8 rounded-full bg-white p-1.5 shadow-sm border-2 border-primary/10 rotate-12">
+                   <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
+                </span>
+                <span className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-primary">
+                  {msg}
+                </span>
+              </div>
+              <span className="h-2 w-2 rounded-full bg-primary/20"></span>
             </React.Fragment>
           ))}
         </div>
         
         {/* Deuxième groupe identique pour l'effet infini */}
-        <div className="flex items-center gap-10 px-4">
+        <div className="flex items-center gap-12 px-4">
           {MESSAGES.map((msg, i) => (
             <React.Fragment key={`clone-${i}`}>
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-cream">
-                {msg}
-              </span>
-              <span className="text-accent text-lg">✦</span>
+              <div className="flex items-center gap-4">
+                <span className="inline-block h-8 w-8 rounded-full bg-white p-1.5 shadow-sm border-2 border-primary/10 -rotate-12">
+                   <img src="/favicon.svg" alt="Afro Miaam" className="h-full w-full object-contain" />
+                </span>
+                <span className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-primary">
+                  {msg}
+                </span>
+              </div>
+              <span className="h-2 w-2 rounded-full bg-primary/20"></span>
             </React.Fragment>
           ))}
         </div>
@@ -47,7 +52,7 @@ export function MarketingMarquee() {
 
       <style jsx>{`
         .animate-marquee {
-          animation: marquee 40s linear infinite;
+          animation: marquee 20s linear infinite;
         }
         @keyframes marquee {
           0% { transform: translateX(0); }
