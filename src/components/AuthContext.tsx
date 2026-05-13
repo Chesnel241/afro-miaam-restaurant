@@ -421,9 +421,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [user]);
 
-    }
-  }, []);
-
   const requestOrderDeletion = useCallback(async (orderId: string) => {
     if (!user || user.role !== "admin") return;
     await updateDoc(doc(db, "orders", orderId), {
