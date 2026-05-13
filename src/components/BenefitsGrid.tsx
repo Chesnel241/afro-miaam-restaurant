@@ -2,6 +2,7 @@
 
 import { GiftIcon, ClockIcon, UserIcon } from "./Icons";
 import { motion } from "framer-motion";
+import { useAuth } from "./AuthContext";
 
 const BENEFITS = [
   {
@@ -25,8 +26,13 @@ const BENEFITS = [
 ];
 
 export function BenefitsGrid() {
+  const { user } = useAuth();
+
+  // On ne montre cette invitation qu'aux visiteurs non connectés
+  if (user) return null;
+
   return (
-    <section className="relative overflow-hidden bg-cream py-10 sm:py-16">
+    <section className="relative overflow-hidden bg-cream py-14 sm:py-24">
       {/* Texture Wax en arrière-plan global */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
            style={{ 
@@ -36,6 +42,35 @@ export function BenefitsGrid() {
       />
 
       <div className="container-x relative z-10">
+        <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16">
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="eyebrow mb-4"
+          >
+            L&apos;expérience privilégiée
+          </motion.p>
+          <motion.h2 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="heading-display text-3xl sm:text-4xl lg:text-5xl text-primary"
+          >
+            Et si vous commandiez avec un <span className="text-accent italic">compte</span> chez nous ?
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="mt-6 text-primary/60 font-medium"
+          >
+            Rejoignez la famille Afro Miaam pour débloquer des avantages exclusifs et simplifier vos commandes.
+          </motion.p>
+        </div>
+
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {BENEFITS.map((benefit, i) => (
             <motion.div
