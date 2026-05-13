@@ -16,11 +16,10 @@ const NAV_ITEMS_VISITOR = [
 ];
 
 const NAV_ITEMS_CUSTOMER = [
-  { href: "/mon-compte?tab=menu", label: "Le Menu" },
-  { href: "/mon-compte?tab=orders", label: "Historique" },
-  { href: "/mon-compte?tab=dashboard", label: "Dashboard" },
-  { href: "/mon-compte?tab=profile", label: "Mon profil" },
+  { href: "/", label: "Accueil" },
+  { href: "/menu", label: "La Carte" },
   { href: "/prestation-service", label: "Prestation Service" },
+  { href: "/mon-compte", label: "Mon Espace" },
 ];
 
 export function Header() {
