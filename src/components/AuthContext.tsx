@@ -22,6 +22,7 @@ import {
   serverTimestamp,
   orderBy,
   increment,
+  or,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
@@ -118,7 +119,7 @@ async function createInitialProfile(uid: string, email: string, displayName?: st
   
   const profile = {
     name,
-    email,
+    email: email.trim().toLowerCase(),
     phone: "",
     role: "customer" as UserRole,
     ordersCount: 0,
@@ -222,13 +223,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const q = query(
       collection(db, "orders"),
-      where("userId", "==", user.id)
+      or(
+        where("userId", "==", user.id),
+        where("userEmail", "==", user.email.toLowerCase())
+      )
     );
 
     const unsub = onSnapshot(q, (snap) => {
       const orders = snap.docs
         .map((d) => docToOrder(d.id, d.data()))
-        // Tri manuel en JS pour éviter de devoir créer un index composite userId + createdAt
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       setUserOrders(orders);

@@ -88,7 +88,7 @@ export default function ReservationPage() {
       const orderData = {
         userId: user?.uid || null,
         userName: user?.name || `${form.firstName} ${form.lastName}`,
-        userEmail: user?.email || form.email || "",
+        userEmail: (user?.email || form.email || "").trim().toLowerCase(),
         items: sanitizedItems,
         subtotal,
         deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
