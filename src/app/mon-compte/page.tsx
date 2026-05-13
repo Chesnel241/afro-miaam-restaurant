@@ -112,6 +112,8 @@ function MonCompteContent() {
     } finally {
       setIsUpdating(false);
     }
+  };
+
   const pendingDeletions = userOrders.filter(o => (o as any).deletionRequested);
 
   return (
