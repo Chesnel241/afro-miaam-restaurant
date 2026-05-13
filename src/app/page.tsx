@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Hero } from "@/components/Hero";
-import { MarketingMarquee } from "@/components/MarketingMarquee";
+import { BenefitsGrid } from "@/components/BenefitsGrid";
 import { HowItWorks } from "@/components/HowItWorks";
 import { ProductCard } from "@/components/ProductCard";
 import { useAuth } from "@/components/AuthContext";
@@ -27,7 +27,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <MarketingMarquee />
+      <BenefitsGrid />
 
       {/* Section Personnalisée pour Utilisateur Connecté */}
       {user && user.role === "customer" && (
