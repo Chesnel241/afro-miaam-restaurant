@@ -86,7 +86,7 @@ export default function ReservationPage() {
       }));
 
       const orderData = {
-        userId: user?.uid || null,
+        userId: user?.id || null,
         userName: user?.name || `${form.firstName} ${form.lastName}`,
         userEmail: (user?.email || form.email || "").trim().toLowerCase(),
         items: sanitizedItems,

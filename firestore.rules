@@ -19,82 +19,55 @@ service cloud.firestore {
 
     // ─── Profils utilisateurs ───
     match /users/{userId} {
-      // Un utilisateur peut lire son propre profil
       allow read: if isOwner(userId);
-
-      // L'admin peut lire tous les profils
       allow read: if isAdmin();
-
-      // Création de profil à l'inscription uniquement
       allow create: if isAuthenticated()
         && request.auth.uid == userId
         && request.resource.data.role == "customer";
-
-      // Le profil admin est créé manuellement ou par le code serveur
-      // Un utilisateur ne peut PAS se donner le rôle admin
       allow update: if isOwner(userId)
-        && request.resource.data.role == resource.data.role; // Le rôle ne peut pas changer
-
-      // L'admin peut mettre à jour n'importe quel profil (ex: ordersCount)
+        && request.resource.data.role == resource.data.role;
       allow update: if isAdmin();
     }
 
     // ─── Commandes ───
     match /orders/{orderId} {
-      // Tout le monde peut créer une commande (invités ou clients connectés)
+      // Tout le monde peut créer une commande
       allow create: if true;
 
-      // Un client peut lire SES commandes uniquement
-      allow read: if isAuthenticated()
-        && resource.data.userId == request.auth.uid;
+      // Un client peut lire SES commandes (soit par son ID, soit par son E-mail vérifié)
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        (resource.data.userEmail.lower() == request.auth.token.email.lower())
+      );
 
       // L'admin peut tout lire
       allow read: if isAdmin();
 
-      // Seul l'admin peut mettre à jour le statut d'une commande
+      // Seul l'admin peut mettre à jour
       allow update: if isAdmin();
 
-      // Aucune suppression autorisée
       allow delete: if false;
     }
 
-    // ─── Menu (carte des plats) ───
+    // ─── Menu ───
     match /menu/{menuItemId} {
-      // Tout le monde peut lire le menu (visiteurs, clients, admin)
       allow read: if true;
-
-      // Seul l'admin peut créer, modifier ou supprimer un plat
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     // ─── Newsletter ───
     match /newsletter/{emailId} {
-      // N'importe qui peut s'inscrire (même non-authentifié)
       allow create: if true 
         && request.resource.data.email is string
         && request.resource.data.email.size() < 200;
-
-      // Seul l'admin peut consulter la liste des inscrits
       allow read: if isAdmin();
-      
-      // Personne ne peut modifier ou supprimer un email
       allow update, delete: if false;
     }
 
     // ─── Demandes de Prestation ───
     match /prestations/{prestationId} {
-      // Tout le monde peut soumettre une demande de prestation
       allow create: if true;
-
-      // Seul l'admin peut consulter les demandes
-      allow read: if isAdmin();
-
-      // Seul l'admin peut mettre à jour le statut
-      allow update: if isAdmin();
-
-      // Pas de suppression
+      allow read, update: if isAdmin();
       allow delete: if false;
     }
   }
