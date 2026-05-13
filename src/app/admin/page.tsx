@@ -3,10 +3,32 @@
 import { useAuth, type Order, type OrderStatus } from "@/components/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon } from "@/components/Icons";
+import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon } from "@/components/Icons";
 import { AdminMenuManager } from "@/components/AdminMenuManager";
+import { QRCodeSVG } from "qrcode.react";
 
 type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu";
+
+// Modal QR Code
+function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
+  const validationUrl = `${window.location.origin}/valider-commande/${orderId}`;
+  
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+      <div className="absolute inset-0 bg-primary/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl animate-fade-in">
+        <h3 className="heading-display mb-6 text-2xl text-primary">QR de Livraison</h3>
+        <div className="mx-auto flex aspect-square w-full max-w-[200px] items-center justify-center rounded-2xl bg-creamSoft p-4 mb-6 ring-1 ring-black/5">
+          <QRCodeSVG value={validationUrl} size={180} />
+        </div>
+        <p className="text-xs text-primary/60 font-medium mb-8">
+          Présentez ce QR Code au client pour qu&apos;il valide la réception sur son téléphone.
+        </p>
+        <button onClick={onClose} className="btn btn-primary w-full">Fermer</button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const { 
@@ -21,6 +43,7 @@ export default function AdminPage() {
   
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [selectedOrderForQR, setSelectedOrderForQR] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -144,6 +167,9 @@ export default function AdminPage() {
       </div>
 
       <div className="mt-10">
+        {selectedOrderForQR && (
+          <QRModal orderId={selectedOrderForQR} onClose={() => setSelectedOrderForQR(null)} />
+        )}
         {/* --- ONGLET : VUE D'ENSEMBLE --- */}
         {activeTab === "overview" && (
           <div className="space-y-12 animate-fade-in">
@@ -212,7 +238,7 @@ export default function AdminPage() {
                     <h2 className="heading-display mb-6 text-2xl text-accent">Attente Acompte ({depositPendingOrders.length})</h2>
                     <div className="rounded-3xl bg-white shadow-card ring-1 ring-accent/10 overflow-hidden divide-y divide-cream/10 mb-10">
                       {depositPendingOrders.map(order => (
-                        <OrderRow key={order.id} order={order} onStatusChange={handleStatusChange} />
+                        <OrderRow key={order.id} order={order} onStatusChange={handleStatusChange} onShowQR={setSelectedOrderForQR} />
                       ))}
                       {depositPendingOrders.length === 0 && <p className="p-10 text-center text-primary/30 italic font-medium">Aucun acompte en attente.</p>}
                     </div>
@@ -220,7 +246,7 @@ export default function AdminPage() {
                     <h2 className="heading-display mb-6 text-2xl text-primary">Prêtes à cuisiner / En cours ({activeOrders.length})</h2>
                     <div className="rounded-3xl bg-white shadow-card ring-1 ring-cream/10 overflow-hidden divide-y divide-cream/10">
                       {activeOrders.map(order => (
-                        <OrderRow key={order.id} order={order} onStatusChange={handleStatusChange} />
+                        <OrderRow key={order.id} order={order} onStatusChange={handleStatusChange} onShowQR={setSelectedOrderForQR} />
                       ))}
                       {activeOrders.length === 0 && <p className="p-16 text-center text-primary/30 italic font-medium">Aucune commande à traiter pour le moment.</p>}
                     </div>
@@ -395,7 +421,7 @@ function KPI({ title, value, sub, variant = "white", progress, trend }: { title:
   );
 }
 
-function OrderRow({ order, onStatusChange }: { order: Order, onStatusChange: (id: string, s: OrderStatus) => void }) {
+function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusChange: (id: string, s: OrderStatus) => void, onShowQR: (id: string) => void }) {
   return (
     <div className="flex flex-col gap-6 p-8 sm:flex-row sm:items-center sm:justify-between hover:bg-cream/5 transition-colors group">
       <div className="flex items-start gap-5">
@@ -423,6 +449,15 @@ function OrderRow({ order, onStatusChange }: { order: Order, onStatusChange: (id
       <div className="flex flex-col sm:items-end gap-4">
         <p className="font-display font-black text-primary text-xl">{order.total.toFixed(2)} €</p>
         <div className="flex gap-3">
+          {order.status !== "Livré" && (
+            <button 
+              onClick={() => onShowQR(order.id)} 
+              className="btn btn-sm bg-creamSoft text-primary border border-cream/20 px-4"
+              title="Afficher le QR Code de livraison"
+            >
+              QR
+            </button>
+          )}
           {order.status === "Attente Acompte" && (
             <button onClick={() => onStatusChange(order.id, "En attente")} className="btn btn-sm bg-accent text-white px-6 shadow-glow">Acompte reçu</button>
           )}
