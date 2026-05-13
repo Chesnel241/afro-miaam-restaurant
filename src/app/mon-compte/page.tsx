@@ -346,41 +346,52 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   });
 
   return (
-    <div className="flex items-center justify-between py-5 first:pt-0 last:pb-0">
-      <div className="flex gap-3 sm:gap-4">
-        <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${
-          order.status === 'Livré' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
-        }`}>
-          {order.status === 'Livré' ? <GiftIcon className="h-5 w-5 sm:h-6 sm:w-6" /> : <ClockIcon className="h-5 w-5 sm:h-6 sm:w-6" />}
+    <div className="py-6 first:pt-0 last:pb-0 flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-4">
+        {/* Partie Gauche : Icône + ID + Date */}
+        <div className="flex gap-4 min-w-0">
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
+            order.status === 'Livré' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+          }`}>
+            {order.status === 'Livré' ? <GiftIcon className="h-6 w-6" /> : <ClockIcon className="h-6 w-6" />}
+          </div>
+          <div className="min-w-0 flex flex-col justify-center">
+            <h4 className="font-display font-black text-primary text-base tracking-tight truncate">
+              {order.id.substring(0, 8).toUpperCase()}
+            </h4>
+            <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">{formattedDate}</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="font-bold text-primary text-xs sm:text-base truncate">{order.id.substring(0, 8).toUpperCase()}</p>
-          <p className="text-[10px] sm:text-xs text-primary/50">{formattedDate}</p>
-          <p className="mt-1 text-[10px] font-medium text-primary/60 leading-tight truncate">
-            {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
-          </p>
+
+        {/* Partie Droite : Prix & Badge Status */}
+        <div className="flex flex-col items-end shrink-0 gap-2">
+          <p className="font-display font-black text-primary text-lg leading-none">{formatPrice(order.total)}</p>
+          <span className={`inline-block rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-[0.1em] shadow-sm ${
+            order.status === "Livré"
+              ? "bg-accent text-white"
+              : order.status === "En cours" || order.status === "Acompte Reçu"
+              ? "bg-blue-600 text-white shadow-md animate-pulse"
+              : order.status === "Attente Acompte"
+              ? "bg-afro-red text-white"
+              : "bg-primary text-white"
+          }`}>
+            {order.status}
+          </span>
         </div>
       </div>
-      <div className="text-right shrink-0">
-        <p className="font-bold text-primary text-xs sm:text-base">{formatPrice(order.total)}</p>
-        <span className={`mt-2 inline-block rounded-lg px-2 py-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest ${
-          order.status === "Livré"
-            ? "bg-accent text-white"
-            : order.status === "En cours" || order.status === "Acompte Reçu"
-            ? "bg-blue-600 text-white shadow-sm"
-            : order.status === "Attente Acompte"
-            ? "bg-afro-red text-white animate-pulse"
-            : "bg-primary text-white"
-        }`}>
-          {order.status}
-        </span>
-        
+
+      {/* Description des plats : Prend toute la largeur, sous les infos principales */}
+      <div className="pl-16 pr-2">
+        <p className="text-xs font-medium text-primary/70 leading-relaxed italic border-l-2 border-cream/30 pl-3">
+          {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
+        </p>
+
         {(order.status === "En cours" || order.status === "Acompte Reçu") && (
           <button 
             onClick={onScan}
-            className="mt-3 block w-full rounded-xl bg-primary px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-md hover:bg-accent transition-all"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-white shadow-glow transition-all hover:scale-[1.02] active:scale-95"
           >
-            Scanner Livraison
+            <span className="text-sm">📸</span> Scanner Livraison
           </button>
         )}
       </div>
