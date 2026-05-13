@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { GiftIcon, ClockIcon, UserIcon } from "./Icons";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "./AuthContext";
 
 const BENEFITS = [
