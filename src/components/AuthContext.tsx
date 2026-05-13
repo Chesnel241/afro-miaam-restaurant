@@ -421,6 +421,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [user]);
 
+  const updateOrderStatus = useCallback(async (orderId: string, newStatus: OrderStatus) => {
+    const orderRef = doc(db, "orders", orderId);
+
+    await updateDoc(orderRef, {
+      status: newStatus,
+      updatedAt: serverTimestamp(),
+    });
+
+    if (newStatus === "Livré") {
+      const orderSnap = await getDoc(orderRef);
+      if (orderSnap.exists()) {
+        const orderData = orderSnap.data();
+        const userId = orderData.userId as string;
+        if (userId) {
+          await updateDoc(doc(db, "users", userId), {
+            ordersCount: increment(1),
+          });
+        }
+      }
+    }
+  }, []);
+
   const requestOrderDeletion = useCallback(async (orderId: string) => {
     if (!user || user.role !== "admin") return;
     await updateDoc(doc(db, "orders", orderId), {
