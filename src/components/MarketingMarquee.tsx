@@ -54,7 +54,7 @@ export function MarketingMarquee() {
 
       <style jsx>{`
         .animate-marquee-fast {
-          animation: marquee 20s linear infinite;
+          animation: marquee 30s linear infinite;
         }
         @keyframes marquee {
           0% { transform: translateX(0); }
