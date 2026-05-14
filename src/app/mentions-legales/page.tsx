@@ -1,4 +1,11 @@
-export const metadata = { title: "Mentions légales" };
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Mentions légales",
+  description: "Mentions légales du site Afro Miaam.",
+  alternates: { canonical: "/mentions-legales" },
+  robots: { index: true, follow: true },
+};
 
 export default function LegalPage() {
   return (
