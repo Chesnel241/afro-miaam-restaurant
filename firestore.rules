@@ -149,5 +149,13 @@ service cloud.firestore {
       allow read, update: if isAdmin();
       allow delete: if false;
     }
+
+    // ─── Paramètres globaux (ex: isReviewRewardActive) ───
+    match /settings/{settingId} {
+      // Lecture publique (le client snapshot /settings/global au boot)
+      allow read: if true;
+      // Écriture admin uniquement (via Firebase Console ou panel admin)
+      allow write: if isAdmin();
+    }
   }
 }
