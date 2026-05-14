@@ -65,12 +65,22 @@ export const metadata: Metadata = {
     title: "Afro Miaam — Ça mijote, ça régale",
     description:
       "Cuisine afro gastronomique à Lyon. Précommande 24h à l'avance. Retrait à Lyon ou livraison à 3 €.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Afro Miaam — Cuisine afro gastronomique à Lyon",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Afro Miaam — Ça mijote, ça régale",
     description:
       "Cuisine afro gastronomique à Lyon. Précommande 24h à l'avance.",
+    images: ["/twitter-image"],
   },
   robots: {
     index: true,
