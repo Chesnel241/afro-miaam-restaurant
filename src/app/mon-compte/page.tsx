@@ -330,13 +330,6 @@ function MonCompteContent() {
   );
 }
 
-export default function MonComptePage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen" />}>
-      <MonCompteContent />
-    </Suspense>
-  );
-}
 
 function TabBtn({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) {
   return (
