@@ -17,33 +17,101 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
+    function isValidEmail(email) {
+      return email is string
+        && email.size() > 3
+        && email.size() < 200
+        && email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
+    }
+
     // ─── Profils utilisateurs ───
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow read: if isAdmin();
+
+      // Création : auth, role forcé customer, champs sensibles initialisés à zéro
       allow create: if isAuthenticated()
         && request.auth.uid == userId
-        && request.resource.data.role == "customer";
+        && request.resource.data.role == "customer"
+        && request.resource.data.email is string
+        && request.resource.data.name is string
+        && request.resource.data.get('referralCredits', 0) == 0
+        && request.resource.data.get('hasUsedWelcomeOffer', false) == false
+        && request.resource.data.get('ordersCount', 0) == 0;
+
+      // Update owner : whitelist + invariants monotones (anti-abuse)
+      // - role / referralCode / createdAt / email : immuables côté client
+      // - referralCredits : ne peut que diminuer (jamais augmenter), reste ≥ 0
+      // - ordersCount : ne peut qu'incrémenter de 1 max (ou rester)
+      // - hasUsedWelcomeOffer : ne peut que passer false → true
       allow update: if isOwner(userId)
-        && request.resource.data.role == resource.data.role;
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.get('referralCode', '')
+            == resource.data.get('referralCode', '')
+        && request.resource.data.get('createdAt', null)
+            == resource.data.get('createdAt', null)
+        && request.resource.data.get('email', '')
+            == resource.data.get('email', '')
+        && request.resource.data.get('referralCredits', 0) is number
+        && request.resource.data.get('referralCredits', 0) >= 0
+        && request.resource.data.get('referralCredits', 0)
+            <= resource.data.get('referralCredits', 0)
+        && request.resource.data.get('ordersCount', 0) is int
+        && request.resource.data.get('ordersCount', 0)
+            >= resource.data.get('ordersCount', 0)
+        && request.resource.data.get('ordersCount', 0)
+            <= resource.data.get('ordersCount', 0) + 1
+        && (resource.data.get('hasUsedWelcomeOffer', false) == false
+            || request.resource.data.get('hasUsedWelcomeOffer', true) == true);
+
+      // Update admin : tout autorisé
       allow update: if isAdmin();
+
+      allow delete: if false;
     }
 
     // ─── Commandes ───
     match /orders/{orderId} {
-      // Tout le monde peut créer une commande
-      allow create: if true;
+      // Création : auth, userId concordant, structure stricte, status initial fixe
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == "Attente Acompte"
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 50
+        && request.resource.data.total is number
+        && request.resource.data.total > 0
+        && request.resource.data.total < 10000
+        && request.resource.data.depositAmount is number
+        && request.resource.data.depositAmount >= 0
+        && request.resource.data.depositAmount <= request.resource.data.total
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.customer is map
+        && request.resource.data.customer.firstName is string
+        && request.resource.data.customer.firstName.size() > 0
+        && request.resource.data.customer.firstName.size() < 80
+        && request.resource.data.customer.lastName is string
+        && request.resource.data.customer.lastName.size() < 80
+        && request.resource.data.customer.phone is string
+        && request.resource.data.customer.phone.size() >= 8
+        && request.resource.data.customer.phone.size() < 32
+        && request.resource.data.customer.date is string
+        && request.resource.data.customer.slot is string
+        && request.resource.data.customer.deliveryMode in ['retrait', 'livraison']
+        && (request.resource.data.customer.deliveryMode == 'retrait'
+            || (request.resource.data.customer.address is string
+                && request.resource.data.customer.address.size() >= 6));
 
-      // Un client peut lire SES commandes (soit par son ID, soit par son E-mail vérifié)
+      // Lecture : propriétaire (par UID ou email) ou admin
       allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid || 
-        (resource.data.userEmail.lower() == request.auth.token.email.lower())
+        resource.data.userId == request.auth.uid ||
+        (resource.data.userEmail is string
+         && request.auth.token.email is string
+         && resource.data.userEmail.lower() == request.auth.token.email.lower())
       );
-
-      // L'admin peut tout lire
       allow read: if isAdmin();
 
-      // Seul l'admin peut mettre à jour
+      // Update : admin uniquement
       allow update: if isAdmin();
 
       allow delete: if false;
@@ -57,18 +125,37 @@ service cloud.firestore {
 
     // ─── Newsletter ───
     match /newsletter/{emailId} {
-      allow create: if true 
-        && request.resource.data.email is string
-        && request.resource.data.email.size() < 200;
+      // Création : email valide + champs strictement whitelistés
+      allow create: if isValidEmail(request.resource.data.email)
+        && request.resource.data.keys().hasOnly(['email', 'createdAt', 'source'])
+        && request.resource.data.get('source', '') is string
+        && request.resource.data.get('source', '').size() < 50;
       allow read: if isAdmin();
       allow update, delete: if false;
     }
 
     // ─── Demandes de Prestation ───
     match /prestations/{prestationId} {
-      allow create: if true;
+      // Création : auth requise, structure validée
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasAll(['type', 'createdAt'])
+        && request.resource.data.type is string
+        && request.resource.data.type in ['corporate', 'private', 'chef']
+        && request.resource.data.createdAt == request.time
+        && (!('guestCount' in request.resource.data)
+            || (request.resource.data.guestCount is int
+                && request.resource.data.guestCount > 0
+                && request.resource.data.guestCount < 1000));
       allow read, update: if isAdmin();
       allow delete: if false;
+    }
+
+    // ─── Paramètres globaux (ex: isReviewRewardActive) ───
+    match /settings/{settingId} {
+      // Lecture publique (le client snapshot /settings/global au boot)
+      allow read: if true;
+      // Écriture admin uniquement (via Firebase Console ou panel admin)
+      allow write: if isAdmin();
     }
   }
 }
