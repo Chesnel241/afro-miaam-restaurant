@@ -117,6 +117,7 @@ type AuthContextType = {
   addMenuItem: (item: Omit<MenuItemDynamic, "id">) => Promise<void>;
   updateMenuItem: (id: string, item: Partial<MenuItemDynamic>) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
+  isReviewRewardActive: boolean;
   addOrderReview: (orderId: string, rating: number, comment: string) => Promise<void>;
 };
 
@@ -562,14 +563,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hasReviewed: true,
         review: { rating, comment, createdAt: serverTimestamp() }
       });
-      await updateDoc(doc(db, "users", user.id), {
-        referralCredits: increment(1)
-      });
+      
+      if (isReviewRewardActive) {
+        await updateDoc(doc(db, "users", user.id), {
+          referralCredits: increment(1)
+        });
+      }
     } catch (err) {
       console.error("Erreur Firebase lors de l'avis:", err);
       throw err; // On laisse remonter pour que l'UI puisse l'attraper si besoin
     }
   }, [user]);
+
+  const [isReviewRewardActive, setIsReviewRewardActive] = useState(true);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "settings", "global"), (snap) => {
+      if (snap.exists()) {
+        setIsReviewRewardActive(snap.data().isReviewRewardActive ?? true);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -588,13 +603,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         newsletterSubscribers,
         dynamicMenu,
         placeOrder,
+        isReviewRewardActive,
+        addOrderReview,
         updateOrderStatus,
         requestOrderDeletion,
         confirmOrderDeletion,
         addMenuItem,
         updateMenuItem,
         deleteMenuItem,
-        addOrderReview,
       }}
     >
       {children}

@@ -444,7 +444,7 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
               onClick={() => setShowReview(true)}
               className="btn btn-xs bg-accent/10 text-accent hover:bg-accent hover:text-white border-none px-4"
             >
-              Donner mon avis (+1€)
+              Donner mon avis {isReviewRewardActive ? "(+1€)" : ""}
             </button>
           )}
           <button 
@@ -495,7 +495,11 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
                     try {
                       await addOrderReview(order.id, rating, comment);
                       setShowReview(false);
-                      alert("Merci ! 1€ a été ajouté à votre Afro Wallet.");
+                      if (isReviewRewardActive) {
+                        alert("Merci ! 1€ a été ajouté à votre Afro Wallet.");
+                      } else {
+                        alert("Merci pour votre avis ! Votre retour est précieux pour nous.");
+                      }
                     } catch (err) {
                       console.error(err);
                       alert("Votre avis a été noté, mais il y a un petit souci technique avec l'ajout automatique de votre crédit. Pas d'inquiétude, l'équipe va régulariser cela !");
