@@ -3,6 +3,7 @@
 import { useAuth, type Order, type MenuItemDynamic } from "@/components/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, Suspense } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { GiftIcon, ArrowRightIcon, TrashIcon, ClockIcon, UserIcon, CartIcon, StarIcon } from "@/components/Icons";
 import { formatPrice } from "@/lib/utils";
