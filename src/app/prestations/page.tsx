@@ -102,7 +102,7 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- SERVICES PILLARS --- */}
-      <section className="container-x -mt-10 md:-mt-16 relative z-20 pb-20">
+      <section className="container-x relative z-20 py-16 md:py-24">
         <div className="grid gap-6 md:grid-cols-3">
           {PRESTATIONS.map((item) => (
             <motion.button
