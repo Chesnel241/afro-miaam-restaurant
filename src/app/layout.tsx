@@ -8,6 +8,7 @@ import { Chatbot } from "@/components/Chatbot";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { AppOverlay } from "@/components/AppOverlay";
+import { CartRecovery } from "@/components/CartRecovery";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Footer />
             <Chatbot />
             <WhatsAppButton />
+            <CartRecovery />
           </CartProvider>
         </AuthProvider>
       </body>

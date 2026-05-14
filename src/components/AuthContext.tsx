@@ -58,6 +58,11 @@ export type UserProfile = {
   role: UserRole;
   ordersCount: number;
   isFirstLogin?: boolean;
+  referralCode?: string;
+  referralCredits?: number;
+  hasUsedWelcomeOffer?: boolean;
+  referredBy?: string;
+  createdAt?: any;
 };
 
 export type Flavor = {
@@ -127,6 +132,9 @@ async function createInitialProfile(uid: string, email: string, displayName?: st
     role: "customer" as UserRole,
     ordersCount: 0,
     isFirstLogin: true,
+    referralCode: `AFRO-${name.split(" ")[0].toUpperCase().substring(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
+    referralCredits: 0,
+    hasUsedWelcomeOffer: false,
     createdAt: serverTimestamp(),
   };
 

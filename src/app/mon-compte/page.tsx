@@ -270,9 +270,50 @@ function MonCompteContent() {
             )}
 
             {activeTab === "dashboard" && (
-              <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
-                <StatCard title="Commandes" value={totalOrders} sub="Total passé" />
-                <StatCard title="Fidélité (Repas livrés)" value={deliveredOrders} sub={`${remaining} restants avant cadeau`} />
+              <div className="space-y-6">
+                <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
+                  <StatCard title="Commandes" value={totalOrders} sub="Total passé" />
+                  <StatCard title="Fidélité (Repas livrés)" value={deliveredOrders} sub={`${remaining} restants avant cadeau`} />
+                </div>
+
+                <div className="rounded-3xl bg-primary-gradient p-8 text-cream shadow-soft relative overflow-hidden">
+                  <div className="afro-side-pattern absolute inset-0 opacity-10 pointer-events-none" />
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div className="flex-1">
+                      <h3 className="heading-display text-2xl mb-2">Afro Family</h3>
+                      <p className="text-sm text-cream/70 font-medium max-w-md">
+                        Invitez vos amis et gagnez <span className="text-accent font-bold">5€</span> pour chaque nouvelle commande passée via votre code !
+                      </p>
+                      <div className="mt-6 flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-accent">
+                          <GiftIcon className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-cream/40 leading-none mb-1">Vos crédits</p>
+                          <p className="text-2xl font-black text-white">{(user as any).referralCredits || 0}€</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/10">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-cream/60 mb-3 text-center">Votre code de parrainage</p>
+                      <div className="flex items-center gap-2">
+                        <code className="bg-white text-primary px-5 py-3 rounded-xl font-black tracking-widest text-lg">
+                          {(user as any).referralCode || "---"}
+                        </code>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText((user as any).referralCode || "");
+                            alert("Code copié !");
+                          }}
+                          className="h-12 w-12 rounded-xl bg-accent text-white flex items-center justify-center hover:scale-110 transition-transform shadow-glow"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
