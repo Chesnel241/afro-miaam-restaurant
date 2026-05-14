@@ -10,7 +10,7 @@ import { useAuth } from "./AuthContext";
 const NAV_ITEMS_VISITOR = [
   { href: "/", label: "Accueil" },
   { href: "/menu", label: "Menu" },
-  { href: "/prestation-service", label: "Prestation Service" },
+  { href: "/prestations", label: "Prestations & Events" },
   { href: "/comment-ca-marche", label: "Comment ça marche" },
   { href: "/contact", label: "Contact" },
 ];
@@ -18,7 +18,7 @@ const NAV_ITEMS_VISITOR = [
 const NAV_ITEMS_CUSTOMER = [
   { href: "/", label: "Accueil" },
   { href: "/menu", label: "La Carte" },
-  { href: "/prestation-service", label: "Prestation Service" },
+  { href: "/prestations", label: "Prestations & Events" },
   { href: "/mon-compte", label: "Mon Espace" },
 ];
 
