@@ -206,3 +206,10 @@ export function GiftIcon(props: Props) {
 
 // Alias for backward compatibility
 export const MapPinIcon = PinIcon;
+export function StarIcon(props: Props) {
+  return (
+    <svg {...base} {...props} fill="currentColor">
+      <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.169L12 18.896l-7.334 3.87 1.4-8.169L.132 9.21l8.2-1.192z" />
+    </svg>
+  );
+}

@@ -8,7 +8,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from "
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CheckIcon, ClockIcon, MapPinIcon, PhoneIcon, UserIcon } from "@/components/Icons";
+import { CheckIcon, ClockIcon, MapPinIcon, PhoneIcon, UserIcon, GiftIcon } from "@/components/Icons";
 import { DELIVERY_FEE } from "@/lib/booking";
 
 export default function ReservationPage() {
