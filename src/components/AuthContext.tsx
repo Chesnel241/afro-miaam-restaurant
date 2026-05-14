@@ -107,7 +107,7 @@ type AuthContextType = {
   newsletterSubscribers: NewsletterSubscriber[];
   dynamicMenu: MenuItemDynamic[];
   // Order Actions
-  placeOrder: (items: OrderItem[], total: number) => Promise<void>;
+  placeOrder: (items: OrderItem[], total: number, discounts?: { referralCredits?: number, welcomeOffer?: boolean, referralCodeUsed?: string }) => Promise<void>;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<void>;
   requestOrderDeletion: (orderId: string) => Promise<void>;
   confirmOrderDeletion: (orderId: string, approved: boolean) => Promise<void>;
@@ -415,18 +415,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Order Functions ──
 
-  const placeOrder = useCallback(async (items: OrderItem[], total: number) => {
+  const placeOrder = useCallback(async (items: OrderItem[], total: number, discounts?: { referralCredits?: number, welcomeOffer?: boolean, referralCodeUsed?: string }) => {
     if (!user) throw new Error("Non connecté");
 
-    await addDoc(collection(db, "orders"), {
+    const orderData = {
       userId: user.id,
       userName: user.name,
       userEmail: user.email,
       items,
       total,
+      discounts: discounts || null,
       status: "En attente" as OrderStatus,
       createdAt: serverTimestamp(),
-    });
+    };
+
+    const orderRef = await addDoc(collection(db, "orders"), orderData);
+
+    // Mise à jour du profil utilisateur (réduction des crédits, marquage offre bienvenue)
+    const userUpdate: any = {};
+    if (discounts?.referralCredits) {
+      userUpdate.referralCredits = increment(-discounts.referralCredits);
+    }
+    if (discounts?.welcomeOffer) {
+      userUpdate.hasUsedWelcomeOffer = true;
+    }
+    
+    if (Object.keys(userUpdate).length > 0) {
+      await updateDoc(doc(db, "users", user.id), userUpdate);
+    }
+
+    // Si un code de parrainage a été utilisé, on cherche le parrain
+    if (discounts?.referralCodeUsed) {
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("referralCode", "==", discounts.referralCodeUsed));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const parrainDoc = querySnapshot.docs[0];
+        // On marque la commande avec l'ID du parrain pour lui donner ses 5€ quand la commande sera LIVRÉE
+        await updateDoc(orderRef, { referrerId: parrainDoc.id });
+      }
+    }
   }, [user]);
 
   const updateOrderStatus = useCallback(async (orderId: string, newStatus: OrderStatus) => {
@@ -442,9 +471,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (orderSnap.exists()) {
         const orderData = orderSnap.data();
         const userId = orderData.userId as string;
+        const referrerId = orderData.referrerId as string;
+
         if (userId) {
           await updateDoc(doc(db, "users", userId), {
             ordersCount: increment(1),
+          });
+        }
+
+        // Récompense du parrain (5€ de crédit)
+        if (referrerId) {
+          await updateDoc(doc(db, "users", referrerId), {
+            referralCredits: increment(5),
           });
         }
       }

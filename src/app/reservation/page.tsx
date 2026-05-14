@@ -32,6 +32,11 @@ export default function ReservationPage() {
   const [success, setSuccess] = useState(false);
   const [finalDeposit, setFinalDeposit] = useState(0);
 
+  // Growth Features State
+  const [referralCode, setReferralCode] = useState("");
+  const [useCredits, setUseCredits] = useState(false);
+  const [isReferralValid, setIsReferralValid] = useState<boolean | null>(null);
+
   // Pré-remplir avec les infos du compte
   useEffect(() => {
     if (user && !form.firstName && !form.lastName) {
@@ -56,7 +61,13 @@ export default function ReservationPage() {
     form.slot &&
     (form.deliveryMode === "retrait" || form.address);
 
-  const total = subtotal + (form.deliveryMode === "livraison" ? DELIVERY_FEE : 0);
+  const totalBeforeDiscount = subtotal + (form.deliveryMode === "livraison" ? DELIVERY_FEE : 0);
+  
+  // Calcul des remises
+  const welcomeDiscount = (user && !user.hasUsedWelcomeOffer && (user as any).ordersCount === 0) ? 5 : 0; // 5€ de bienvenue
+  const creditsToUse = useCredits ? Math.min((user as any).referralCredits || 0, totalBeforeDiscount - welcomeDiscount) : 0;
+  
+  const total = Math.max(0, totalBeforeDiscount - welcomeDiscount - creditsToUse);
   const depositAmount = total * 0.5;
 
   // Calcul de la date minimale (Demain) - Directement au rendu pour éviter le délai d'effet
@@ -85,6 +96,12 @@ export default function ReservationPage() {
         image: item.image || ""
       }));
 
+      const discounts = {
+        referralCredits: creditsToUse,
+        welcomeOffer: welcomeDiscount > 0,
+        referralCodeUsed: isReferralValid ? referralCode : undefined,
+      };
+
       const orderData = {
         userId: user?.id || null,
         userName: user?.name || `${form.firstName} ${form.lastName}`,
@@ -94,6 +111,7 @@ export default function ReservationPage() {
         deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
         total,
         depositAmount,
+        discounts,
         status: "Attente Acompte",
         createdAt: serverTimestamp(),
         customer: {
@@ -109,20 +127,28 @@ export default function ReservationPage() {
         },
       };
 
+      // Si parrainage utilisé, on marque le parrain
+      if (discounts.referralCodeUsed) {
+        const { getDocs, query, where, collection } = await import("firebase/firestore");
+        const q = query(collection(db, "users"), where("referralCode", "==", discounts.referralCodeUsed));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          (orderData as any).referrerId = snap.docs[0].id;
+        }
+      }
+
       await addDoc(collection(db, "orders"), orderData);
 
-      // Succès immédiat pour éviter d'attendre l'updateDoc (plus optionnel)
-      setFinalDeposit(depositAmount);
-      setSuccess(true);
-      clearCart();
-      window.scrollTo(0, 0);
-
-      // Incrémenter la fidélité en arrière-plan sans bloquer
-      if (user?.uid) {
-        const userRef = doc(db, "users", user.uid);
-        updateDoc(userRef, {
+      // Mise à jour du profil (crédits et offre bienvenue)
+      if (user?.id) {
+        const userRef = doc(db, "users", user.id);
+        const userUpdate: any = {
           ordersCount: increment(1)
-        }).catch(e => console.error("Erreur fidélité:", e));
+        };
+        if (creditsToUse > 0) userUpdate.referralCredits = increment(-creditsToUse);
+        if (welcomeDiscount > 0) userUpdate.hasUsedWelcomeOffer = true;
+        
+        await updateDoc(userRef, userUpdate);
       }
 
     } catch (err) {
@@ -130,6 +156,18 @@ export default function ReservationPage() {
       alert("Erreur lors de la réservation. Vérifiez votre connexion et réessayez.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyReferral = async () => {
+    if (!referralCode || referralCode.length < 5) return;
+    try {
+      const { collection, query, where, getDocs } = await import("firebase/firestore");
+      const q = query(collection(db, "users"), where("referralCode", "==", referralCode.trim()));
+      const snap = await getDocs(q);
+      setIsReferralValid(!snap.empty && snap.docs[0].id !== user?.id);
+    } catch (e) {
+      setIsReferralValid(false);
     }
   };
 
@@ -342,6 +380,55 @@ export default function ReservationPage() {
               />
             </div>
 
+            {/* --- Growth Features UI --- */}
+            <div className="sm:col-span-2 space-y-4 pt-4 border-t border-cream/30">
+              <h3 className="font-display text-lg font-bold text-primary flex items-center gap-2">
+                <GiftIcon className="h-5 w-5 text-accent" /> Avantages & Réductions
+              </h3>
+              
+              {user && (user as any).referralCredits > 0 && (
+                <label className="flex items-center gap-3 p-4 rounded-2xl bg-accent/5 border border-accent/10 cursor-pointer group hover:bg-accent/10 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={useCredits} 
+                    onChange={e => setUseCredits(e.target.checked)}
+                    className="h-5 w-5 rounded border-accent text-accent focus:ring-accent" 
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-primary">Utiliser mes crédits Afro Family</p>
+                    <p className="text-xs text-primary/60">Vous avez <span className="text-accent font-bold">{(user as any).referralCredits}€</span> disponibles.</p>
+                  </div>
+                </label>
+              )}
+
+              {(!user || (user as any).ordersCount === 0) && (
+                <div className="space-y-2">
+                  <label className="label">Code Parrain (Optionnel)</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Ex: AFRO-JEAN-1234"
+                      className={`field flex-1 ${isReferralValid === true ? 'border-green-500 bg-green-50' : isReferralValid === false ? 'border-red-500 bg-red-50' : ''}`}
+                      value={referralCode}
+                      onChange={e => {
+                        setReferralCode(e.target.value.toUpperCase());
+                        setIsReferralValid(null);
+                      }}
+                    />
+                    <button 
+                      type="button"
+                      onClick={handleVerifyReferral}
+                      className="btn btn-md bg-primary text-white px-6"
+                    >
+                      Vérifier
+                    </button>
+                  </div>
+                  {isReferralValid === true && <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Code valide ! Récompense activée.</p>}
+                  {isReferralValid === false && <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Code invalide ou expiré.</p>}
+                </div>
+              )}
+            </div>
+
             <div className="sm:col-span-2 pt-6">
               <button
                 type="submit"
@@ -377,10 +464,23 @@ export default function ReservationPage() {
                 <span className="text-primary/60">Sous-total</span>
                 <span className="font-bold text-primary">{formatPrice(subtotal)}</span>
               </div>
-              {form.deliveryMode === "livraison" && (
                 <div className="flex justify-between text-sm text-accent">
                   <span>Frais de livraison</span>
                   <span className="font-bold">{formatPrice(DELIVERY_FEE)}</span>
+                </div>
+              )}
+
+              {welcomeDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600 font-bold">
+                  <span>Cadeau de Bienvenue 🎁</span>
+                  <span>-{formatPrice(welcomeDiscount)}</span>
+                </div>
+              )}
+
+              {creditsToUse > 0 && (
+                <div className="flex justify-between text-sm text-blue-600 font-bold">
+                  <span>Crédits Afro Family 💎</span>
+                  <span>-{formatPrice(creditsToUse)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-cream/30 pt-4 text-xl">
