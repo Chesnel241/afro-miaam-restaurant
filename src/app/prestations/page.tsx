@@ -56,7 +56,7 @@ export default function PrestationsPage() {
   return (
     <div className="min-h-screen bg-creamSoft">
       {/* --- HERO SECTION --- */}
-      <section className="relative h-[60vh] min-h-[500px] overflow-hidden bg-primary">
+      <section className="relative h-[70vh] min-h-[500px] overflow-hidden bg-primary">
         <div className="absolute inset-0">
           <img 
             src={currentPrestation.image} 
@@ -66,7 +66,7 @@ export default function PrestationsPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-primary/60 via-transparent to-primary" />
         </div>
         
-        <div className="container-x relative z-10 flex h-full flex-col justify-center pt-10 sm:pt-20">
+        <div className="container-x relative z-30 flex h-full flex-col justify-center pt-10 sm:pt-20">
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -102,7 +102,7 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- SERVICES PILLARS --- */}
-      <section className="container-x -mt-12 relative z-20 pb-20">
+      <section className="container-x -mt-10 md:-mt-16 relative z-20 pb-20">
         <div className="grid gap-6 md:grid-cols-3">
           {PRESTATIONS.map((item) => (
             <motion.button
