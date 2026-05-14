@@ -4,9 +4,11 @@ import { useAuth, type Order, type MenuItemDynamic } from "@/components/AuthCont
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { GiftIcon, ArrowRightIcon, TrashIcon, ClockIcon, UserIcon, CartIcon } from "@/components/Icons";
+import { GiftIcon, ArrowRightIcon, TrashIcon, ClockIcon, UserIcon, CartIcon, StarIcon } from "@/components/Icons";
 import { formatPrice } from "@/lib/utils";
 import dynamic from "next/dynamic";
+import { MemberCard } from "@/components/MemberCard";
+import { useCart } from "@/components/CartContext";
 
 const QRScannerModal = dynamic(
   () => import("@/components/QRScannerModal").then((mod) => mod.QRScannerModal),
@@ -123,25 +125,11 @@ function MonCompteContent() {
         
         {/* --- SIDEBAR / MOBILE HEADER --- */}
         <aside className="space-y-6">
-          <div className="rounded-2xl sm:rounded-3xl bg-white p-5 sm:p-6 shadow-soft ring-1 ring-cream/20">
-            <div className="flex flex-col items-center text-center">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-4">
-                <UserIcon className="h-8 w-8 sm:h-10 sm:w-10" />
-              </div>
-              <h2 className="font-display text-lg sm:text-xl font-bold text-primary">{user.name}</h2>
-              <p className="text-xs sm:text-sm text-primary/50 mb-6 truncate max-w-full px-4">{user.email}</p>
-              
-              <button
-                onClick={async () => {
-                  await logout();
-                  router.push("/login");
-                }}
-                className="btn btn-md bg-afro-red text-white w-full flex items-center justify-center min-w-0 px-4 text-sm sm:text-base h-12"
-              >
-                Se déconnecter
-              </button>
-            </div>
-          </div>
+          <MemberCard 
+            userName={user.name} 
+            ordersCount={user.ordersCount} 
+            referralCredits={(user as any).referralCredits || 0} 
+          />
 
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-primary-gradient p-5 sm:p-6 text-cream shadow-soft">
             <div className="afro-side-pattern absolute inset-0 opacity-10" aria-hidden="true" />
@@ -413,6 +401,26 @@ function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string
 }
 
 function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
+  const { addItem } = useCart();
+  const { addOrderReview } = useAuth();
+  const router = useRouter();
+  const [showReview, setShowReview] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+
+  const handleReorder = () => {
+    order.items.forEach(item => {
+      addItem({
+        id: (item as any).itemId || item.name,
+        name: item.name,
+        price: item.price,
+        image: (item as any).image || "",
+        flavor: (item as any).flavor
+      }, item.quantity);
+    });
+    router.push("/panier");
+  };
+
   const dateObj = new Date(order.createdAt);
   const formattedDate = dateObj.toLocaleDateString("fr-FR", {
     day: "numeric",
@@ -421,55 +429,100 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   });
 
   return (
-    <div className="py-6 first:pt-0 last:pb-0 flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
-        {/* Partie Gauche : Icône + ID + Date */}
-        <div className="flex gap-4 min-w-0">
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
+    <div className="py-8 first:pt-0 last:pb-0 border-b border-cream/20 last:border-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex gap-5 min-w-0">
+          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
             order.status === 'Livré' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
           }`}>
-            {order.status === 'Livré' ? <GiftIcon className="h-6 w-6" /> : <ClockIcon className="h-6 w-6" />}
+            {order.status === 'Livré' ? <GiftIcon className="h-8 w-8" /> : <ClockIcon className="h-8 w-8" />}
           </div>
           <div className="min-w-0 flex flex-col justify-center">
-            <h4 className="font-display font-black text-primary text-base tracking-tight truncate">
-              {order.id.substring(0, 8).toUpperCase()}
-            </h4>
-            <p className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">{formattedDate}</p>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h4 className="font-display font-black text-primary text-lg tracking-tight truncate">
+                #{order.id.substring(0, 8).toUpperCase()}
+              </h4>
+              <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                order.status === "Livré"
+                  ? "bg-green-100 text-green-700"
+                  : order.status === "En cours" || order.status === "Acompte Reçu"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-primary/10 text-primary/60"
+              }`}>
+                {order.status}
+              </span>
+            </div>
+            <p className="text-xs font-medium text-primary/40 uppercase tracking-widest">{formattedDate}</p>
           </div>
         </div>
 
-        {/* Partie Droite : Prix & Badge Status */}
-        <div className="flex flex-col items-end shrink-0 gap-2">
-          <p className="font-display font-black text-primary text-lg leading-none">{formatPrice(order.total)}</p>
-          <span className={`inline-block rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-[0.1em] shadow-sm ${
-            order.status === "Livré"
-              ? "bg-accent text-white"
-              : order.status === "En cours" || order.status === "Acompte Reçu"
-              ? "bg-blue-600 text-white shadow-md animate-pulse"
-              : order.status === "Attente Acompte"
-              ? "bg-afro-red text-white"
-              : "bg-primary text-white"
-          }`}>
-            {order.status}
-          </span>
+        <div className="flex flex-wrap items-center gap-3">
+          {order.status === 'Livré' && !order.hasReviewed && (
+            <button 
+              onClick={() => setShowReview(true)}
+              className="btn btn-xs bg-accent/10 text-accent hover:bg-accent hover:text-white border-none px-4"
+            >
+              Donner mon avis (+1€)
+            </button>
+          )}
+          <button 
+            onClick={handleReorder}
+            className="btn btn-xs bg-primary text-white hover:bg-primary/90 border-none px-4 flex items-center gap-2"
+          >
+            <CartIcon className="h-3 w-3" />
+            Reprendre la même
+          </button>
         </div>
       </div>
 
-      {/* Description des plats : Prend toute la largeur, sous les infos principales */}
-      <div className="pl-16 pr-2">
-        <p className="text-xs font-medium text-primary/70 leading-relaxed italic border-l-2 border-cream/30 pl-3">
-          {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
-        </p>
-
-        {(order.status === "En cours" || order.status === "Acompte Reçu") && (
-          <button 
-            onClick={onScan}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-[10px] font-black uppercase tracking-[0.15em] text-white shadow-glow transition-all hover:scale-[1.02] active:scale-95"
-          >
-            <span className="text-sm">📸</span> Scanner Livraison
-          </button>
-        )}
+      <div className="mt-4 sm:ml-19 pl-1">
+         <p className="text-xs font-medium text-primary/70 leading-relaxed italic border-l-2 border-cream/30 pl-3">
+           {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
+         </p>
       </div>
+
+      <AnimatePresence>
+        {showReview && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-6 p-6 rounded-3xl bg-creamSoft border border-cream/30 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-black text-primary uppercase tracking-[0.2em]">Votre note</p>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <button key={s} onClick={() => setRating(s)} className={`transition-all hover:scale-125 ${rating >= s ? 'text-accent' : 'text-primary/10'}`}>
+                      <StarIcon className="h-7 w-7" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <textarea 
+                placeholder="Un petit mot sur votre repas ?" 
+                className="field bg-white min-h-[100px] text-sm"
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+              />
+              <div className="flex justify-end gap-3 pt-2">
+                <button onClick={() => setShowReview(false)} className="px-4 py-2 text-[10px] font-black text-primary/40 uppercase tracking-widest hover:text-primary transition-colors">Annuler</button>
+                <button 
+                  onClick={async () => {
+                    await addOrderReview(order.id, rating, comment);
+                    setShowReview(false);
+                    alert("Merci ! 1€ a été ajouté à votre Afro Wallet.");
+                  }} 
+                  className="btn btn-sm btn-primary px-8 uppercase font-black tracking-widest"
+                >
+                  Envoyer
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

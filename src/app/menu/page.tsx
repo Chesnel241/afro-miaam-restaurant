@@ -8,7 +8,7 @@ import { useCart } from "@/components/CartContext";
 import { useAuth } from "@/components/AuthContext";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/data/menu";
 import { formatPrice } from "@/lib/utils";
-import { CartIcon } from "@/components/Icons";
+import { CartIcon, GiftIcon } from "@/components/Icons";
 
 export default function MenuPage() {
   const [filter, setFilter] = useState<CategoryFilter>("all");
@@ -67,6 +67,23 @@ export default function MenuPage() {
             africaines. Commande à l&apos;avance, paiement après validation
             par téléphone.
           </p>
+
+          <div className="mt-8 flex flex-wrap gap-4">
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 animate-pulse">
+              <div className="h-2 w-2 rounded-full bg-accent shadow-[0_0_8px_rgba(255,165,0,0.8)]" />
+              <p className="text-sm font-black uppercase tracking-widest text-accent">
+                Places limitées : <span className="text-white">Plus que 8 disponibles pour demain</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-4 border border-white/5">
+              <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                <GiftIcon className="h-4 w-4" />
+              </div>
+              <p className="text-xs font-bold text-cream/70">
+                Gagnez <span className="text-white">5€</span> par ami parrainé
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -48,6 +48,8 @@ export type Order = {
   total: number;
   status: OrderStatus;
   createdAt: string;
+  hasReviewed?: boolean;
+  referrerId?: string;
 };
 
 export type UserProfile = {
@@ -115,6 +117,7 @@ type AuthContextType = {
   addMenuItem: (item: Omit<MenuItemDynamic, "id">) => Promise<void>;
   updateMenuItem: (id: string, item: Partial<MenuItemDynamic>) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
+  addOrderReview: (orderId: string, rating: number, comment: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -551,6 +554,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await updateDoc(doc(db, "menu", id), { available: false, deletedAt: serverTimestamp() });
   }, [user]);
 
+  const addOrderReview = useCallback(async (orderId: string, rating: number, comment: string) => {
+    if (!user) return;
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+      hasReviewed: true,
+      review: { rating, comment, createdAt: serverTimestamp() }
+    });
+    await updateDoc(doc(db, "users", user.id), {
+      referralCredits: increment(1)
+    });
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -574,6 +589,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         addMenuItem,
         updateMenuItem,
         deleteMenuItem,
+        addOrderReview,
       }}
     >
       {children}
