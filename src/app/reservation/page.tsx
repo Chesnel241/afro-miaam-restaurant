@@ -464,6 +464,7 @@ export default function ReservationPage() {
                 <span className="text-primary/60">Sous-total</span>
                 <span className="font-bold text-primary">{formatPrice(subtotal)}</span>
               </div>
+              {form.deliveryMode === "livraison" && (
                 <div className="flex justify-between text-sm text-accent">
                   <span>Frais de livraison</span>
                   <span className="font-bold">{formatPrice(DELIVERY_FEE)}</span>
