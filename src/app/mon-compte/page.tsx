@@ -376,7 +376,7 @@ function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string
 
 function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const { addItem } = useCart();
-  const { addOrderReview } = useAuth();
+  const { addOrderReview, isReviewRewardActive } = useAuth();
   const router = useRouter();
   const [showReview, setShowReview] = useState(false);
   const [rating, setRating] = useState(5);
