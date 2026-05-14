@@ -394,12 +394,14 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
     router.push("/panier");
   };
 
-  const dateObj = new Date(order.createdAt);
-  const formattedDate = dateObj.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const dateObj = order.createdAt ? new Date(order.createdAt) : new Date();
+  const formattedDate = !isNaN(dateObj.getTime()) 
+    ? dateObj.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+    : "Date inconnue";
+
+  const orderIdDisplay = typeof order.id === "string" 
+    ? `#${order.id.substring(0, 8).toUpperCase()}` 
+    : `#${String(order.id).substring(0, 8).toUpperCase()}`;
 
   return (
     <div className="py-8 first:pt-0 last:pb-0 border-b border-cream/20 last:border-0">
@@ -413,7 +415,7 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
           <div className="min-w-0 flex flex-col justify-center">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h4 className="font-display font-black text-primary text-lg tracking-tight truncate">
-                #{order.id.substring(0, 8).toUpperCase()}
+                {orderIdDisplay}
               </h4>
               <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                 order.status === "Livré"

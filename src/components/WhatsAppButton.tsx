@@ -1,9 +1,15 @@
 "use client";
 
+import { useCart } from "./CartContext";
+
 export function WhatsAppButton() {
+  const { itemCount } = useCart();
   const phone = "33751019452";
   const message = encodeURIComponent("Bonjour Afro Miaam ! J'aimerais passer une commande.");
   const url = `https://wa.me/${phone}?text=${message}`;
+
+  // Si panier présent, on remonte le bouton pour ne pas gêner la barre de panier orange
+  const bottomClass = itemCount > 0 ? "bottom-24" : "bottom-8";
 
   return (
     <a
@@ -11,7 +17,7 @@ export function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Nous contacter sur WhatsApp"
-      className="fixed bottom-8 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110 active:scale-95 sm:bottom-6 sm:right-24 sm:h-16 sm:w-16"
+      className={`fixed ${bottomClass} right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 sm:bottom-6 sm:right-24 sm:h-16 sm:w-16`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

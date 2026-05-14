@@ -27,58 +27,13 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <BenefitsGrid />
-
-      {/* Section Personnalisée pour Utilisateur Connecté */}
-      {user && user.role === "customer" && (
-        <section className="bg-white py-10 border-b border-cream/20">
-          <div className="container-x">
-            <div className="rounded-3xl bg-creamSoft p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 text-accent mb-2">
-                  <GiftIcon className="h-5 w-5" />
-                  <span className="text-xs font-bold uppercase tracking-widest">Espace Privilège</span>
-                </div>
-                <h2 className="heading-display text-2xl text-primary sm:text-3xl">
-                  Bon retour, <span className="text-accent">{user.name}</span>&nbsp;!
-                </h2>
-                <p className="mt-3 text-primary/70 max-w-lg">
-                  Prêt pour votre prochaine expérience gastronomique ? {recentItems.length > 0 ? "Retrouvez vos classiques ou découvrez nos nouveautés." : "Parcourez notre menu et cumulez vos points fidélité."}
-                </p>
-                <div className="mt-6 flex flex-wrap gap-4">
-                  <Link href="/menu" className="btn btn-md btn-primary">
-                    Voir la carte
-                  </Link>
-                  <Link href="/mon-compte" className="btn btn-md btn-ghost-dark">
-                    Mon historique
-                  </Link>
-                </div>
-              </div>
-
-              {recentItems.length > 0 && (
-                <div className="w-full md:w-auto">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary/40 mb-3 text-center md:text-left">
-                    Commander à nouveau
-                  </p>
-                  <div className="flex gap-4">
-                    {recentItems.map(item => (
-                      <Link key={item.id} href="/menu" className="group block w-20 sm:w-24">
-                        <div className="aspect-square rounded-2xl bg-white overflow-hidden shadow-sm group-hover:shadow-soft transition-all">
-                          <img src={item.image} alt={item.name} className="h-full w-full object-cover group-hover:scale-110 transition-transform" />
-                        </div>
-                        <p className="mt-2 text-[10px] font-bold text-primary truncate text-center">{item.name}</p>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+      
+      {!user && (
+        <>
+          <BenefitsGrid />
+          <HowItWorks />
+        </>
       )}
-
-      {/* On ne montre le marketing lourd (Comment ça marche) que si pas connecté ou sur demande */}
-      {(!user || user.role !== "customer") && <HowItWorks />}
 
       {/* Signatures */}
       <section className="bg-creamSoft py-14 sm:py-20">
