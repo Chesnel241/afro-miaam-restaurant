@@ -382,6 +382,12 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleReorder = () => {
     order.items.forEach(item => {
       addItem({
@@ -396,9 +402,9 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   };
 
   const dateObj = order.createdAt ? new Date(order.createdAt) : new Date();
-  const formattedDate = !isNaN(dateObj.getTime()) 
+  const formattedDate = mounted && !isNaN(dateObj.getTime()) 
     ? dateObj.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-    : "Date inconnue";
+    : "...";
 
   const orderIdDisplay = typeof order.id === "string" 
     ? `#${order.id.substring(0, 8).toUpperCase()}` 
