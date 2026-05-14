@@ -142,11 +142,29 @@ function Pill({
 function CircularBadge() {
   return (
     <div className="relative h-full w-full">
-      <div className="absolute inset-0 animate-[spin_10s_linear_infinite] rounded-full border border-dashed border-accent/40" />
-      <div className="flex h-full w-full items-center justify-center rounded-full bg-accent text-white shadow-glow">
+      {/* Texte Circulaire Animé */}
+      <svg
+        viewBox="0 0 200 200"
+        className="absolute inset-0 h-full w-full animate-[spin_10s_linear_infinite]"
+      >
+        <defs>
+          <path
+            id="badge-path"
+            d="M 100, 100 m -85, 0 a 85,85 0 1,1 170,0 a 85,85 0 1,1 -170,0"
+          />
+        </defs>
+        <text className="text-[14px] font-black uppercase tracking-[0.2em] fill-white">
+          <textPath href="#badge-path" startOffset="0">
+            ★ COMMANDEZ 24H À L&apos;AVANCE ★ COMMANDEZ 24H À L&apos;AVANCE
+          </textPath>
+        </text>
+      </svg>
+
+      {/* Cœur du Badge */}
+      <div className="absolute inset-[15%] flex items-center justify-center rounded-full bg-accent text-white shadow-glow">
         <div className="text-center">
-          <p className="text-[10px] font-black leading-none sm:text-xs md:text-sm">24H</p>
-          <p className="mt-0.5 text-[6px] font-bold uppercase tracking-tighter sm:text-[8px] md:text-[10px]">D&apos;AVANCE</p>
+          <p className="text-[10px] font-black leading-none sm:text-xs md:text-sm lg:text-base">24H</p>
+          <p className="mt-0.5 text-[5px] font-bold uppercase tracking-tighter sm:text-[7px] md:text-[8px]">AVANCE</p>
         </div>
       </div>
     </div>
