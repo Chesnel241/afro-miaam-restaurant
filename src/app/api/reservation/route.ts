@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
+import { collection, getDocs } from "firebase/firestore";
+import { menuItems } from "@/data/menu";
+import { db } from "@/lib/firebase";
+import { DELIVERY_FEE } from "@/lib/booking";
+
+type ClientItem = {
+  id?: unknown;
+  quantity?: unknown;
+};
 
 type Payload = {
   items?: unknown[];
   date?: string;
   slot?: string;
   deliveryMode?: "retrait" | "livraison";
+  total?: unknown;
   customer?: {
     firstName?: string;
     lastName?: string;
@@ -15,8 +25,9 @@ type Payload = {
   };
 };
 
-const MAX_BODY_BYTES = 32 * 1024; // 32 KB
+const MAX_BODY_BYTES = 32 * 1024;
 const MAX_ITEMS = 50;
+const MAX_QUANTITY = 50;
 const FIELD_LIMITS = {
   firstName: 80,
   lastName: 80,
@@ -26,6 +37,35 @@ const FIELD_LIMITS = {
   notes: 600,
 };
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const PRICE_CACHE_TTL_MS = 60_000;
+const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
+  menuItems.map((i) => [i.id, i.price]),
+);
+
+let priceCache: { byId: Record<string, number>; expires: number } | null = null;
+
+async function getPriceById(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (priceCache && now < priceCache.expires) return priceCache.byId;
+
+  const byId: Record<string, number> = { ...STATIC_PRICE_BY_ID };
+  try {
+    const snap = await getDocs(collection(db, "menu"));
+    snap.forEach((d) => {
+      const data = d.data() as { price?: unknown; available?: unknown };
+      const price = typeof data.price === "number" && data.price > 0 ? data.price : null;
+      if (price !== null && data.available !== false) {
+        byId[d.id] = price;
+      }
+    });
+  } catch (e) {
+    console.warn("MENU_FIRESTORE_READ_FAILED", (e as { code?: string }).code ?? "unknown");
+    // fallback already populated from STATIC_PRICE_BY_ID
+  }
+
+  priceCache = { byId, expires: now + PRICE_CACHE_TTL_MS };
+  return byId;
+}
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
@@ -33,7 +73,6 @@ function bad(error: string, status = 400) {
 
 function clean(value: unknown, max: number): string {
   if (typeof value !== "string") return "";
-  // Strip control characters except newline and tab.
   return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").trim().slice(0, max);
 }
 
@@ -42,12 +81,15 @@ function generateReference(): string {
   const ymd = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(
     date.getDate(),
   ).padStart(2, "0")}`;
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const rand = crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
   return `AM-${ymd}-${rand}`;
 }
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 export async function POST(request: Request) {
-  // 1) Hard cap on body size to prevent DoS via large payloads.
   const lenHeader = request.headers.get("content-length");
   if (lenHeader && Number(lenHeader) > MAX_BODY_BYTES) {
     return bad("Requête trop volumineuse.", 413);
@@ -70,22 +112,59 @@ export async function POST(request: Request) {
     return bad("Format JSON invalide.");
   }
 
-  // 2) Items
-  const items = Array.isArray(payload.items) ? payload.items : [];
+  const items = Array.isArray(payload.items) ? (payload.items as ClientItem[]) : [];
   if (items.length === 0) return bad("Le panier est vide.");
   if (items.length > MAX_ITEMS) return bad("Trop d'articles dans le panier.");
 
-  // 3) Date / slot, basic shape validation
   const date = clean(payload.date, 10);
   const slot = clean(payload.slot, 32);
   if (!ISO_DATE_RE.test(date)) return bad("Date invalide.");
   if (!slot) return bad("Créneau invalide.");
 
-  // 4) Delivery mode whitelist
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const requested = new Date(date + "T00:00:00");
+  if (requested.getTime() < today.getTime() + 24 * 3600 * 1000) {
+    return bad("Réservation minimum 24h à l'avance.");
+  }
+
   const deliveryMode: "retrait" | "livraison" =
     payload.deliveryMode === "livraison" ? "livraison" : "retrait";
 
-  // 5) Customer fields
+  // Recalcul du total côté serveur depuis le menu Firestore (cache 60s)
+  const PRICE_BY_ID = await getPriceById();
+  let serverSubtotal = 0;
+  for (const item of items) {
+    const id = clean(item.id, 60);
+    const qty = item.quantity;
+    if (!id || !(id in PRICE_BY_ID)) {
+      return bad(`Article inconnu: ${id || "(vide)"}`);
+    }
+    if (typeof qty !== "number" || !Number.isInteger(qty) || qty < 1 || qty > MAX_QUANTITY) {
+      return bad("Quantité invalide.");
+    }
+    serverSubtotal += PRICE_BY_ID[id] * qty;
+  }
+
+  const serverDeliveryFee = deliveryMode === "livraison" ? DELIVERY_FEE : 0;
+  const serverTotalBeforeDiscount = round2(serverSubtotal + serverDeliveryFee);
+
+  // Le client peut envoyer un total ≤ serveur (les remises crédits/welcome ne sont
+  // pas vérifiables ici sans Admin SDK). On rejette tout total > serveur ou < 0.
+  let clientTotal = serverTotalBeforeDiscount;
+  if (payload.total !== undefined) {
+    if (typeof payload.total !== "number" || !Number.isFinite(payload.total)) {
+      return bad("Total invalide.");
+    }
+    if (payload.total > serverTotalBeforeDiscount + 0.01) {
+      return bad("Total incohérent avec les prix du menu.");
+    }
+    if (payload.total < 0) {
+      return bad("Total négatif refusé.");
+    }
+    clientTotal = round2(payload.total);
+  }
+
   const c = payload.customer || {};
   const customer = {
     firstName: clean(c.firstName, FIELD_LIMITS.firstName),
@@ -110,16 +189,25 @@ export async function POST(request: Request) {
   }
 
   const reference = generateReference();
+  const finalTotal = clientTotal;
+  const finalDeposit = round2(finalTotal * 0.5);
 
-  // TODO: brancher l'envoi email/SMS/Sheets/Notion ici.
-  // Volontairement on ne logge ni le numéro complet ni l'adresse.
   console.log("[Afro Miaam] Nouvelle réservation", {
     reference,
     date,
     slot,
     deliveryMode,
     itemCount: items.length,
+    serverSubtotal,
+    finalTotal,
   });
 
-  return NextResponse.json({ ok: true, reference });
+  return NextResponse.json({
+    ok: true,
+    reference,
+    serverSubtotal: round2(serverSubtotal),
+    deliveryFee: serverDeliveryFee,
+    total: finalTotal,
+    depositAmount: finalDeposit,
+  });
 }
