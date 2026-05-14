@@ -31,25 +31,7 @@ export function MemberCard({ userName, ordersCount, referralCredits }: MemberCar
           </div>
         </div>
 
-        {/* Fidélité */}
-        <div className="mb-8">
-          <div className="flex justify-between items-end mb-3">
-            <p className="text-xs font-bold text-cream/60 uppercase tracking-widest">Fidélité 10+1</p>
-            <p className="text-xs font-black text-accentSoft">{currentProgress} / {maxOrders}</p>
-          </div>
-          <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden p-[2px]">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="h-full bg-accent rounded-full shadow-[0_0_15px_rgba(255,165,0,0.5)]"
-            />
-          </div>
-          <p className="mt-3 text-[10px] font-medium text-cream/40 italic">
-            Plus que {remaining} repas livrés avant votre repas offert !
-          </p>
-        </div>
-
+        {/* Fidélité - Supprimée pour éviter doublon avec Wallet */}
         <div className="flex justify-between items-center pt-6 border-t border-white/5">
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-cream/30 mb-1">Afro Wallet</p>

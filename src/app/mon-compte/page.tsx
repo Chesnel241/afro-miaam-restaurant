@@ -131,37 +131,17 @@ function MonCompteContent() {
             referralCredits={(user as any).referralCredits || 0} 
           />
 
-          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-primary-gradient p-5 sm:p-6 text-cream shadow-soft">
-            <div className="afro-side-pattern absolute inset-0 opacity-10" aria-hidden="true" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-accent">
-                  <GiftIcon className="h-4 w-4" />
-                </span>
-                <h2 className="font-display text-base sm:text-lg font-bold">Ma Fidélité</h2>
-              </div>
-              
-              <div className="mt-5">
-                {isRewardReady ? (
-                  <div className="rounded-xl bg-accent p-3 text-center shadow-glow animate-bounce">
-                    <p className="font-bold text-white text-xs">🎉 Cadeau prêt !</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex justify-between items-end mb-2">
-                      <p className="text-[10px] sm:text-xs text-cream/80 font-semibold leading-none">
-                        {remaining <= 2 ? "Presque fini ! 🔥" : `${remaining} repas restants`}
-                      </p>
-                      <span className="text-[10px] font-bold text-accent leading-none">{currentCycleCount}/10</span>
-                    </div>
-                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-cream/10">
-                      <div className={`h-full bg-accent transition-all duration-1000 ${remaining <= 2 ? 'animate-pulse' : ''}`} style={{ width: `${progressPercentage}%` }} />
-                    </div>
-                  </>
-                )}
-                <p className="mt-3 text-[9px] text-cream/40 italic text-center">La 11ème commande est offerte !</p>
-              </div>
-            </div>
+          <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-cream/20">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40 mb-4">Gestion du compte</h3>
+            <button
+              onClick={async () => {
+                await logout();
+                router.push("/login");
+              }}
+              className="btn btn-md bg-afro-red/10 text-afro-red w-full border-none hover:bg-afro-red hover:text-white transition-all font-black text-xs tracking-widest"
+            >
+              SE DÉCONNECTER
+            </button>
           </div>
         </aside>
 

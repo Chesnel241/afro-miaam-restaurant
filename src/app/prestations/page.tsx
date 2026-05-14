@@ -32,6 +32,14 @@ const PRESTATIONS = [
   }
 ];
 
+const SHOWCASE_IMAGES = [
+  "https://images.unsplash.com/photo-1535232352032-665a4b0b11c9?q=80&w=2070&auto=format&fit=crop", // Pâtisserie Anniversaire
+  "https://images.unsplash.com/photo-1530103043960-ef38714abb15?q=80&w=2070&auto=format&fit=crop", // Déco Table
+  "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?q=80&w=2070&auto=format&fit=crop", // Gâteau design
+  "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2070&auto=format&fit=crop", // Réception
+  "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070&auto=format&fit=crop"  // Ambiance Pro
+];
+
 export default function PrestationsPage() {
   const [selectedType, setSelectedType] = useState(PRESTATIONS[0].id);
   const [guests, setGuests] = useState(20);
@@ -58,7 +66,7 @@ export default function PrestationsPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-primary/60 via-transparent to-primary" />
         </div>
         
-        <div className="container-x relative z-10 flex h-full flex-col justify-center pt-20">
+        <div className="container-x relative z-10 flex h-full flex-col justify-center pt-10 sm:pt-20">
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -82,11 +90,11 @@ export default function PrestationsPage() {
           >
             <button 
               onClick={() => document.getElementById('quote-builder')?.scrollIntoView({ behavior: 'smooth' })}
-              className="btn btn-lg btn-primary px-10"
+              className="btn btn-lg btn-primary"
             >
               Estimer mon projet
             </button>
-            <a href="https://wa.me/33600000000" className="btn btn-lg bg-white/10 text-white backdrop-blur-md border border-white/20 hover:bg-white/20">
+            <a href="https://wa.me/33751019452" className="btn btn-lg bg-white/10 text-white backdrop-blur-md border border-white/20 hover:bg-white/20">
               Contacter un expert
             </a>
           </motion.div>
@@ -94,20 +102,20 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- SERVICES PILLARS --- */}
-      <section className="container-x -mt-20 relative z-20 pb-20">
+      <section className="container-x -mt-12 relative z-20 pb-20">
         <div className="grid gap-6 md:grid-cols-3">
           {PRESTATIONS.map((item) => (
             <motion.button
               key={item.id}
               onClick={() => setSelectedType(item.id)}
-              whileHover={{ y: -10 }}
-              className={`group relative overflow-hidden rounded-[2.5rem] p-8 text-left transition-all ${
+              whileHover={{ y: -5 }}
+              className={`group relative overflow-hidden rounded-[2rem] p-8 text-left transition-all ${
                 selectedType === item.id 
                   ? "bg-primary text-white shadow-2xl ring-4 ring-accent" 
                   : "bg-white text-primary shadow-soft hover:shadow-xl"
               }`}
             >
-              <div className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl transition-colors ${
+              <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl transition-colors ${
                 selectedType === item.id ? "bg-accent text-white" : "bg-accent/10 text-accent"
               }`}>
                 {item.icon}
@@ -116,9 +124,8 @@ export default function PrestationsPage() {
               <p className={`text-sm leading-relaxed ${selectedType === item.id ? "text-cream/70" : "text-primary/60"}`}>
                 {item.description}
               </p>
-              <div className="mt-8 flex items-center gap-2 font-black text-sm uppercase tracking-widest">
+              <div className="mt-6 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest opacity-60">
                 <span>À partir de {item.basePrice}€ / pers</span>
-                <ArrowRightIcon className={`h-4 w-4 transition-transform ${selectedType === item.id ? "translate-x-1" : "group-hover:translate-x-1"}`} />
               </div>
             </motion.button>
           ))}
@@ -216,7 +223,7 @@ export default function PrestationsPage() {
                     </div>
 
                     <a 
-                      href={`https://wa.me/33600000000?text=Bonjour, je souhaite un devis pour un événement ${currentPrestation.title} de ${guests} personnes.`}
+                      href={`https://wa.me/33751019452?text=Bonjour, je souhaite un devis pour un événement ${currentPrestation.title} de ${guests} personnes.`}
                       className="btn btn-lg bg-accent text-white w-full shadow-glow"
                     >
                       Valider avec un expert
@@ -231,6 +238,24 @@ export default function PrestationsPage() {
               </AnimatePresence>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* --- SHOWCASE GALLERY --- */}
+      <section className="py-20 overflow-hidden bg-creamSoft">
+        <div className="container-x mb-12">
+          <h2 className="heading-display text-3xl text-primary">Nos Réalisations</h2>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-8 px-4 no-scrollbar">
+          {SHOWCASE_IMAGES.map((img, idx) => (
+            <motion.div 
+              key={idx}
+              whileHover={{ scale: 1.05 }}
+              className="relative h-[300px] w-[250px] sm:h-[400px] sm:w-[320px] shrink-0 overflow-hidden rounded-[2rem] shadow-xl"
+            >
+              <img src={img} alt="Réalisation Afro Miaam" className="h-full w-full object-cover" />
+            </motion.div>
+          ))}
         </div>
       </section>
 
