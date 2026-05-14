@@ -14,6 +14,7 @@ export function MemberCard({ userName, ordersCount, referralCredits }: MemberCar
   const currentProgress = ordersCount % maxOrders;
   const progressPercent = (currentProgress / maxOrders) * 100;
   const remaining = maxOrders - currentProgress;
+  const isRewardReady = ordersCount > 0 && currentProgress === 0;
 
   return (
     <div className="relative overflow-hidden rounded-[2.5rem] bg-primary-gradient p-1 shadow-2xl">
@@ -31,7 +32,29 @@ export function MemberCard({ userName, ordersCount, referralCredits }: MemberCar
           </div>
         </div>
 
-        {/* Fidélité - Supprimée pour éviter doublon avec Wallet */}
+        {/* Fidélité Intégrée Discrètement */}
+        <div className="mb-8">
+          <div className="flex justify-between items-end mb-2">
+            <p className="text-[9px] font-bold text-cream/40 uppercase tracking-widest">
+              {isRewardReady ? "Cadeau prêt ! 🎉" : "Prochain cadeau"}
+            </p>
+            <p className="text-[10px] font-black text-accentSoft">{currentProgress} / {maxOrders}</p>
+          </div>
+          <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className={`h-full bg-accent rounded-full ${isRewardReady ? 'animate-pulse' : ''}`}
+            />
+          </div>
+          {!isRewardReady && (
+            <p className="mt-2 text-[9px] font-medium text-cream/30 italic">
+              Encore {remaining} repas pour votre offre 10+1.
+            </p>
+          )}
+        </div>
+
         <div className="flex justify-between items-center pt-6 border-t border-white/5">
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-cream/30 mb-1">Afro Wallet</p>
@@ -50,13 +73,5 @@ export function MemberCard({ userName, ordersCount, referralCredits }: MemberCar
       {/* Glossy Effect */}
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
     </div>
-  );
-}
-
-function StarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.169L12 18.896l-7.334 3.87 1.4-8.169L.132 9.21l8.2-1.192z" />
-    </svg>
   );
 }
