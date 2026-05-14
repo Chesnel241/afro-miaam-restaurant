@@ -88,6 +88,9 @@ export const metadata: Metadata = {
     address: true,
     email: true,
   },
+  verification: {
+    google: "WOpJu0AfW2PBWD5FJVa5oTE7Z10zcq37KFEke4IgE0g",
+  },
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
