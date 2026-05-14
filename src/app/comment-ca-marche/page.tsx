@@ -1,13 +1,62 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { HowItWorks } from "@/components/HowItWorks";
+import { JsonLd } from "@/components/JsonLd";
+import { breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
-export const metadata = {
-  title: "Comment ça marche",
+export const metadata: Metadata = {
+  title: "Comment ça marche — Précommander chez Afro Miaam",
+  description:
+    "Précommande 24h, choix du créneau, retrait gratuit ou livraison à 3 € dans Lyon. Paiement par téléphone après validation. Le mode d'emploi en 3 étapes.",
+  alternates: { canonical: "/comment-ca-marche" },
+  openGraph: {
+    title: "Comment commander chez Afro Miaam",
+    description: "Précommande 24h, retrait ou livraison Lyon.",
+    url: "/comment-ca-marche",
+  },
+};
+
+const howToJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "Comment précommander chez Afro Miaam",
+  description:
+    "Précommander vos plats africains en 3 étapes : composer le panier, choisir un créneau au moins 24h à l'avance, payer après validation par téléphone.",
+  totalTime: "PT5M",
+  step: [
+    {
+      "@type": "HowToStep",
+      position: 1,
+      name: "Composez votre panier",
+      text: "Parcourez le menu et ajoutez les plats souhaités au panier.",
+      url: `${SITE_URL}/menu`,
+    },
+    {
+      "@type": "HowToStep",
+      position: 2,
+      name: "Choisissez un créneau",
+      text: "Sélectionnez votre créneau au minimum 24h à l'avance et le mode (retrait ou livraison à 3 € dans Lyon).",
+      url: `${SITE_URL}/reservation`,
+    },
+    {
+      "@type": "HowToStep",
+      position: 3,
+      name: "Validation par téléphone",
+      text: "Notre équipe vous rappelle pour confirmer la commande et finaliser le paiement.",
+    },
+  ],
 };
 
 export default function HowItWorksPage() {
   return (
     <>
+      <JsonLd data={howToJsonLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Accueil", path: "/" },
+          { name: "Comment ça marche", path: "/comment-ca-marche" },
+        ])}
+      />
       <section className="bg-primary pt-10 pb-10 text-cream sm:pt-16 sm:pb-12">
         <div className="container-x">
           <p className="eyebrow text-accentSoft">Mode d&apos;emploi</p>

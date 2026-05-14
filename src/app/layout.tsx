@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
@@ -9,6 +9,9 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { AppOverlay } from "@/components/AppOverlay";
 import { CartRecovery } from "@/components/CartRecovery";
+import { AuthProvider } from "@/components/AuthContext";
+import { JsonLd } from "@/components/JsonLd";
+import { restaurantJsonLd, SITE_URL } from "@/lib/seo";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -31,20 +34,69 @@ export const metadata: Metadata = {
   },
   description:
     "Cuisine afro gastronomique à Lyon, en précommande 24h à l'avance. Commande en ligne, retrait sur place ou livraison à 3 € dans Lyon. Paiement après validation par téléphone.",
-  metadataBase: new URL("https://afro-miaam.fr"),
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Afro Miaam",
+  authors: [{ name: "Afro Miaam", url: SITE_URL }],
+  creator: "Afro Miaam",
+  publisher: "Afro Miaam",
+  category: "food",
+  keywords: [
+    "restaurant africain Lyon",
+    "commander africain Lyon",
+    "cuisine africaine Lyon",
+    "traiteur africain Lyon",
+    "yassa Lyon",
+    "tieboudienne Lyon",
+    "mafé Lyon",
+    "attiéké Lyon",
+    "chef africain à domicile",
+    "afro gastronomique",
+    "Afro Miaam",
+    "précommande restaurant Lyon",
+  ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Afro Miaam, Ça mijote, ça régale",
-    description:
-      "Précommande 24h à l'avance. Retrait à Lyon ou livraison à 3 €.",
     type: "website",
     locale: "fr_FR",
+    url: SITE_URL,
+    siteName: "Afro Miaam",
+    title: "Afro Miaam — Ça mijote, ça régale",
+    description:
+      "Cuisine afro gastronomique à Lyon. Précommande 24h à l'avance. Retrait à Lyon ou livraison à 3 €.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Afro Miaam — Ça mijote, ça régale",
+    description:
+      "Cuisine afro gastronomique à Lyon. Précommande 24h à l'avance.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  formatDetection: {
+    telephone: true,
+    address: true,
+    email: true,
   },
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
 };
 
-import { AuthProvider } from "@/components/AuthContext";
+export const viewport: Viewport = {
+  themeColor: "#1F3D2B",
+  colorScheme: "light",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -65,6 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CartRecovery />
           </CartProvider>
         </AuthProvider>
+        <JsonLd data={restaurantJsonLd()} />
       </body>
     </html>
   );

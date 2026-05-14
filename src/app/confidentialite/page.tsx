@@ -1,4 +1,11 @@
-export const metadata = { title: "Politique de confidentialité" };
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Politique de confidentialité",
+  description: "Comment Afro Miaam protège vos données personnelles.",
+  alternates: { canonical: "/confidentialite" },
+  robots: { index: true, follow: true },
+};
 
 export default function PrivacyPage() {
   return (

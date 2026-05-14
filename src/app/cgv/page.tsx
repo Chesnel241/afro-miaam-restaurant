@@ -1,4 +1,11 @@
-export const metadata = { title: "Conditions générales de vente" };
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Conditions générales de vente",
+  description: "Les conditions générales de vente d'Afro Miaam.",
+  alternates: { canonical: "/cgv" },
+  robots: { index: true, follow: true },
+};
 
 export default function CgvPage() {
   return (

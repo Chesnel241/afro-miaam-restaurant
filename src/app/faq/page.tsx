@@ -1,7 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
+import { faqJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata = {
-  title: "FAQ",
+export const metadata: Metadata = {
+  title: "FAQ — Questions fréquentes sur Afro Miaam",
+  description:
+    "Comment commander, se faire livrer, retirer, payer ou annuler une commande chez Afro Miaam à Lyon. Toutes les réponses pratiques en un coup d'œil.",
+  alternates: { canonical: "/faq" },
+  openGraph: {
+    title: "FAQ Afro Miaam",
+    description: "Commande, livraison, retrait, paiement, modification.",
+    url: "/faq",
+  },
 };
 
 const FAQ = [
@@ -38,6 +49,13 @@ const FAQ = [
 export default function FaqPage() {
   return (
     <>
+      <JsonLd data={faqJsonLd(FAQ)} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Accueil", path: "/" },
+          { name: "FAQ", path: "/faq" },
+        ])}
+      />
       <section className="bg-primary pt-10 pb-10 text-cream sm:pt-16 sm:pb-12">
         <div className="container-x">
           <p className="eyebrow text-accentSoft">Questions fréquentes</p>
