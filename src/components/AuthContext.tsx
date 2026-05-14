@@ -556,14 +556,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const addOrderReview = useCallback(async (orderId: string, rating: number, comment: string) => {
     if (!user) return;
-    const orderRef = doc(db, "orders", orderId);
-    await updateDoc(orderRef, {
-      hasReviewed: true,
-      review: { rating, comment, createdAt: serverTimestamp() }
-    });
-    await updateDoc(doc(db, "users", user.id), {
-      referralCredits: increment(1)
-    });
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      await updateDoc(orderRef, {
+        hasReviewed: true,
+        review: { rating, comment, createdAt: serverTimestamp() }
+      });
+      await updateDoc(doc(db, "users", user.id), {
+        referralCredits: increment(1)
+      });
+    } catch (err) {
+      console.error("Erreur Firebase lors de l'avis:", err);
+      throw err; // On laisse remonter pour que l'UI puisse l'attraper si besoin
+    }
   }, [user]);
 
   return (

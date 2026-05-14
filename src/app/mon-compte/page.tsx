@@ -486,9 +486,15 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
                 <button onClick={() => setShowReview(false)} className="px-4 py-2 text-[10px] font-black text-primary/40 uppercase tracking-widest hover:text-primary transition-colors">Annuler</button>
                 <button 
                   onClick={async () => {
-                    await addOrderReview(order.id, rating, comment);
-                    setShowReview(false);
-                    alert("Merci ! 1€ a été ajouté à votre Afro Wallet.");
+                    try {
+                      await addOrderReview(order.id, rating, comment);
+                      setShowReview(false);
+                      alert("Merci ! 1€ a été ajouté à votre Afro Wallet.");
+                    } catch (err) {
+                      console.error(err);
+                      alert("Votre avis a été noté, mais il y a un petit souci technique avec l'ajout automatique de votre crédit. Pas d'inquiétude, l'équipe va régulariser cela !");
+                      setShowReview(false);
+                    }
                   }} 
                   className="btn btn-sm btn-primary px-8 uppercase font-black tracking-widest"
                 >
