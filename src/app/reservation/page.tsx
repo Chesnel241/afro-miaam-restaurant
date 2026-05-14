@@ -13,8 +13,15 @@ import { DELIVERY_FEE } from "@/lib/booking";
 
 export default function ReservationPage() {
   const { cart, subtotal, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Redirection vers login si non connecté
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/login?redirect=${encodeURIComponent("/reservation")}`);
+    }
+  }, [user, authLoading, router]);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -77,8 +84,12 @@ export default function ReservationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Vérification de sécurité pour la date (J+1)
+
+    if (!user?.id) {
+      router.replace(`/login?redirect=${encodeURIComponent("/reservation")}`);
+      return;
+    }
+
     if (form.date < minDate) {
       alert("Désolé, les réservations doivent être effectuées au moins 24h à l'avance. Veuillez choisir une date à partir de demain.");
       return;
@@ -86,15 +97,54 @@ export default function ReservationPage() {
 
     setLoading(true);
     try {
-      // Nettoyage des items pour Firestore (éviter les undefined)
-      const sanitizedItems = cart.map(item => ({
+      const sanitizedItems = cart.map((item) => ({
         id: item.id || "unknown",
         name: item.name || "Plat sans nom",
         price: item.price || 0,
         quantity: item.quantity || 1,
         flavor: item.flavor || null,
-        image: item.image || ""
+        image: item.image || "",
       }));
+
+      // 1) Validation serveur : recalcule total, vérifie items contre menu, retourne référence
+      const apiRes = await fetch("/api/reservation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: sanitizedItems.map((i) => ({ id: i.id, quantity: i.quantity })),
+          date: form.date,
+          slot: form.slot,
+          deliveryMode: form.deliveryMode,
+          total,
+          customer: {
+            firstName: form.firstName,
+            lastName: form.lastName,
+            phone: form.phone,
+            email: form.email,
+            address: form.address,
+            notes: form.notes,
+          },
+        }),
+      });
+
+      if (!apiRes.ok) {
+        const { error } = await apiRes
+          .json()
+          .catch(() => ({ error: "Erreur lors de la validation." }));
+        alert(error || "Erreur lors de la validation.");
+        setLoading(false);
+        return;
+      }
+
+      const apiData = await apiRes.json();
+      const serverTotal = typeof apiData.total === "number" ? apiData.total : total;
+      const serverDeposit =
+        typeof apiData.depositAmount === "number"
+          ? apiData.depositAmount
+          : serverTotal * 0.5;
+      const serverReference = typeof apiData.reference === "string"
+        ? apiData.reference
+        : undefined;
 
       const discounts = {
         referralCredits: creditsToUse,
@@ -102,17 +152,18 @@ export default function ReservationPage() {
         referralCodeUsed: isReferralValid ? referralCode : undefined,
       };
 
-      const orderData = {
-        userId: user?.id || null,
-        userName: user?.name || `${form.firstName} ${form.lastName}`,
-        userEmail: (user?.email || form.email || "").trim().toLowerCase(),
+      const orderData: Record<string, unknown> = {
+        userId: user.id,
+        userName: user.name || `${form.firstName} ${form.lastName}`,
+        userEmail: (user.email || form.email || "").trim().toLowerCase(),
         items: sanitizedItems,
         subtotal,
         deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
-        total,
-        depositAmount,
+        total: serverTotal,
+        depositAmount: serverDeposit,
         discounts,
         status: "Attente Acompte",
+        reference: serverReference,
         createdAt: serverTimestamp(),
         customer: {
           firstName: form.firstName,
@@ -127,32 +178,32 @@ export default function ReservationPage() {
         },
       };
 
-      // Si parrainage utilisé, on marque le parrain
       if (discounts.referralCodeUsed) {
         const { getDocs, query, where, collection } = await import("firebase/firestore");
         const q = query(collection(db, "users"), where("referralCode", "==", discounts.referralCodeUsed));
         const snap = await getDocs(q);
         if (!snap.empty) {
-          (orderData as any).referrerId = snap.docs[0].id;
+          orderData.referrerId = snap.docs[0].id;
         }
       }
 
       await addDoc(collection(db, "orders"), orderData);
 
-      // Mise à jour du profil (crédits et offre bienvenue)
       if (user?.id) {
         const userRef = doc(db, "users", user.id);
-        const userUpdate: any = {
-          ordersCount: increment(1)
+        const userUpdate: Record<string, unknown> = {
+          ordersCount: increment(1),
         };
         if (creditsToUse > 0) userUpdate.referralCredits = increment(-creditsToUse);
         if (welcomeDiscount > 0) userUpdate.hasUsedWelcomeOffer = true;
-        
         await updateDoc(userRef, userUpdate);
       }
 
+      setFinalDeposit(serverDeposit);
+      setSuccess(true);
+      clearCart();
     } catch (err) {
-      console.error("Booking Error:", err);
+      console.error("BOOKING_ERROR", (err as { code?: string }).code ?? "unknown");
       alert("Erreur lors de la réservation. Vérifiez votre connexion et réessayez.");
     } finally {
       setLoading(false);

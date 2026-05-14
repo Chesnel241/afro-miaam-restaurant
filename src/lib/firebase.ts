@@ -2,6 +2,11 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import {
+  initializeAppCheck,
+  ReCaptchaV3Provider,
+  type AppCheck,
+} from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,9 +17,24 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Évite la double-initialisation en mode dev (hot reload)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
+let appCheck: AppCheck | undefined;
+if (typeof window !== "undefined") {
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  if (siteKey) {
+    try {
+      appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(siteKey),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } catch (e) {
+      console.warn("APP_CHECK_INIT_FAILED", (e as Error).code ?? "unknown");
+    }
+  }
+}
+
+export { appCheck };
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);

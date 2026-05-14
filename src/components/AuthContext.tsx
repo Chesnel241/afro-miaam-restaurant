@@ -128,7 +128,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 async function createInitialProfile(uid: string, email: string, displayName?: string | null): Promise<UserProfile> {
   const name = displayName || email.split("@")[0];
   const userRef = doc(db, "users", uid);
-  
+
+  // 8 caractères dans un alphabet sans ambiguïté → 32^8 ≈ 1 000 milliards combinaisons
+  const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  const suffix = Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
+  const referralCode = `AFRO-${name.split(" ")[0].toUpperCase().substring(0, 4)}-${suffix}`;
+
   const profile = {
     name,
     email: email.trim().toLowerCase(),
@@ -136,7 +143,7 @@ async function createInitialProfile(uid: string, email: string, displayName?: st
     role: "customer" as UserRole,
     ordersCount: 0,
     isFirstLogin: true,
-    referralCode: `AFRO-${name.split(" ")[0].toUpperCase().substring(0, 4)}-${Math.floor(1000 + Math.random() * 9000)}`,
+    referralCode,
     referralCredits: 0,
     hasUsedWelcomeOffer: false,
     createdAt: serverTimestamp(),
