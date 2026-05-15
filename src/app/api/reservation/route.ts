@@ -272,11 +272,17 @@ export async function POST(request: Request) {
 
       finalTotal = round2(Math.max(0, serverTotalBeforeDiscount - welcomeDiscount - creditsToUse));
       finalDeposit = round2(finalTotal * 0.5);
-      
-      if (finalTotal <= 0 && serverTotalBeforeDiscount > 0) {
-          if (finalTotal < 0) {
-              throw new Error("Erreur de calcul du total.");
-          }
+
+      // MED-1 (pass 6): explicit reject. Firestore rule requires total > 0;
+      // a finalTotal === 0 would fail at the rules layer with a cryptic error.
+      // Surface a clear message instead so the user knows to use fewer credits.
+      if (finalTotal <= 0) {
+        if (serverTotalBeforeDiscount > 0) {
+          throw new Error(
+            "Vos réductions couvrent intégralement la commande. Utilisez moins de crédits pour finaliser la réservation.",
+          );
+        }
+        throw new Error("Erreur de calcul du total.");
       }
 
       const discounts = {

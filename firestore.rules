@@ -204,6 +204,23 @@ service cloud.firestore {
           && request.resource.data.review.rating <= 5
           && request.resource.data.review.comment is string
           && request.resource.data.review.comment.size() <= 500
+        )
+        // PATCH (pentest BUG-1 / pass 6): owner-confirms-delivery path.
+        // The admin shows a QR to the customer; the customer scans it on
+        // their phone, lands on /valider-commande/[id], and presses
+        // "Confirmer la Réception". This sets status=Livré + deliveredAt
+        // ONLY when the order is in a delivery-eligible state and ONLY by
+        // the order owner. Without this branch, the customer-side update
+        // was rejected by the rule and the delivery confirmation UI was
+        // dead.
+        || (
+          isAuthenticated()
+          && resource.data.userId == request.auth.uid
+          && resource.data.status in ['Acompte Reçu', 'En attente', 'En cours']
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'deliveredAt'])
+          && request.resource.data.status == "Livré"
+          && request.resource.data.deliveredAt is string
         );
 
       allow delete: if false;
