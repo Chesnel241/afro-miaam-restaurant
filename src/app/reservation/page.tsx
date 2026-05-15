@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/AuthContext";
 import { useCart } from "@/components/CartContext";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { formatPrice } from "@/lib/utils";
 import { collection, addDoc, serverTimestamp, doc, runTransaction } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -110,19 +110,27 @@ export default function ReservationPage() {
         image: item.image || "",
       }));
 
-      // 1) Server-side validation: prices + discount range + structure.
+      const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
+
       const apiRes = await fetch("/api/reservation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           items: sanitizedItems.map((i) => ({
             id: i.id.split("__")[0],
             quantity: i.quantity,
+            name: i.name,
+            flavor: i.flavor,
+            image: i.image
           })),
           date: form.date,
           slot: form.slot,
           deliveryMode: form.deliveryMode,
-          total, // discounted total. Server accepts when <= server-computed.
+          useCredits,
+          referralCode: isReferralValid ? referralCode : undefined,
           customer: {
             firstName: form.firstName,
             lastName: form.lastName,
@@ -144,96 +152,7 @@ export default function ReservationPage() {
       }
 
       const apiData = await apiRes.json();
-      const serverTotal = typeof apiData.total === "number" ? apiData.total : total;
-      const serverDeposit =
-        typeof apiData.depositAmount === "number"
-          ? apiData.depositAmount
-          : serverTotal * 0.5;
-      const serverReference = typeof apiData.reference === "string"
-        ? apiData.reference
-        : undefined;
-
-      const discounts = {
-        referralCredits: creditsToUse,
-        welcomeOffer: welcomeDiscount > 0,
-        referralCodeUsed: isReferralValid ? referralCode : undefined,
-      };
-
-      const orderData: Record<string, unknown> = {
-        userId: user.id,
-        userName: user.name || `${form.firstName} ${form.lastName}`,
-        userEmail: (user.email || form.email || "").trim().toLowerCase(),
-        items: sanitizedItems,
-        subtotal,
-        deliveryFee: form.deliveryMode === "livraison" ? DELIVERY_FEE : 0,
-        total: serverTotal,
-        depositAmount: serverDeposit,
-        discounts,
-        status: "Attente Acompte",
-        reference: serverReference,
-        createdAt: serverTimestamp(),
-        customer: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          phone: form.phone,
-          address: form.address,
-          deliveryMode: form.deliveryMode,
-          date: form.date,
-          slot: form.slot,
-          notes: form.notes,
-        },
-      };
-
-      // M-2: cross-user lookup for referrerId removed — the firestore.rules
-      // block client reads on other users' docs, so this query was failing
-      // silently (snap.empty=true). The order is recorded with the
-      // referralCodeUsed string in `discounts`; admin reconciles referrerId
-      // server-side. To fully fix this, add an Admin SDK API route that
-      // resolves referralCode -> uid and writes referrerId to the order.
-
-      await addDoc(collection(db, "orders"), orderData);
-
-      if (user?.id) {
-        // Update the user's economic counters atomically. We use a Firestore
-        // client-side transaction (read + check + write) instead of a bare
-        // updateDoc with increment(), because two parallel orders racing on
-        // the same account could each pass the rules check against a stale
-        // snapshot and end up driving referralCredits negative (CRIT-2).
-        // The transaction reads the current balance, validates it, and writes
-        // back numeric literal values computed from the read snapshot.
-        const userRef = doc(db, "users", user.id);
-        try {
-          await runTransaction(db, async (tx) => {
-            const snap = await tx.get(userRef);
-            if (!snap.exists()) throw new Error("USER_NOT_FOUND");
-            const data = snap.data() as {
-              ordersCount?: number;
-              referralCredits?: number;
-              hasUsedWelcomeOffer?: boolean;
-            };
-            const currentCredits = data.referralCredits ?? 0;
-            const currentOrdersCount = data.ordersCount ?? 0;
-            if (currentCredits < creditsToUse) {
-              throw new Error("INSUFFICIENT_CREDITS");
-            }
-            const update: {
-              ordersCount: number;
-              referralCredits: number;
-              hasUsedWelcomeOffer?: boolean;
-            } = {
-              ordersCount: currentOrdersCount + 1,
-              referralCredits: currentCredits - creditsToUse,
-            };
-            if (welcomeDiscount > 0) update.hasUsedWelcomeOffer = true;
-            tx.update(userRef, update);
-          });
-        } catch (e) {
-          // The order is already created; if the stats update fails (network
-          // blip, insufficient credits race, etc.), admin can reconcile.
-          console.warn("USER_STATS_UPDATE_FAILED", (e as { code?: string }).code ?? "unknown");
-        }
-      }
+      const serverDeposit = typeof apiData.depositAmount === "number" ? apiData.depositAmount : 0;
 
       setFinalDeposit(serverDeposit);
       setSuccess(true);

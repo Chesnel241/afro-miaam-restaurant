@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { collection, getDocs } from "firebase/firestore";
+import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { menuItems } from "@/data/menu";
-import { db } from "@/lib/firebase";
 import { DELIVERY_FEE } from "@/lib/booking";
 import { MAINTENANCE_MODE } from "@/lib/maintenance";
 
 type ClientItem = {
   id?: unknown;
   quantity?: unknown;
+  name?: unknown;
+  flavor?: unknown;
+  image?: unknown;
 };
 
 type Payload = {
@@ -15,7 +18,8 @@ type Payload = {
   date?: string;
   slot?: string;
   deliveryMode?: "retrait" | "livraison";
-  total?: unknown;
+  useCredits?: boolean;
+  referralCode?: string;
   customer?: {
     firstName?: string;
     lastName?: string;
@@ -39,8 +43,6 @@ const FIELD_LIMITS = {
 };
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// M-3 (pass 5): server-side whitelist of reservation slots. Must stay in sync
-// with the dropdown options in app/reservation/page.tsx.
 const ALLOWED_SLOTS = new Set([
   "12h00 - 12h30",
   "12h30 - 13h00",
@@ -52,9 +54,6 @@ const ALLOWED_SLOTS = new Set([
   "20h30 - 21h00",
 ]);
 
-// H-2 (pass 5): in-memory rate limiter per IP. Survives within a warm
-// serverless instance (~5 min on Vercel) so it mitigates burst floods.
-// For full distributed rate limiting, swap this for Upstash KV.
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_HITS = 10;
 const rateLimit = new Map<string, { hits: number; resetAt: number }>();
@@ -71,15 +70,9 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-function clientIp(request: Request): string {
-  const fwd = request.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return request.headers.get("x-real-ip") ?? "unknown";
-}
-const PRICE_CACHE_TTL_MS = 60_000;
+import { clientIp } from "@/lib/utils";
 
-// Static menu fallback in case Firestore is unreachable (e.g. App Check
-// enforced on /menu reads server-side).
+const PRICE_CACHE_TTL_MS = 60_000;
 const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
   menuItems.map((i) => [i.id, i.price]),
 );
@@ -92,7 +85,7 @@ async function getPriceById(): Promise<Record<string, number>> {
 
   const byId: Record<string, number> = { ...STATIC_PRICE_BY_ID };
   try {
-    const snap = await getDocs(collection(db, "menu"));
+    const snap = await adminDb.collection("menu").get();
     snap.forEach((d) => {
       const data = d.data() as { price?: unknown; available?: unknown };
       const price = typeof data.price === "number" && data.price > 0 ? data.price : null;
@@ -131,17 +124,27 @@ function round2(n: number): number {
 }
 
 export async function POST(request: Request) {
-  // Maintenance gate. The middleware lets /api/* through so we surface a real
-  // JSON 503 here instead of an HTML redirect.
   if (MAINTENANCE_MODE) {
     return bad("Service temporairement indisponible (maintenance).", 503);
   }
 
-  // H-2: simple per-IP rate limit (10 req / minute). In-memory; doesn't
-  // survive across cold starts but mitigates burst floods on warm functions.
   if (!checkRateLimit(clientIp(request))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
+
+  // Authentication validation via Admin SDK
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return bad("Non autorisé. Token manquant.", 401);
+  }
+  const token = authHeader.split("Bearer ")[1];
+  let decodedToken;
+  try {
+    decodedToken = await adminAuth.verifyIdToken(token);
+  } catch (e) {
+    return bad("Non autorisé. Token invalide ou expiré.", 401);
+  }
+  const userId = decodedToken.uid;
 
   const lenHeader = request.headers.get("content-length");
   if (lenHeader && Number(lenHeader) > MAX_BODY_BYTES) {
@@ -173,7 +176,6 @@ export async function POST(request: Request) {
   const slot = clean(payload.slot, 32);
   if (!ISO_DATE_RE.test(date)) return bad("Date invalide.");
   if (!slot) return bad("Créneau invalide.");
-  // M-3: enforce slot whitelist server-side.
   if (!ALLOWED_SLOTS.has(slot)) return bad("Créneau non autorisé.");
 
   const today = new Date();
@@ -186,9 +188,10 @@ export async function POST(request: Request) {
   const deliveryMode: "retrait" | "livraison" =
     payload.deliveryMode === "livraison" ? "livraison" : "retrait";
 
-  // Server-authoritative price lookup from the Firestore menu (fallback static).
   const PRICE_BY_ID = await getPriceById();
   let serverSubtotal = 0;
+  const sanitizedItems: any[] = [];
+  
   for (const item of items) {
     const id = clean(item.id, 60);
     const qty = item.quantity;
@@ -198,33 +201,21 @@ export async function POST(request: Request) {
     if (typeof qty !== "number" || !Number.isInteger(qty) || qty < 1 || qty > MAX_QUANTITY) {
       return bad("Quantité invalide.");
     }
-    serverSubtotal += PRICE_BY_ID[id] * qty;
+    const price = PRICE_BY_ID[id];
+    serverSubtotal += price * qty;
+    
+    sanitizedItems.push({
+      id: id,
+      name: clean(item.name, 100) || "Plat",
+      price: price,
+      quantity: qty,
+      flavor: item.flavor ? clean(item.flavor, 50) : null,
+      image: item.image ? clean(item.image, 200) : "",
+    });
   }
 
   const serverDeliveryFee = deliveryMode === "livraison" ? DELIVERY_FEE : 0;
   const serverTotalBeforeDiscount = round2(serverSubtotal + serverDeliveryFee);
-
-  // The client may legitimately send a total LOWER than the server total when
-  // a welcome offer or referral credits apply (we cannot verify those without
-  // Admin SDK). Reject totals that are HIGHER than the server total or
-  // negative; pass-through otherwise. Also reject NaN / non-finite.
-  let clientTotal = serverTotalBeforeDiscount;
-  if (payload.total !== undefined && payload.total !== null) {
-    const t = Number(payload.total);
-    if (!Number.isFinite(t)) {
-      return bad("Total invalide.");
-    }
-    // M-1: also reject zero — the firestore.rule requires `total > 0` so a
-    // zero total would crash later with a generic UI error. Surface a clear
-    // 400 here. Minimum chargeable order: 0.01 €.
-    if (t <= 0) {
-      return bad("Le total doit être strictement positif (minimum 0,01 €).");
-    }
-    if (t > serverTotalBeforeDiscount + 0.01) {
-      return bad("Total incohérent avec les prix du menu.");
-    }
-    clientTotal = round2(t);
-  }
 
   const c = payload.customer || {};
   const customer = {
@@ -234,6 +225,9 @@ export async function POST(request: Request) {
     email: clean(c.email, FIELD_LIMITS.email),
     address: clean(c.address, FIELD_LIMITS.address),
     notes: clean(c.notes, FIELD_LIMITS.notes),
+    deliveryMode,
+    date,
+    slot,
   };
 
   if (!customer.firstName || !customer.lastName) {
@@ -250,25 +244,92 @@ export async function POST(request: Request) {
   }
 
   const reference = generateReference();
-  const finalTotal = clientTotal;
-  const finalDeposit = round2(finalTotal * 0.5);
 
-  console.log("[Afro Miaam] Nouvelle réservation", {
-    reference,
-    date,
-    slot,
-    deliveryMode,
-    itemCount: items.length,
-    serverSubtotal,
-    finalTotal,
-  });
+  try {
+    let finalTotal = serverTotalBeforeDiscount;
+    let finalDeposit = 0;
+    const orderId = adminDb.collection("orders").doc().id;
+    const userRef = adminDb.collection("users").doc(userId);
 
-  return NextResponse.json({
-    ok: true,
-    reference,
-    serverSubtotal: round2(serverSubtotal),
-    deliveryFee: serverDeliveryFee,
-    total: finalTotal,
-    depositAmount: finalDeposit,
-  });
+    await adminDb.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef);
+      if (!userSnap.exists) {
+        throw new Error("Utilisateur introuvable.");
+      }
+      
+      const userData = userSnap.data() || {};
+      const currentCredits = typeof userData.referralCredits === 'number' ? userData.referralCredits : 0;
+      const ordersCount = typeof userData.ordersCount === 'number' ? userData.ordersCount : 0;
+      const hasUsedWelcomeOffer = userData.hasUsedWelcomeOffer === true;
+
+      // Logic des réductions
+      const welcomeDiscount = (!hasUsedWelcomeOffer && ordersCount === 0) ? 5 : 0;
+      let creditsToUse = 0;
+      
+      if (payload.useCredits) {
+        creditsToUse = Math.min(currentCredits, serverTotalBeforeDiscount - welcomeDiscount);
+      }
+
+      finalTotal = round2(Math.max(0, serverTotalBeforeDiscount - welcomeDiscount - creditsToUse));
+      finalDeposit = round2(finalTotal * 0.5);
+      
+      if (finalTotal <= 0 && serverTotalBeforeDiscount > 0) {
+          if (finalTotal < 0) {
+              throw new Error("Erreur de calcul du total.");
+          }
+      }
+
+      const discounts = {
+        referralCredits: creditsToUse,
+        welcomeOffer: welcomeDiscount > 0,
+        referralCodeUsed: payload.referralCode && payload.referralCode.length >= 5 ? clean(payload.referralCode, 20) : undefined,
+      };
+
+      const orderData = {
+        userId: userId,
+        userName: userData.name || `${customer.firstName} ${customer.lastName}`,
+        userEmail: (userData.email || customer.email || "").trim().toLowerCase(),
+        items: sanitizedItems,
+        subtotal: round2(serverSubtotal),
+        deliveryFee: serverDeliveryFee,
+        total: finalTotal,
+        depositAmount: finalDeposit,
+        discounts,
+        status: "Attente Acompte",
+        reference,
+        createdAt: FieldValue.serverTimestamp(),
+        customer: customer,
+      };
+
+      const updateData: any = {
+        ordersCount: FieldValue.increment(1),
+      };
+      
+      if (welcomeDiscount > 0) {
+        updateData.hasUsedWelcomeOffer = true;
+      }
+      if (creditsToUse > 0) {
+        updateData.referralCredits = FieldValue.increment(-creditsToUse);
+      }
+
+      // Write order and update user atomically
+      tx.set(adminDb.collection("orders").doc(orderId), orderData);
+      tx.update(userRef, updateData);
+    });
+
+    console.log("[Afro Miaam] Réservation confirmée et stockée", { orderId, reference, finalTotal });
+
+    return NextResponse.json({
+      ok: true,
+      reference,
+      orderId,
+      serverSubtotal: round2(serverSubtotal),
+      deliveryFee: serverDeliveryFee,
+      total: finalTotal,
+      depositAmount: finalDeposit,
+    });
+  } catch (error: any) {
+    console.error("TRANSACTION_FAILED", error);
+    return bad(error.message || "Erreur lors de la validation et l'insertion de la commande.", 500);
+  }
 }

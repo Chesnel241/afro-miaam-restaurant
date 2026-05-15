@@ -28,3 +28,17 @@ export function getProductImage(item: { name: string, image: string }): string {
 
   return item.image;
 }
+
+export function clientIp(request: Request): string {
+  // Anti-spoofing: on Vercel, x-vercel-forwarded-for is reliable and injected by the edge
+  const vercelIp = request.headers.get("x-vercel-forwarded-for");
+  if (vercelIp) return vercelIp.split(",")[0].trim();
+  
+  // For standard proxies, if a user sends X-Forwarded-For, the proxy appends the true IP at the end
+  const fwd = request.headers.get("x-forwarded-for");
+  if (fwd) {
+      const ips = fwd.split(",");
+      return ips[ips.length - 1].trim(); 
+  }
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
