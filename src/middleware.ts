@@ -5,6 +5,8 @@ import type { NextRequest } from 'next/server';
 const MAINTENANCE_MODE = true;
 
 export function middleware(request: NextRequest) {
+  const isAdmin = request.nextUrl.searchParams.get('admin') === 'true';
+
   // On autorise l'accès aux assets statiques et à l'image de maintenance
   if (
     request.nextUrl.pathname.startsWith('/_next') ||
@@ -15,7 +17,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (MAINTENANCE_MODE && request.nextUrl.pathname !== '/maintenance') {
+  // Bypass maintenance si admin=true est présent dans l'URL
+  if (MAINTENANCE_MODE && request.nextUrl.pathname !== '/maintenance' && !isAdmin) {
     return NextResponse.redirect(new URL('/maintenance', request.url));
   }
 

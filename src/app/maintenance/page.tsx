@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ChefHat, Clock, ShieldCheck, Instagram, Facebook } from "lucide-react";
+import { ChefHat, Clock, ShieldCheck, Camera, Share2 } from "lucide-react";
 
 export default function MaintenancePage() {
   return (
@@ -55,13 +55,13 @@ export default function MaintenancePage() {
         <div className="mt-16 flex items-center gap-8">
           <Link href="#" className="group flex flex-col items-center gap-2 transition-all hover:scale-110">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 group-hover:border-accent/50 group-hover:bg-accent/10">
-              <Instagram className="h-6 w-6 text-gray-400 group-hover:text-accent" />
+              <Camera className="h-6 w-6 text-gray-400 group-hover:text-accent" />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-accent">Instagram</span>
           </Link>
           <Link href="#" className="group flex flex-col items-center gap-2 transition-all hover:scale-110">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 group-hover:border-primary/50 group-hover:bg-primary/10">
-              <Facebook className="h-6 w-6 text-gray-400 group-hover:text-primary" />
+              <Share2 className="h-6 w-6 text-gray-400 group-hover:text-primary" />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-primary">Facebook</span>
           </Link>
