@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CheckIcon, ClockIcon, MapPinIcon, PhoneIcon, UserIcon, GiftIcon } from "@/components/Icons";
 import { DELIVERY_FEE } from "@/lib/booking";
+import { menuItems } from "@/data/menu";
 
 export default function ReservationPage() {
   const { cart, subtotal, clearCart } = useCart();

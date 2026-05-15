@@ -13,7 +13,13 @@ service cloud.firestore {
     // --- USERS ---
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId);
+      
+      // REG-1 Fix: Obliger le rôle "customer" à la création pour éviter l'escalade admin
+      allow create: if isOwner(userId)
+        && request.resource.data.role == "customer"
+        && request.resource.data.referralCredits == 0
+        && request.resource.data.hasUsedWelcomeOffer == false;
+
       // H1 Fix: Whitelist des champs modifiables par le client
       allow update: if (isOwner(userId) && 
         request.resource.data.diff(resource.data).affectedKeys()
@@ -22,14 +28,16 @@ service cloud.firestore {
 
     // --- ORDERS ---
     match /orders/{orderId} {
-      // C2 Fix: Validation stricte à la création
+      // REG-3 Fix: Validation ultra-stricte (Structure, prix, limites)
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == "Attente Acompte"
         && request.resource.data.total is number
         && request.resource.data.total > 0
+        && request.resource.data.total < 10000
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 50
         && request.resource.data.createdAt == request.time;
         
       allow read: if isAdmin() || (isAuthenticated() && (
@@ -37,8 +45,8 @@ service cloud.firestore {
         resource.data.userEmail.lower() == request.auth.token.email.lower()
       ));
       
-      // M3 Fix: Interdire la modification de la date dans le passé via rules (best effort)
-      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      // REG-2 Fix: Seul l'admin peut modifier le statut ou le total
+      allow update: if isAdmin();
       allow delete: if false;
     }
 
@@ -50,25 +58,30 @@ service cloud.firestore {
 
     // --- NEWSLETTER ---
     match /newsletter/{docId} {
-      // H2 Fix: Validation format email
+      // H-A Fix: Validation format et structure
       allow create: if true 
+        && request.resource.data.keys().hasOnly(['email', 'createdAt', 'source'])
         && request.resource.data.email is string
+        && request.resource.data.email.size() < 200
         && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
       allow read: if isAdmin();
     }
 
     // --- PRESTATIONS ---
     match /prestations/{docId} {
-      // C3 Fix: Protection contre le flood
+      // H-B Fix: Protection contre le flood et XSS
       allow create: if isAuthenticated()
         && request.resource.data.email is string
-        && request.resource.data.name is string;
+        && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && request.resource.data.name is string
+        && request.resource.data.name.size() < 100;
       allow read, update: if isAdmin();
     }
 
     // --- SETTINGS ---
     match /settings/{docId} {
-      allow read: if true;
+      // M-B Fix: Accès restreint aux utilisateurs connectés
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
   }

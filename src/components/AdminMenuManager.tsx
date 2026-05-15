@@ -7,7 +7,8 @@ import { TrashIcon, PlusIcon, ClockIcon, GiftIcon } from "@/components/Icons";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/data/menu";
 import { seedMenu } from "@/lib/seed";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 
 export function AdminMenuManager() {
   const { dynamicMenu, addMenuItem, updateMenuItem, deleteMenuItem } = useAuth();
@@ -15,6 +16,7 @@ export function AdminMenuManager() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
