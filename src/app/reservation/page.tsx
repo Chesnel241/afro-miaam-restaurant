@@ -4,7 +4,7 @@ import { useAuth } from "@/components/AuthContext";
 import { useCart } from "@/components/CartContext";
 import { db } from "@/lib/firebase";
 import { formatPrice } from "@/lib/utils";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, runTransaction } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -185,39 +185,52 @@ export default function ReservationPage() {
         },
       };
 
-      if (discounts.referralCodeUsed) {
-        const { getDocs, query, where, collection } = await import("firebase/firestore");
-        const q = query(collection(db, "users"), where("referralCode", "==", discounts.referralCodeUsed));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          orderData.referrerId = snap.docs[0].id;
-        }
-      }
+      // M-2: cross-user lookup for referrerId removed — the firestore.rules
+      // block client reads on other users' docs, so this query was failing
+      // silently (snap.empty=true). The order is recorded with the
+      // referralCodeUsed string in `discounts`; admin reconciles referrerId
+      // server-side. To fully fix this, add an Admin SDK API route that
+      // resolves referralCode -> uid and writes referrerId to the order.
 
       await addDoc(collection(db, "orders"), orderData);
 
       if (user?.id) {
-        // Update the user's economic counters. Each field respects the
-        // monotonic invariants enforced by firestore.rules:
-        //   - ordersCount: +1 (allowed: <= existing + 1)
-        //   - referralCredits: decrement (allowed: <= existing)
-        //   - hasUsedWelcomeOffer: false -> true (allowed)
+        // Update the user's economic counters atomically. We use a Firestore
+        // client-side transaction (read + check + write) instead of a bare
+        // updateDoc with increment(), because two parallel orders racing on
+        // the same account could each pass the rules check against a stale
+        // snapshot and end up driving referralCredits negative (CRIT-2).
+        // The transaction reads the current balance, validates it, and writes
+        // back numeric literal values computed from the read snapshot.
         const userRef = doc(db, "users", user.id);
-        type UserUpdatePayload = {
-          ordersCount: ReturnType<typeof increment>;
-          referralCredits?: ReturnType<typeof increment>;
-          hasUsedWelcomeOffer?: boolean;
-        };
-        const userUpdate: UserUpdatePayload = {
-          ordersCount: increment(1),
-        };
-        if (creditsToUse > 0) userUpdate.referralCredits = increment(-creditsToUse);
-        if (welcomeDiscount > 0) userUpdate.hasUsedWelcomeOffer = true;
-        // Best-effort: the order was recorded; if this update fails (network
-        // blip), admin can reconcile manually.
         try {
-          await updateDoc(userRef, userUpdate);
+          await runTransaction(db, async (tx) => {
+            const snap = await tx.get(userRef);
+            if (!snap.exists()) throw new Error("USER_NOT_FOUND");
+            const data = snap.data() as {
+              ordersCount?: number;
+              referralCredits?: number;
+              hasUsedWelcomeOffer?: boolean;
+            };
+            const currentCredits = data.referralCredits ?? 0;
+            const currentOrdersCount = data.ordersCount ?? 0;
+            if (currentCredits < creditsToUse) {
+              throw new Error("INSUFFICIENT_CREDITS");
+            }
+            const update: {
+              ordersCount: number;
+              referralCredits: number;
+              hasUsedWelcomeOffer?: boolean;
+            } = {
+              ordersCount: currentOrdersCount + 1,
+              referralCredits: currentCredits - creditsToUse,
+            };
+            if (welcomeDiscount > 0) update.hasUsedWelcomeOffer = true;
+            tx.update(userRef, update);
+          });
         } catch (e) {
+          // The order is already created; if the stats update fails (network
+          // blip, insufficient credits race, etc.), admin can reconcile.
           console.warn("USER_STATS_UPDATE_FAILED", (e as { code?: string }).code ?? "unknown");
         }
       }
@@ -234,15 +247,20 @@ export default function ReservationPage() {
   };
 
   const handleVerifyReferral = async () => {
-    if (!referralCode || referralCode.length < 5) return;
-    try {
-      const { collection, query, where, getDocs } = await import("firebase/firestore");
-      const q = query(collection(db, "users"), where("referralCode", "==", referralCode.trim()));
-      const snap = await getDocs(q);
-      setIsReferralValid(!snap.empty && snap.docs[0].id !== user?.id);
-    } catch (e) {
+    // M-2: client-side cross-user query against /users is blocked by the
+    // firestore.rules (read: isOwner OR isAdmin), so the previous version
+    // always returned snap.empty=true → the validator falsely reported
+    // every code as invalid. Until a server-side validator (Admin SDK)
+    // is added, accept any non-empty code as a "candidate" — the actual
+    // referrerId resolution happens in the order-creation flow on submit
+    // (which currently also fails for the same rule reason; the order is
+    // recorded with a discounts.referralCodeUsed string but no referrerId
+    // until admin reconciles).
+    if (!referralCode || referralCode.length < 5) {
       setIsReferralValid(false);
+      return;
     }
+    setIsReferralValid(true);
   };
 
   if (success) {

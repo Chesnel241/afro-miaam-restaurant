@@ -10,7 +10,9 @@ const securityHeaders = [
   {
     key: "Permissions-Policy",
     value:
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()",
+      // camera=(self) is REQUIRED for the QR scanner (admin order validation).
+      // Previously was camera=() which silently broke the scanner.
+      "camera=(self), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()",
   },
   { key: "X-DNS-Prefetch-Control", value: "on" },
   // HSTS — uniquement utile en HTTPS, sans effet en local
