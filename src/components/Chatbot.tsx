@@ -29,6 +29,16 @@ const INITIAL_MESSAGE: Message = {
     "Salut ! Je suis là pour répondre rapidement à vos questions sur Afro Miaam. Choisissez un sujet ou posez votre question.",
 };
 
+// Defense-in-depth: a chatbot message persisted in sessionStorage could be
+// tampered with (e.g. via another XSS) to include a javascript: or
+// off-origin href. Only accept hrefs that are clearly internal paths.
+function isSafeChatbotHref(href: unknown): href is string {
+  if (typeof href !== "string") return false;
+  if (!href.startsWith("/")) return false;
+  if (href.startsWith("//")) return false; // protocol-relative
+  return true;
+}
+
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -300,7 +310,7 @@ function Bubble({ message }: { message: Message }) {
         }`}
       >
         <p>{message.text}</p>
-        {isBot && message.cta && (
+        {isBot && message.cta && isSafeChatbotHref(message.cta.href) && (
           <Link
             href={message.cta.href}
             className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-accent transition hover:bg-accent hover:text-white"

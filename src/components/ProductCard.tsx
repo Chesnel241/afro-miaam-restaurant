@@ -7,7 +7,11 @@ import { useCart } from "./CartContext";
 import { formatPrice, getProductImage } from "@/lib/utils";
 import { CheckIcon, PlusIcon } from "./Icons";
 
-export function ProductCard({ item }: { item: MenuItem }) {
+// Accept both the static MenuItem (slug-based catalog) and the dynamic
+// shape coming from Firestore (auto-generated id, string category).
+type DisplayableMenuItem = Omit<MenuItem, "category"> & { category: string };
+
+export function ProductCard({ item }: { item: DisplayableMenuItem }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const [selectedFlavor, setSelectedFlavor] = useState<string>("");
