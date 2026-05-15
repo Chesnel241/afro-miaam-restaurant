@@ -59,7 +59,7 @@ export default function LoginPage() {
           break;
         default:
           setError("Une erreur est survenue. Réessayez.");
-          console.error(err);
+          console.error("GOOGLE_LOGIN_FAILED", (err as any).code ?? "unknown");
       }
     } finally {
       setBusy(false);
@@ -75,7 +75,7 @@ export default function LoginPage() {
       const code = (err as { code?: string })?.code || "";
       if (code !== "auth/popup-closed-by-user") {
         setError(`Erreur Google (${code}). Vérifiez que l'option est activée dans Firebase.`);
-        console.error(err);
+        console.error("ORDER_VALIDATION_FAILED", (err as any).code ?? "unknown");
       }
     } finally {
       setBusy(false);

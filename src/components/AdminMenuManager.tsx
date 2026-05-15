@@ -51,60 +51,32 @@ export function AdminMenuManager() {
     setForm({
       name: "",
       description: "",
-      price: "0",
-      image: "/img/signatures/mafe.jpg",
-      category: "signature",
+      price: 0 as any,
+      image: "",
+      category: "plats",
       tags: [],
       available: true,
       flavors: [],
     });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const storageRef = ref(storage, `menu/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setForm(prev => ({ ...prev, image: url }));
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Erreur lors de l'upload de l'image.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const sanitizedForm = {
-      ...form,
-      price: parseFloat(String(form.price)) || 0,
-      flavors: form.flavors?.map(f => ({
-        ...f,
-        name: f.name.trim(),
-        supplement: parseFloat(String(f.supplement)) || 0
-      })).filter(f => f.name !== "") || []
-    };
+    if (!form.name || !form.category) return;
 
+    setIsSaving(true);
     try {
       if (editingId) {
-        await updateMenuItem(editingId, sanitizedForm);
+        await updateDoc(doc(db, "menu", editingId), form);
       } else {
-        await addMenuItem(sanitizedForm);
+        await addDoc(collection(db, "menu"), form);
       }
       handleCancel();
     } catch (err: unknown) {
-      console.error("Save error:", err);
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      if (errorMsg.includes("permission") || errorMsg.includes("PERMISSION_DENIED")) {
-        alert("⛔ Accès refusé.\n\nMettez à jour les règles Firestore pour autoriser l'écriture dans la collection 'menu' (voir fichier firestore.rules).");
-      } else {
-        alert("Erreur lors de l'enregistrement :\n" + errorMsg);
-      }
+      console.error("SAVE_FAILED", (err as any).code ?? "unknown");
+      alert("Erreur lors de l'enregistrement.");
+    } finally {
+      setIsSaving(false);
     }
   };
 

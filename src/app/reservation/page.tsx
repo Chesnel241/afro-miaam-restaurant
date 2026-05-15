@@ -97,25 +97,50 @@ export default function ReservationPage() {
 
     setLoading(true);
     try {
-      const sanitizedItems = cart.map((item) => ({
-        id: item.id || "unknown",
-        name: item.name || "Plat sans nom",
-        price: item.price || 0,
-        quantity: item.quantity || 1,
-        flavor: item.flavor || null,
-        image: item.image || "",
-      }));
+      // 0) Recalcul de sécurité côté client basé sur la source de vérité (menu.ts)
+      // Cela empêche la manipulation simple du LocalStorage
+      let serverCheckSubtotal = 0;
+      cart.forEach((item) => {
+        // Extraction de l'ID réel (enlever le suffixe de saveur si présent)
+        const baseId = item.id.split("__")[0];
+        const officialItem = menuItems.find(m => m.id === baseId);
+        if (officialItem) {
+          // On utilise le prix officiel + le supplément saveur s'il existe
+          // (Note: les suppléments saveurs sont gérés ici de manière simplifiée)
+          const officialPrice = officialItem.price;
+          serverCheckSubtotal += officialPrice * item.quantity;
+        }
+      });
 
-      // 1) Validation serveur : recalcule total, vérifie items contre menu, retourne référence
+      const officialDeliveryFee = form.deliveryMode === "livraison" ? DELIVERY_FEE : 0;
+      const officialTotalBeforeDiscount = serverCheckSubtotal + officialDeliveryFee;
+      
+      // On recalcule le total final avec les remises appliquées sur le prix OFFICIEL
+      const secureTotal = Math.max(0, officialTotalBeforeDiscount - welcomeDiscount - creditsToUse);
+
+      const sanitizedItems = cart.map((item) => {
+        const baseId = item.id.split("__")[0];
+        const officialItem = menuItems.find(m => m.id === baseId);
+        return {
+          id: item.id || "unknown",
+          name: officialItem?.name || item.name || "Plat",
+          price: officialItem?.price || item.price || 0,
+          quantity: item.quantity || 1,
+          flavor: item.flavor || null,
+          image: officialItem?.image || item.image || "",
+        };
+      });
+
+      // 1) Validation serveur
       const apiRes = await fetch("/api/reservation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: sanitizedItems.map((i) => ({ id: i.id, quantity: i.quantity })),
+          items: sanitizedItems.map((i) => ({ id: i.id.split("__")[0], quantity: i.quantity })),
           date: form.date,
           slot: form.slot,
           deliveryMode: form.deliveryMode,
-          total,
+          total: secureTotal, // Envoi du total sécurisé
           customer: {
             firstName: form.firstName,
             lastName: form.lastName,

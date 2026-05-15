@@ -259,8 +259,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       setUserOrders(orders);
-    }, (err) => {
-      console.error("Erreur Snapshot Orders:", err);
     });
 
     return () => {
@@ -577,7 +575,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch (err) {
-      console.error("Erreur Firebase lors de l'avis:", err);
+      console.error("REVIEW_SUBMISSION_FAILED", (err as any).code ?? "unknown");
       throw err; // On laisse remonter pour que l'UI puisse l'attraper si besoin
     }
   }, [user]);
