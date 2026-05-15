@@ -3,9 +3,10 @@ import type { NextRequest } from 'next/server';
 
 // Configuration : Mettre à 'true' pour activer la maintenance
 const MAINTENANCE_MODE = true;
+const MAINTENANCE_BYPASS_KEY = "afro_miaam_access_2026_secure";
 
 export function middleware(request: NextRequest) {
-  const isAdmin = request.nextUrl.searchParams.get('admin') === 'true';
+  const isAdmin = request.nextUrl.searchParams.get('key') === MAINTENANCE_BYPASS_KEY;
 
   // On autorise l'accès aux assets statiques et à l'image de maintenance
   if (
@@ -17,7 +18,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Bypass maintenance si admin=true est présent dans l'URL
+  // Bypass maintenance si la clé secrète est présente dans l'URL
   if (MAINTENANCE_MODE && request.nextUrl.pathname !== '/maintenance' && !isAdmin) {
     return NextResponse.redirect(new URL('/maintenance', request.url));
   }

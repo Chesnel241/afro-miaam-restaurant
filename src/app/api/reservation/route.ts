@@ -125,18 +125,10 @@ export async function POST(request: Request) {
   // remises crédits/welcome offer non vérifiables ici sans Admin SDK). On rejette tout
   // total > serveur ou ≤ 0.
   let clientTotal = serverTotalBeforeDiscount;
-  if (payload.total !== undefined) {
-    if (typeof payload.total !== "number" || !Number.isFinite(payload.total)) {
-      return bad("Total invalide.");
-    }
-    if (payload.total > serverTotalBeforeDiscount + 0.01) {
+    if (Math.abs(Number(payload.total) - serverTotalBeforeDiscount) > 0.01) {
       return bad("Total incohérent avec les prix du menu.");
     }
-    if (payload.total < 0) {
-      return bad("Total négatif refusé.");
-    }
-    clientTotal = round2(payload.total);
-  }
+    clientTotal = round2(Number(payload.total));
 
   const c = payload.customer || {};
   const customer = {

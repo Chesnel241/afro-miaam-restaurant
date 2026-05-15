@@ -23,7 +23,7 @@ service cloud.firestore {
       // H1 Fix: Whitelist des champs modifiables par le client
       allow update: if (isOwner(userId) && 
         request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['name', 'phone', 'isFirstLogin', 'image'])) || isAdmin();
+        .hasOnly(['name', 'phone', 'isFirstLogin', 'image', 'referralCredits', 'ordersCount', 'hasUsedWelcomeOffer'])) || isAdmin();
     }
 
     // --- ORDERS ---
