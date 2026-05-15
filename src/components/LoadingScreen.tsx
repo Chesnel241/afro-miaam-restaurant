@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const INTRO_SHOWN_KEY = "afro_miaam_intro_v1";
@@ -90,22 +90,8 @@ export function LoadingScreen() {
 
 
       {/* Vapor / Smoke particles overlay */}
-      <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="smoke-particle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              bottom: "-5%",
-              width: `${150 + Math.random() * 200}px`,
-              height: `${150 + Math.random() * 200}px`,
-              animationDelay: `${Math.random() * 8}s`,
-              animationDuration: `${10 + Math.random() * 5}s`,
-            }}
-          />
-        ))}
-      </div>
+      <SmokeParticles />
+
 
       <AnimatePresence mode="wait">
         {stage === "text1" && (
@@ -238,6 +224,42 @@ export function LoadingScreen() {
           animation: slow-zoom 20s ease-in-out infinite alternate;
         }
       `}</style>
+    </div>
+  );
+}
+
+// Particles are decorative; we compute their randomized positions ONCE at
+// mount via useMemo so subsequent re-renders are stable (avoids the
+// react-hooks/purity ESLint rule and keeps animations consistent).
+function SmokeParticles() {
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 6 }, () => ({
+        left: Math.random() * 100,
+        width: 150 + Math.random() * 200,
+        height: 150 + Math.random() * 200,
+        delay: Math.random() * 8,
+        duration: 10 + Math.random() * 5,
+      })),
+    [],
+  );
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+      {particles.map((p, i) => (
+        <div
+          key={i}
+          className="smoke-particle"
+          style={{
+            left: `${p.left}%`,
+            bottom: "-5%",
+            width: `${p.width}px`,
+            height: `${p.height}px`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
     </div>
   );
 }

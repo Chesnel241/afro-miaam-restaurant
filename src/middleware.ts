@@ -1,31 +1,69 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import {
+  MAINTENANCE_MODE,
+  MAINTENANCE_BYPASS_KEY,
+  MAINTENANCE_COOKIE_NAME,
+} from "./lib/maintenance";
 
-// Configuration : Mettre à 'true' pour activer la maintenance
-const MAINTENANCE_MODE = true;
-const MAINTENANCE_BYPASS_KEY = "afro_miaam_access_2026_secure";
+// Whitelist of static file extensions. The previous `includes('.')` check
+// was too permissive (any path containing a dot bypassed maintenance).
+const STATIC_EXT_RE = /\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|map|woff2?|ttf|otf|eot|txt|xml|json|pdf)$/i;
+
+const ONE_DAY_SECONDS = 60 * 60 * 24;
 
 export function middleware(request: NextRequest) {
-  const isAdmin = request.nextUrl.searchParams.get('key') === MAINTENANCE_BYPASS_KEY;
+  const { pathname, searchParams } = request.nextUrl;
 
-  // On autorise l'accès aux assets statiques et à l'image de maintenance
+  // Always allow Next internals, the maintenance page itself, and static files.
+  // /api/* is NOT auto-allowed here: each API route checks the maintenance
+  // flag itself so JSON clients see a real 503, not a redirect to HTML.
   if (
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/api') ||
-    request.nextUrl.pathname.startsWith('/maintenance') ||
-    request.nextUrl.pathname.includes('.')
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/maintenance") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    STATIC_EXT_RE.test(pathname)
   ) {
     return NextResponse.next();
   }
 
-  // Bypass maintenance si la clé secrète est présente dans l'URL
-  if (MAINTENANCE_MODE && request.nextUrl.pathname !== '/maintenance' && !isAdmin) {
-    return NextResponse.redirect(new URL('/maintenance', request.url));
+  if (!MAINTENANCE_MODE) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
+  // Check bypass via secure cookie first (set after a successful query bypass).
+  const cookieKey = request.cookies.get(MAINTENANCE_COOKIE_NAME)?.value;
+  if (cookieKey && cookieKey === MAINTENANCE_BYPASS_KEY) {
+    return NextResponse.next();
+  }
+
+  // One-time query bypass: if the URL carries ?key=<correct>, set a HttpOnly
+  // cookie and continue. After this, internal navigation works without the
+  // key in the URL — so the key doesn't leak via Referer headers.
+  const queryKey = searchParams.get("key");
+  if (queryKey && queryKey === MAINTENANCE_BYPASS_KEY) {
+    const url = request.nextUrl.clone();
+    url.searchParams.delete("key");
+    const res = NextResponse.redirect(url);
+    res.cookies.set(MAINTENANCE_COOKIE_NAME, MAINTENANCE_BYPASS_KEY, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      maxAge: ONE_DAY_SECONDS,
+    });
+    return res;
+  }
+
+  return NextResponse.redirect(new URL("/maintenance", request.url));
 }
 
 export const config = {
-  matcher: '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  matcher: "/((?!_next/static|_next/image|favicon.ico).*)",
 };

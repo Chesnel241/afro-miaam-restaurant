@@ -29,7 +29,7 @@ if (typeof window !== "undefined") {
         isTokenAutoRefreshEnabled: true,
       });
     } catch (e) {
-      console.warn("APP_CHECK_INIT_FAILED", (e as Error).code ?? "unknown");
+      console.warn("APP_CHECK_INIT_FAILED", (e as { code?: string }).code ?? "unknown");
     }
   }
 }

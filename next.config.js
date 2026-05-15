@@ -22,7 +22,13 @@ const securityHeaders = [
 
 const nextConfig = {
   poweredByHeader: false,
-  reactStrictMode: true,   eslint: { ignoreDuringBuilds: true },   typescript: { ignoreBuildErrors: true },
+  reactStrictMode: true,
+  // typescript.ignoreBuildErrors removed: it was masking real runtime errors
+  // (e.g. ReferenceError on missing imports). The build now fails fast on
+  // type errors. ESLint findings are mostly stylistic so we keep
+  // ignoreDuringBuilds to avoid blocking deploys on warnings; run
+  // `npm run lint` locally to surface them.
+  eslint: { ignoreDuringBuilds: true },
   images: {
     remotePatterns: [
       {

@@ -8,9 +8,10 @@ import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckIcon, ClockIcon } from "@/components/Icons";
 
-export default function ValiderCommandePage({ params }: { params: { id: string } }) {
+export default function ValiderCommandePage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [orderId, setOrderId] = useState<string>("");
   const [order, setOrder] = useState<any>(null);
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState("");
@@ -18,14 +19,25 @@ export default function ValiderCommandePage({ params }: { params: { id: string }
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    params.then((p) => {
+      if (!cancelled) setOrderId(p.id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [params]);
+
+  useEffect(() => {
+    if (!orderId) return;
     if (!loading && !user) {
-      router.push(`/login?redirect=/valider-commande/${params.id}`);
+      router.push(`/login?redirect=/valider-commande/${orderId}`);
       return;
     }
 
     const fetchOrder = async () => {
       try {
-        const docRef = doc(db, "orders", params.id);
+        const docRef = doc(db, "orders", orderId);
         const snap = await getDoc(docRef);
         
         if (!snap.exists()) {
@@ -60,12 +72,12 @@ export default function ValiderCommandePage({ params }: { params: { id: string }
     };
 
     if (user) fetchOrder();
-  }, [user, loading, params.id, router]);
+  }, [user, loading, orderId, router]);
 
   const handleValider = async () => {
     setIsUpdating(true);
     try {
-      const docRef = doc(db, "orders", params.id);
+      const docRef = doc(db, "orders", orderId);
       await updateDoc(docRef, {
         status: "Livré",
         deliveredAt: new Date().toISOString()
@@ -135,7 +147,7 @@ export default function ValiderCommandePage({ params }: { params: { id: string }
                 </div>
                 <div>
                   <h1 className="heading-display text-xl text-primary">Validation de Livraison</h1>
-                  <p className="text-xs text-primary/40 font-bold uppercase tracking-widest">Commande #{params.id.substring(0,8).toUpperCase()}</p>
+                  <p className="text-xs text-primary/40 font-bold uppercase tracking-widest">Commande #{orderId.substring(0,8).toUpperCase()}</p>
                 </div>
               </div>
 

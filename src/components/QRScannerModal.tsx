@@ -19,23 +19,41 @@ export function QRScannerModal({ onClose }: { onClose: () => void }) {
     scannerRef.current = new Html5QrcodeScanner("reader", config, false);
 
     const onScanSuccess = (decodedText: string) => {
-      // Si le texte décodé contient l'URL de validation de notre site
-      if (decodedText.includes("/valider-commande/")) {
-        if (scannerRef.current) {
-          scannerRef.current.clear().then(() => {
-            window.location.href = decodedText;
-          }).catch(err => {
-            console.error("Erreur lors de l'arrêt du scanner", err);
-            window.location.href = decodedText;
-          });
+      // Strict validation: the scanned content must parse as a URL with the
+      // same origin as the current site, and the path must start with
+      // "/valider-commande/". A substring check (the old behaviour) lets
+      // an attacker craft https://evil.com/x/valider-commande/y for an
+      // open-redirect / phishing attack.
+      let safeTarget: string | null = null;
+      try {
+        const parsed = new URL(decodedText);
+        if (
+          parsed.origin === window.location.origin &&
+          parsed.pathname.startsWith("/valider-commande/")
+        ) {
+          safeTarget = parsed.pathname + parsed.search;
         }
-      } else {
+      } catch {
+        // Not a URL.
+      }
+
+      if (!safeTarget) {
         setError("Ce QR Code n'est pas un code de livraison Afro Miaam valide.");
+        return;
+      }
+
+      if (scannerRef.current) {
+        scannerRef.current.clear().then(() => {
+          window.location.href = safeTarget;
+        }).catch((err: unknown) => {
+          console.warn("QR_SCAN_CLEANUP_FAILED", (err as { code?: string }).code ?? "unknown");
+          window.location.href = safeTarget;
+        });
       }
     };
 
-    const onScanFailure = (error: any) => {
-      // On ignore les échecs de lecture continue (quand aucun code n'est visible)
+    const onScanFailure = (_error: unknown) => {
+      // Ignore continuous read failures (camera frames without a code).
     };
 
     scannerRef.current.render(onScanSuccess, onScanFailure);

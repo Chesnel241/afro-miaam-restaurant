@@ -12,14 +12,14 @@ export function CartRecovery() {
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
-    // On vérifie le localStorage pour un panier abandonné
-    const savedCart = localStorage.getItem("afro-miaam-cart");
+    // Use the same storage key as CartContext.
+    const savedCart = localStorage.getItem("afro-miaam-cart-v2");
     if (savedCart) {
       try {
-        const items = JSON.parse(savedCart);
-        if (items.length > 0) {
-          setCartCount(items.length);
-          // On affiche après 3 secondes pour ne pas être trop intrusif
+        const parsed = JSON.parse(savedCart) as { lines?: unknown[] };
+        const lines = Array.isArray(parsed?.lines) ? parsed.lines : [];
+        if (lines.length > 0) {
+          setCartCount(lines.length);
           const timer = setTimeout(() => setShow(true), 3000);
           return () => clearTimeout(timer);
         }

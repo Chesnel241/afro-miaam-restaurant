@@ -3,7 +3,7 @@
 import { useAuth, type Order, type OrderStatus } from "@/components/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon } from "@/components/Icons";
+import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon, TrashIcon } from "@/components/Icons";
 import { AdminMenuManager } from "@/components/AdminMenuManager";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -11,7 +11,10 @@ type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu";
 
 // Modal QR Code
 function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
-  const validationUrl = `${window.location.origin}/valider-commande/${orderId}`;
+  // Hardcoded canonical origin: window.location.origin would let a host-header
+  // injection / cache poisoning poison the QR target.
+  const CANONICAL_ORIGIN = "https://afromiaam.com";
+  const validationUrl = `${CANONICAL_ORIGIN}/valider-commande/${orderId}`;
   
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
@@ -491,10 +494,3 @@ function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusC
   );
 }
 
-function UserIcon({ className }: { className?: string }) {
-  return (
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className={className}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-}

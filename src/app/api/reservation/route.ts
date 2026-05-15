@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { collection, getDocs } from "firebase/firestore";
 import { menuItems } from "@/data/menu";
+import { db } from "@/lib/firebase";
 import { DELIVERY_FEE } from "@/lib/booking";
+import { MAINTENANCE_MODE } from "@/lib/maintenance";
 
 type ClientItem = {
   id?: unknown;
@@ -35,9 +38,37 @@ const FIELD_LIMITS = {
   notes: 600,
 };
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const PRICE_BY_ID: Record<string, number> = Object.fromEntries(
+const PRICE_CACHE_TTL_MS = 60_000;
+
+// Static menu fallback in case Firestore is unreachable (e.g. App Check
+// enforced on /menu reads server-side).
+const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
   menuItems.map((i) => [i.id, i.price]),
 );
+
+let priceCache: { byId: Record<string, number>; expires: number } | null = null;
+
+async function getPriceById(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (priceCache && now < priceCache.expires) return priceCache.byId;
+
+  const byId: Record<string, number> = { ...STATIC_PRICE_BY_ID };
+  try {
+    const snap = await getDocs(collection(db, "menu"));
+    snap.forEach((d) => {
+      const data = d.data() as { price?: unknown; available?: unknown };
+      const price = typeof data.price === "number" && data.price > 0 ? data.price : null;
+      if (price !== null && data.available !== false) {
+        byId[d.id] = price;
+      }
+    });
+  } catch (e) {
+    console.warn("MENU_FIRESTORE_READ_FAILED", (e as { code?: string }).code ?? "unknown");
+  }
+
+  priceCache = { byId, expires: now + PRICE_CACHE_TTL_MS };
+  return byId;
+}
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
@@ -62,6 +93,12 @@ function round2(n: number): number {
 }
 
 export async function POST(request: Request) {
+  // Maintenance gate. The middleware lets /api/* through so we surface a real
+  // JSON 503 here instead of an HTML redirect.
+  if (MAINTENANCE_MODE) {
+    return bad("Service temporairement indisponible (maintenance).", 503);
+  }
+
   const lenHeader = request.headers.get("content-length");
   if (lenHeader && Number(lenHeader) > MAX_BODY_BYTES) {
     return bad("Requête trop volumineuse.", 413);
@@ -93,7 +130,6 @@ export async function POST(request: Request) {
   if (!ISO_DATE_RE.test(date)) return bad("Date invalide.");
   if (!slot) return bad("Créneau invalide.");
 
-  // Date côté serveur : J+1 minimum
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const requested = new Date(date + "T00:00:00");
@@ -104,7 +140,8 @@ export async function POST(request: Request) {
   const deliveryMode: "retrait" | "livraison" =
     payload.deliveryMode === "livraison" ? "livraison" : "retrait";
 
-  // Recalcul du total côté serveur à partir du menu officiel
+  // Server-authoritative price lookup from the Firestore menu (fallback static).
+  const PRICE_BY_ID = await getPriceById();
   let serverSubtotal = 0;
   for (const item of items) {
     const id = clean(item.id, 60);
@@ -121,14 +158,24 @@ export async function POST(request: Request) {
   const serverDeliveryFee = deliveryMode === "livraison" ? DELIVERY_FEE : 0;
   const serverTotalBeforeDiscount = round2(serverSubtotal + serverDeliveryFee);
 
-  // Si le client a envoyé un total, on tolère ≤ serverTotal (le client peut avoir des
-  // remises crédits/welcome offer non vérifiables ici sans Admin SDK). On rejette tout
-  // total > serveur ou ≤ 0.
+  // The client may legitimately send a total LOWER than the server total when
+  // a welcome offer or referral credits apply (we cannot verify those without
+  // Admin SDK). Reject totals that are HIGHER than the server total or
+  // negative; pass-through otherwise. Also reject NaN / non-finite.
   let clientTotal = serverTotalBeforeDiscount;
-    if (Math.abs(Number(payload.total) - serverTotalBeforeDiscount) > 0.01) {
+  if (payload.total !== undefined && payload.total !== null) {
+    const t = Number(payload.total);
+    if (!Number.isFinite(t)) {
+      return bad("Total invalide.");
+    }
+    if (t < 0) {
+      return bad("Total négatif refusé.");
+    }
+    if (t > serverTotalBeforeDiscount + 0.01) {
       return bad("Total incohérent avec les prix du menu.");
     }
-    clientTotal = round2(Number(payload.total));
+    clientTotal = round2(t);
+  }
 
   const c = payload.customer || {};
   const customer = {

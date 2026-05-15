@@ -12,6 +12,7 @@ import {
 import {
   doc,
   getDoc,
+  getDocs,
   setDoc,
   collection,
   query,
@@ -370,13 +371,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpWithEmail = useCallback(async (email: string, password: string, name: string, phone: string, subscribeNewsletter = false) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Generate a non-guessable referral code (crypto entropy, ambiguity-free
+    // alphabet). 8 chars from 32 symbols → ~1.1 trillion combinations.
+    const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const suffix = Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join("");
+    const referralCode = `AFRO-${(name.split(" ")[0] || "USR").toUpperCase().substring(0, 4)}-${suffix}`;
+
     await setDoc(doc(db, "users", cred.user.uid), {
       name,
-      email,
+      email: email.trim().toLowerCase(),
       phone,
       role: "customer",
       ordersCount: 0,
       isFirstLogin: true,
+      referralCode,
+      referralCredits: 0,
+      hasUsedWelcomeOffer: false,
       createdAt: serverTimestamp(),
       subscribeNewsletter,
     });
@@ -563,20 +576,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const addOrderReview = useCallback(async (orderId: string, rating: number, comment: string) => {
     if (!user) return;
     try {
+      // Read first to enforce one-review-per-order at the client level too.
+      // Defense in depth: the Firestore rule also rejects the update when
+      // hasReviewed is already true.
       const orderRef = doc(db, "orders", orderId);
+      const snap = await getDoc(orderRef);
+      if (!snap.exists()) throw new Error("ORDER_NOT_FOUND");
+      const existing = snap.data() as { userId?: string; hasReviewed?: boolean };
+      if (existing.userId !== user.id) throw new Error("FORBIDDEN");
+      if (existing.hasReviewed === true) throw new Error("ALREADY_REVIEWED");
+
       await updateDoc(orderRef, {
         hasReviewed: true,
-        review: { rating, comment, createdAt: serverTimestamp() }
+        review: { rating, comment, createdAt: serverTimestamp() },
       });
-      
-      if (isReviewRewardActive) {
-        await updateDoc(doc(db, "users", user.id), {
-          referralCredits: increment(1)
-        });
-      }
+
+      // NOTE: referralCredits reward is NOT incremented from the client.
+      // The hardened users/update rule only allows credits to DECREASE
+      // (anti-farming). Credits for reviews are granted manually by admin
+      // until an Admin SDK API moves this server-side.
     } catch (err) {
-      console.error("REVIEW_SUBMISSION_FAILED", (err as any).code ?? "unknown");
-      throw err; // On laisse remonter pour que l'UI puisse l'attraper si besoin
+      console.warn("REVIEW_SUBMISSION_FAILED", (err as { code?: string; message?: string }).code ?? (err as Error).message ?? "unknown");
+      throw err;
     }
   }, [user]);
 

@@ -10,7 +10,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CheckIcon, ClockIcon, MapPinIcon, PhoneIcon, UserIcon, GiftIcon } from "@/components/Icons";
 import { DELIVERY_FEE } from "@/lib/booking";
-import { menuItems } from "@/data/menu";
 
 export default function ReservationPage() {
   const { cart, subtotal, clearCart } = useCart();
@@ -98,50 +97,32 @@ export default function ReservationPage() {
 
     setLoading(true);
     try {
-      // 0) Recalcul de sécurité côté client basé sur la source de vérité (menu.ts)
-      // Cela empêche la manipulation simple du LocalStorage
-      let serverCheckSubtotal = 0;
-      cart.forEach((item) => {
-        // Extraction de l'ID réel (enlever le suffixe de saveur si présent)
-        const baseId = item.id.split("__")[0];
-        const officialItem = menuItems.find(m => m.id === baseId);
-        if (officialItem) {
-          // On utilise le prix officiel + le supplément saveur s'il existe
-          // (Note: les suppléments saveurs sont gérés ici de manière simplifiée)
-          const officialPrice = officialItem.price;
-          serverCheckSubtotal += officialPrice * item.quantity;
-        }
-      });
+      // The server (/api/reservation) is now the source of truth for prices:
+      // it reads the Firestore menu, rejects unknown items, recomputes the
+      // subtotal, and returns the authoritative total + deposit + reference.
+      // We send {id, quantity} only and let the server validate.
+      const sanitizedItems = cart.map((item) => ({
+        id: item.id || "unknown",
+        name: item.name || "Plat",
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        flavor: item.flavor || null,
+        image: item.image || "",
+      }));
 
-      const officialDeliveryFee = form.deliveryMode === "livraison" ? DELIVERY_FEE : 0;
-      const officialTotalBeforeDiscount = serverCheckSubtotal + officialDeliveryFee;
-      
-      // On recalcule le total final avec les remises appliquées sur le prix OFFICIEL
-      const secureTotal = Math.max(0, officialTotalBeforeDiscount - welcomeDiscount - creditsToUse);
-
-      const sanitizedItems = cart.map((item) => {
-        const baseId = item.id.split("__")[0];
-        const officialItem = menuItems.find(m => m.id === baseId);
-        return {
-          id: item.id || "unknown",
-          name: officialItem?.name || item.name || "Plat",
-          price: officialItem?.price || item.price || 0,
-          quantity: item.quantity || 1,
-          flavor: item.flavor || null,
-          image: officialItem?.image || item.image || "",
-        };
-      });
-
-      // 1) Validation serveur
+      // 1) Server-side validation: prices + discount range + structure.
       const apiRes = await fetch("/api/reservation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: sanitizedItems.map((i) => ({ id: i.id.split("__")[0], quantity: i.quantity })),
+          items: sanitizedItems.map((i) => ({
+            id: i.id.split("__")[0],
+            quantity: i.quantity,
+          })),
           date: form.date,
           slot: form.slot,
           deliveryMode: form.deliveryMode,
-          total: secureTotal, // Envoi du total sécurisé
+          total, // discounted total. Server accepts when <= server-computed.
           customer: {
             firstName: form.firstName,
             lastName: form.lastName,
@@ -216,13 +197,29 @@ export default function ReservationPage() {
       await addDoc(collection(db, "orders"), orderData);
 
       if (user?.id) {
+        // Update the user's economic counters. Each field respects the
+        // monotonic invariants enforced by firestore.rules:
+        //   - ordersCount: +1 (allowed: <= existing + 1)
+        //   - referralCredits: decrement (allowed: <= existing)
+        //   - hasUsedWelcomeOffer: false -> true (allowed)
         const userRef = doc(db, "users", user.id);
-        const userUpdate: Record<string, unknown> = {
+        type UserUpdatePayload = {
+          ordersCount: ReturnType<typeof increment>;
+          referralCredits?: ReturnType<typeof increment>;
+          hasUsedWelcomeOffer?: boolean;
+        };
+        const userUpdate: UserUpdatePayload = {
           ordersCount: increment(1),
         };
         if (creditsToUse > 0) userUpdate.referralCredits = increment(-creditsToUse);
         if (welcomeDiscount > 0) userUpdate.hasUsedWelcomeOffer = true;
-        await updateDoc(userRef, userUpdate);
+        // Best-effort: the order was recorded; if this update fails (network
+        // blip), admin can reconcile manually.
+        try {
+          await updateDoc(userRef, userUpdate);
+        } catch (e) {
+          console.warn("USER_STATS_UPDATE_FAILED", (e as { code?: string }).code ?? "unknown");
+        }
       }
 
       setFinalDeposit(serverDeposit);
