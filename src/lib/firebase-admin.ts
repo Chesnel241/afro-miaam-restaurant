@@ -6,7 +6,15 @@ if (!getApps().length) {
   try {
     // Si la variable d'environnement est présente, on l'utilise
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      let serviceAccount;
+      try {
+        // Tenter de parser directement (si c'est du JSON clair)
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      } catch {
+        // Si ça échoue, tenter de décoder le Base64
+        const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('utf-8');
+        serviceAccount = JSON.parse(decoded);
+      }
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
