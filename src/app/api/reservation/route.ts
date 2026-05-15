@@ -38,6 +38,44 @@ const FIELD_LIMITS = {
   notes: 600,
 };
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// M-3 (pass 5): server-side whitelist of reservation slots. Must stay in sync
+// with the dropdown options in app/reservation/page.tsx.
+const ALLOWED_SLOTS = new Set([
+  "12h00 - 12h30",
+  "12h30 - 13h00",
+  "13h00 - 13h30",
+  "13h30 - 14h00",
+  "19h00 - 19h30",
+  "19h30 - 20h00",
+  "20h00 - 20h30",
+  "20h30 - 21h00",
+]);
+
+// H-2 (pass 5): in-memory rate limiter per IP. Survives within a warm
+// serverless instance (~5 min on Vercel) so it mitigates burst floods.
+// For full distributed rate limiting, swap this for Upstash KV.
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_HITS = 10;
+const rateLimit = new Map<string, { hits: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimit.get(ip);
+  if (!entry || entry.resetAt < now) {
+    rateLimit.set(ip, { hits: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.hits >= RATE_LIMIT_MAX_HITS) return false;
+  entry.hits++;
+  return true;
+}
+
+function clientIp(request: Request): string {
+  const fwd = request.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
 const PRICE_CACHE_TTL_MS = 60_000;
 
 // Static menu fallback in case Firestore is unreachable (e.g. App Check
@@ -99,6 +137,12 @@ export async function POST(request: Request) {
     return bad("Service temporairement indisponible (maintenance).", 503);
   }
 
+  // H-2: simple per-IP rate limit (10 req / minute). In-memory; doesn't
+  // survive across cold starts but mitigates burst floods on warm functions.
+  if (!checkRateLimit(clientIp(request))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
+  }
+
   const lenHeader = request.headers.get("content-length");
   if (lenHeader && Number(lenHeader) > MAX_BODY_BYTES) {
     return bad("Requête trop volumineuse.", 413);
@@ -129,6 +173,8 @@ export async function POST(request: Request) {
   const slot = clean(payload.slot, 32);
   if (!ISO_DATE_RE.test(date)) return bad("Date invalide.");
   if (!slot) return bad("Créneau invalide.");
+  // M-3: enforce slot whitelist server-side.
+  if (!ALLOWED_SLOTS.has(slot)) return bad("Créneau non autorisé.");
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
