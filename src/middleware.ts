@@ -10,7 +10,11 @@ import {
 // was too permissive (any path containing a dot bypassed maintenance).
 const STATIC_EXT_RE = /\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|map|woff2?|ttf|otf|eot|txt|xml|json|pdf)$/i;
 
-const ONE_DAY_SECONDS = 60 * 60 * 24;
+// H-5 (pass 5): reduced from 24h to 1h. A 24h cookie on a shared device
+// (admin uses bypass once, then someone else uses the same browser within
+// 24h) gave silent access to the full site during maintenance. 1h is a
+// reasonable session.
+const ONE_HOUR_SECONDS = 60 * 60;
 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
@@ -56,7 +60,7 @@ export function middleware(request: NextRequest) {
       sameSite: "lax",
       secure: true,
       path: "/",
-      maxAge: ONE_DAY_SECONDS,
+      maxAge: ONE_HOUR_SECONDS,
     });
     return res;
   }
