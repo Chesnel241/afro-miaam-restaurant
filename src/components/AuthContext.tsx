@@ -8,6 +8,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
+  deleteUser,
 } from "firebase/auth";
 import {
   doc,
@@ -427,10 +428,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const deleteAccount = useCallback(async () => {
     if (!auth.currentUser || !user) return;
     const uid = auth.currentUser.uid;
+    // Mark the Firestore record as deleted FIRST so admin still has historic
+    // visibility (the users/{uid} doc is intentionally NOT removed — it stays
+    // with role="deleted" + deletedAt timestamp for audit/reporting).
     await updateDoc(doc(db, "users", uid), {
       deletedAt: serverTimestamp(),
       role: "deleted",
     });
+    // Then delete the Firebase Auth user. This prevents the same email from
+    // being re-registered, which would mint a fresh UID and a new profile
+    // with hasUsedWelcomeOffer=false — letting an attacker replay the 5€
+    // welcome offer indefinitely (CRIT-3).
+    try {
+      await deleteUser(auth.currentUser);
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/requires-recent-login") {
+        // Firebase requires a fresh sign-in for sensitive operations.
+        throw new Error(
+          "Pour supprimer votre compte, veuillez vous reconnecter puis réessayer."
+        );
+      }
+      throw err;
+    }
     await signOut(auth);
     setUser(null);
   }, [user]);

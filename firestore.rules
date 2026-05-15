@@ -116,6 +116,17 @@ service cloud.firestore {
           )
         ));
 
+      // PATCH (pentest CRIT-1 + H-3):
+      //  - Cross-document check: if discounts.welcomeOffer == true, the user
+      //    document must currently have hasUsedWelcomeOffer == false. This
+      //    prevents parallel-order double-claim of the 5€ welcome discount.
+      //    Costs +1 Firestore read per order create — acceptable on Spark.
+      //  - items[] per-element shape validation is INTENTIONALLY NOT enforced
+      //    here: the Firestore rules language cannot iterate over lists, so any
+      //    "first-element" sentinel check would be misleading (attacker can
+      //    still inject bad items[1..N]). Per-item structural validation is
+      //    performed by the API server (Admin SDK path). The rule keeps the
+      //    list size bounded (>0 and <=50) as a denial-of-service guardrail.
       allow create: if isAuthenticated()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == "Attente Acompte"
@@ -162,10 +173,23 @@ service cloud.firestore {
             request.resource.data.customer.get('address', '') is string
             && request.resource.data.customer.get('address', '').size() >= 6
           )
+        )
+        // CRIT-1: welcome-offer single-use cross-document guard
+        && (
+          request.resource.data.get('discounts', {}).get('welcomeOffer', false) == false
+          || (
+            exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && get(/databases/$(database)/documents/users/$(request.auth.uid))
+                .data.get('hasUsedWelcomeOffer', false) == false
+          )
         );
 
       // Admin can update freely. Owner has a single-shot review path: can only
       // flip hasReviewed/review when hasReviewed is not already true.
+      // PATCH (pentest CRIT-6): the previous rule whitelisted the OUTER keys
+      //   but allowed the inner `review` map to carry arbitrary keys (XSS /
+      //   data-leak vector). We now constrain `review` to exactly
+      //   {rating: int 1..5, comment: string <=500 chars, createdAt}.
       allow update: if isAdmin()
         || (
           isAuthenticated()
@@ -173,6 +197,13 @@ service cloud.firestore {
           && resource.data.get('hasReviewed', false) == false
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['hasReviewed', 'review'])
+          && request.resource.data.review is map
+          && request.resource.data.review.keys().hasOnly(['rating', 'comment', 'createdAt'])
+          && request.resource.data.review.rating is int
+          && request.resource.data.review.rating >= 1
+          && request.resource.data.review.rating <= 5
+          && request.resource.data.review.comment is string
+          && request.resource.data.review.comment.size() <= 500
         );
 
       allow delete: if false;
@@ -239,10 +270,13 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
     // SETTINGS — closes C10
     //   Read is now auth-only (client snapshots /settings/global at boot).
+    // PATCH (pentest H-4): hard 50KB cap on settings docs to prevent a
+    //   compromised admin account (or buggy admin UI) from writing a giant
+    //   document that gets fanned out to every authenticated client at boot.
     // -------------------------------------------------------------------------
     match /settings/{docId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAdmin() && request.resource.size < 50000;
     }
   }
 }

@@ -168,8 +168,11 @@ export async function POST(request: Request) {
     if (!Number.isFinite(t)) {
       return bad("Total invalide.");
     }
-    if (t < 0) {
-      return bad("Total négatif refusé.");
+    // M-1: also reject zero — the firestore.rule requires `total > 0` so a
+    // zero total would crash later with a generic UI error. Surface a clear
+    // 400 here. Minimum chargeable order: 0.01 €.
+    if (t <= 0) {
+      return bad("Le total doit être strictement positif (minimum 0,01 €).");
     }
     if (t > serverTotalBeforeDiscount + 0.01) {
       return bad("Total incohérent avec les prix du menu.");
