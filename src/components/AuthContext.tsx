@@ -606,8 +606,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const orderRef = doc(db, "orders", orderId);
       const snap = await getDoc(orderRef);
       if (!snap.exists()) throw new Error("ORDER_NOT_FOUND");
-      const existing = snap.data() as { userId?: string; hasReviewed?: boolean };
-      if (existing.userId !== user.id) throw new Error("FORBIDDEN");
+      const existing = snap.data() as { userId?: string; userEmail?: string; hasReviewed?: boolean };
+      const isOwnerByUid = existing.userId === user.id;
+      const isOwnerByEmail = typeof existing.userEmail === 'string' &&
+        existing.userEmail.trim().toLowerCase() === user.email.trim().toLowerCase();
+      
+      if (!isOwnerByUid && !isOwnerByEmail) throw new Error("FORBIDDEN");
       if (existing.hasReviewed === true) throw new Error("ALREADY_REVIEWED");
 
       await updateDoc(orderRef, {

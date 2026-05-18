@@ -193,7 +193,14 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (
           isAuthenticated()
-          && resource.data.userId == request.auth.uid
+          && (
+            resource.data.userId == request.auth.uid
+            || (
+              resource.data.userEmail is string
+              && request.auth.token.email is string
+              && resource.data.userEmail.lower() == request.auth.token.email.lower()
+            )
+          )
           && resource.data.get('hasReviewed', false) == false
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['hasReviewed', 'review'])
