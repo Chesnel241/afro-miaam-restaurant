@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   signOut,
   deleteUser,
@@ -469,7 +470,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const loginWithGoogle = useCallback(async () => {
-    await signInWithPopup(auth, googleProvider);
+    // Détection de mobile / tablette pour éviter le blocage des popups Firebase
+    const isMobile = typeof window !== "undefined" && (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 768)
+    );
+
+    if (isMobile) {
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (err: any) {
+        // En cas de popup bloqué sur desktop, on bascule sur la redirection
+        if (err.code === "auth/popup-blocked" || err.code === "auth/cancelled-popup-request") {
+          await signInWithRedirect(auth, googleProvider);
+        } else {
+          throw err;
+        }
+      }
+    }
   }, []);
 
   const logoutFn = useCallback(async () => {
