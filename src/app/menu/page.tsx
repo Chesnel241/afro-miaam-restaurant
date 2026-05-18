@@ -9,6 +9,7 @@ import { useAuth } from "@/components/AuthContext";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/data/menu";
 import { formatPrice } from "@/lib/utils";
 import { CartIcon, GiftIcon } from "@/components/Icons";
+import { ShimmerMenu } from "@/components/ShimmerMenu";
 
 export default function MenuPage() {
   const [filter, setFilter] = useState<CategoryFilter>("all");
@@ -205,28 +206,9 @@ export default function MenuPage() {
               </div>
             </div>
           ))}
-          {menuItems.length === 0 && (
-            <div className="py-20 text-center">
-              <p className="text-primary/60 italic">Le menu est en cours de mise à jour...</p>
-            </div>
-          )}
+          {menuItems.length === 0 && <ShimmerMenu />}
         </div>
       </section>
-
-      {itemCount > 0 && (
-        <div className="sticky bottom-3 z-30 px-3 pb-3 sm:hidden">
-          <Link
-            href="/panier"
-            className="btn btn-lg btn-primary w-full justify-between shadow-glow"
-          >
-            <span className="inline-flex items-center gap-2">
-              <CartIcon className="h-5 w-5" />
-              {itemCount} article{itemCount > 1 ? "s" : ""}
-            </span>
-            <span>{formatPrice(total)}</span>
-          </Link>
-        </div>
-      )}
     </>
   );
 }

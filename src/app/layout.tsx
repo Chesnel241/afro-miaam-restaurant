@@ -12,6 +12,8 @@ import { CartRecovery } from "@/components/CartRecovery";
 import { AuthProvider } from "@/components/AuthContext";
 import { JsonLd } from "@/components/JsonLd";
 import { restaurantJsonLd, SITE_URL } from "@/lib/seo";
+import { BottomNavBar } from "@/components/BottomNavBar";
+import { FloatingCart } from "@/components/FloatingCart";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -123,8 +125,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AppOverlay />
           <CartProvider>
             <Header />
-            <main id="main-content" role="main" className="flex-1">{children}</main>
+            <main id="main-content" role="main" className="flex-1 pb-24 lg:pb-0">{children}</main>
             <Footer />
+            <BottomNavBar />
+            <FloatingCart />
             <Chatbot />
             <WhatsAppButton />
             <CartRecovery />
