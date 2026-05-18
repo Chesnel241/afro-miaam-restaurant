@@ -1,9 +1,46 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TruckIcon, GiftIcon, ClockIcon, ArrowRightIcon, CheckIcon } from "@/components/Icons";
 import { formatPrice } from "@/lib/utils";
+
+function AnimatedPrice({ value }: { value: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let start = displayValue;
+    const end = value;
+    if (start === end) return;
+
+    const duration = 800; // Animation dure 800ms
+    const startTime = performance.now();
+
+    let animationFrameId: number;
+
+    const updateNumber = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing fonction (easeOutExpo pour un effet de compteur haut de gamme qui ralentit à la fin)
+      const easeOutExpo = (x: number): number => {
+        return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+      };
+      
+      const current = start + (end - start) * easeOutExpo(progress);
+      setDisplayValue(Math.round(current));
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(updateNumber);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(updateNumber);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value]);
+
+  return <>{formatPrice(displayValue)}</>;
+}
 
 const PRESTATIONS = [
   {
@@ -93,42 +130,44 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- SERVICES PILLARS --- */}
-      <section className="container-x relative z-20 py-16 md:py-24 xl:py-28">
-        <div className="grid gap-6 md:grid-cols-2 max-w-5xl mx-auto xl:gap-8">
-          {PRESTATIONS.map((item) => (
-            <motion.button
-              key={item.id}
-              onClick={() => setSelectedType(item.id)}
-              whileHover={{ y: -5 }}
-              className={`group relative overflow-hidden rounded-[2.5rem] p-8 xl:p-10 text-left transition-all ${
-                selectedType === item.id 
-                  ? "bg-primary text-white shadow-2xl ring-4 ring-accent" 
-                  : "bg-white text-primary shadow-soft hover:shadow-xl"
-              }`}
-            >
-              <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl transition-colors ${
-                selectedType === item.id ? "bg-accent text-white" : "bg-accent/10 text-accent"
-              }`}>
-                {item.icon}
-              </div>
-              <h3 className="font-display text-xl font-black mb-3">{item.title}</h3>
-              <p className={`text-sm leading-relaxed ${selectedType === item.id ? "text-cream/70" : "text-primary/60"}`}>
-                {item.description}
-              </p>
-              <div className="mt-6 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest opacity-60">
-                <span>À partir de {item.basePrice}€ / pers</span>
-              </div>
-            </motion.button>
-          ))}
-        </div>
-      </section>
+      <div className="relative bg-afro-pattern-gold bg-creamSoft/10 border-t border-b border-cream/30">
+        <section className="container-x relative z-20 py-16 md:py-24 xl:py-28">
+          <div className="grid gap-6 md:grid-cols-2 max-w-5xl mx-auto xl:gap-8">
+            {PRESTATIONS.map((item) => (
+              <motion.button
+                key={item.id}
+                onClick={() => setSelectedType(item.id)}
+                whileHover={{ y: -5 }}
+                className={`group relative overflow-hidden rounded-[2.5rem] p-8 xl:p-10 text-left transition-all ${
+                  selectedType === item.id 
+                    ? "bg-primary text-white shadow-2xl ring-4 ring-accent" 
+                    : "bg-white text-primary shadow-soft hover:shadow-xl"
+                }`}
+              >
+                <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl transition-colors ${
+                  selectedType === item.id ? "bg-accent text-white" : "bg-accent/10 text-accent"
+                }`}>
+                  {item.icon}
+                </div>
+                <h3 className="font-display text-xl font-black mb-3">{item.title}</h3>
+                <p className={`text-sm leading-relaxed ${selectedType === item.id ? "text-cream/70" : "text-primary/60"}`}>
+                  {item.description}
+                </p>
+                <div className="mt-6 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest opacity-60">
+                  <span>À partir de {item.basePrice}€ / pers</span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </section>
+      </div>
 
       {/* --- QUOTE BUILDER --- */}
       <section id="quote-builder" className="container-x py-20 xl:py-28">
         <div className="rounded-[3rem] bg-white shadow-soft ring-1 ring-cream/20 overflow-hidden">
           <div className="grid lg:grid-cols-2">
             {/* Left: Inputs */}
-            <div className="p-8 sm:p-16 xl:p-20 border-r border-cream/30">
+            <div className="p-8 sm:p-16 xl:p-20 border-r border-cream/30 bg-afro-pattern-gold/30">
               <h2 className="heading-display text-3xl xl:text-4xl text-primary mb-2">Simulateur de Devis</h2>
               <p className="text-primary/60 mb-10 italic">Obtenez une première estimation en quelques clics.</p>
               
@@ -192,7 +231,7 @@ export default function PrestationsPage() {
                   >
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-accentSoft mb-2">Estimation Indicative</p>
                     <h3 className="text-6xl sm:text-7xl font-black text-white mb-6">
-                      {formatPrice(estimatedTotal)}
+                      <AnimatedPrice value={estimatedTotal} />
                     </h3>
                     
                     <div className="space-y-4 mb-10">
@@ -257,7 +296,7 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- REASSURANCE --- */}
-      <section className="bg-white py-24 xl:py-32">
+      <section className="bg-white bg-afro-pattern-gold py-24 xl:py-32 border-t border-cream/30">
         <div className="container-x">
           <div className="text-center max-w-3xl mx-auto mb-20 xl:mb-24">
             <h2 className="heading-display text-4xl xl:text-5xl text-primary">Plus qu&apos;un traiteur, un <span className="text-accent">partenaire</span></h2>

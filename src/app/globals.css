@@ -239,3 +239,8 @@ select.field {
 .animate-marquee-left:hover {
   animation-play-state: paused;
 }
+
+/* Motif géométrique africain discret pour habiller les arrière-plans */
+.bg-afro-pattern-gold {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 40 L40 0 L80 40 L40 80 Z M40 0 L40 80 M0 40 L80 40' fill='none' stroke='%23d1b07d' stroke-width='1' stroke-opacity='0.035' stroke-dasharray='4 2'/%3E%3Cpath d='M20 20 L60 60 M60 20 L20 60' fill='none' stroke='%23d1b07d' stroke-width='0.5' stroke-opacity='0.015'/%3E%3C/svg%3E");
+}
