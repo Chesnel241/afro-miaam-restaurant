@@ -1,4 +1,5 @@
 export type MenuCategory =
+  | "formule"
   | "signature"
   | "plat"
   | "entree"

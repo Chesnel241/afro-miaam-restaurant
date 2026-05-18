@@ -1,6 +1,7 @@
 import type { MenuItem, MenuCategory } from "@/lib/types";
 
 export const CATEGORY_LABELS: Record<MenuCategory, string> = {
+  formule: "Formules Menus",
   signature: "Nos signatures",
   plat: "Plats",
   entree: "Entrées",
@@ -12,6 +13,7 @@ export const CATEGORY_LABELS: Record<MenuCategory, string> = {
 };
 
 export const CATEGORY_ORDER: MenuCategory[] = [
+  "formule",
   "signature",
   "entree",
   "plat",
@@ -23,6 +25,24 @@ export const CATEGORY_ORDER: MenuCategory[] = [
 ];
 
 export const menuItems: MenuItem[] = [
+  {
+    id: "menu-decouverte",
+    category: "formule",
+    name: "Menu Découverte",
+    description: "1 Entrée + 1 Plat + 1 Accompagnement + 1 Boisson au choix.",
+    price: 15.99,
+    image: "/img/menu/garba.png",
+    tags: ["Formule Populaire"],
+  },
+  {
+    id: "menu-gourmand",
+    category: "formule",
+    name: "Menu Gourmand",
+    description: "1 Entrée + 1 Plat Premium + 1 Accompagnement Premium + 1 Dessert + 1 Boisson au choix.",
+    price: 24.99,
+    image: "/img/menu/tiep-poisson.png",
+    tags: ["Formule Gourmande"],
+  },
   // Plats (dossier public/img/menu)
   {
     id: "garba",
