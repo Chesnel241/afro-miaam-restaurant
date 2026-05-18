@@ -22,6 +22,7 @@ export default function MenuPage() {
   };
 
   const isVegetarian = (item: any) => {
+    if (item.preferences) return item.preferences.includes("veg");
     const vegetarianIds = [
       "frites-patates-douces", "banane-bouillie", "riz", "attieke", "beignets", "frites", "manioc",
       "pancakes", "tiramisu", "degue", "crepes", "fondant-chocolat", "gateau-banane", "gateau-farine",
@@ -31,15 +32,23 @@ export default function MenuPage() {
   };
 
   const isSpicy = (item: any) => {
+    if (item.preferences) return item.preferences.includes("spicy");
     const spicyIds = ["pastels", "odika-poulet", "jus-gingembre"];
     return spicyIds.includes(item.id) || item.description?.toLowerCase().includes("épicé") || item.description?.toLowerCase().includes("relevé");
   };
 
+  const isHalal = (item: any) => {
+    if (item.preferences) return item.preferences.includes("halal");
+    return true;
+  };
+
   const isNutFree = (item: any) => {
+    if (item.preferences) return item.preferences.includes("nutfree");
     return !item.id.includes("mafe");
   };
 
   const isGlutenFree = (item: any) => {
+    if (item.preferences) return item.preferences.includes("glutenfree");
     const containGluten = ["samoussa-boeuf", "pastels", "samoussa-thon", "pancakes", "crepes", "fondant-chocolat", "gateau-banane", "gateau-farine"];
     return !containGluten.includes(item.id);
   };
@@ -47,6 +56,7 @@ export default function MenuPage() {
   const matchesPrefs = (item: any) => {
     if (prefFilter.includes("veg") && !isVegetarian(item)) return false;
     if (prefFilter.includes("spicy") && !isSpicy(item)) return false;
+    if (prefFilter.includes("halal") && !isHalal(item)) return false;
     if (prefFilter.includes("nutfree") && !isNutFree(item)) return false;
     if (prefFilter.includes("glutenfree") && !isGlutenFree(item)) return false;
     return true;
@@ -129,49 +139,32 @@ export default function MenuPage() {
         <div className="container-x">
           <CategoryTabs active={filter} onChange={setFilter} />
           
-          {/* Preference Toggles */}
-          <div className="mt-4 flex flex-wrap gap-2 items-center justify-center sm:justify-start">
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary/40 mr-2">Préférences :</span>
-            <button
-              onClick={() => togglePref("veg")}
-              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                prefFilter.includes("veg")
-                  ? "bg-green-600 text-white border-green-600 shadow-glow"
-                  : "bg-white text-primary/60 border-primary/10 hover:border-green-600/35 hover:text-green-600"
-              }`}
-            >
-              🥬 Végétarien
-            </button>
-            <button
-              onClick={() => togglePref("spicy")}
-              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                prefFilter.includes("spicy")
-                  ? "bg-red-600 text-white border-red-600 shadow-glow"
-                  : "bg-white text-primary/60 border-primary/10 hover:border-red-600/35 hover:text-red-600"
-              }`}
-            >
-              🌶️ Épicé
-            </button>
-            <button
-              onClick={() => togglePref("nutfree")}
-              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                prefFilter.includes("nutfree")
-                  ? "bg-[#D9A752] text-white border-[#D9A752] shadow-glow"
-                  : "bg-white text-primary/60 border-primary/10 hover:border-[#D9A752]/35 hover:text-[#D9A752]"
-              }`}
-            >
-              🥜 Sans arachide
-            </button>
-            <button
-              onClick={() => togglePref("glutenfree")}
-              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
-                prefFilter.includes("glutenfree")
-                  ? "bg-blue-600 text-white border-blue-600 shadow-glow"
-                  : "bg-white text-primary/60 border-primary/10 hover:border-blue-600/35 hover:text-blue-600"
-              }`}
-            >
-              🌾 Sans gluten
-            </button>
+          {/* Corporate Preference Filter Bar */}
+          <div className="mt-4 flex flex-wrap gap-2.5 items-center justify-center sm:justify-start pt-3 border-t border-primary/5 animate-fade-in">
+            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary/40 mr-1.5 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+              Préférences :
+            </span>
+            {[
+              { id: "veg", label: "🥬 Végétarien", activeBg: "bg-emerald-600/10 text-emerald-700 border-emerald-600/30", hoverBg: "hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-600/20" },
+              { id: "spicy", label: "🌶️ Épicé", activeBg: "bg-red-600/10 text-red-700 border-red-600/30", hoverBg: "hover:bg-red-50 hover:text-red-700 hover:border-red-600/20" },
+              { id: "halal", label: "🌙 Halal", activeBg: "bg-amber-600/10 text-amber-700 border-amber-600/30", hoverBg: "hover:bg-amber-50 hover:text-amber-700 hover:border-amber-600/20" },
+              { id: "nutfree", label: "🥜 Sans Arachide", activeBg: "bg-indigo-600/10 text-indigo-700 border-indigo-600/30", hoverBg: "hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-600/20" },
+              { id: "glutenfree", label: "🌾 Sans Gluten", activeBg: "bg-sky-600/10 text-sky-700 border-sky-600/30", hoverBg: "hover:bg-sky-50 hover:text-sky-700 hover:border-sky-600/20" }
+            ].map((pref) => {
+              const isActive = prefFilter.includes(pref.id);
+              return (
+                <button
+                  key={pref.id}
+                  onClick={() => togglePref(pref.id)}
+                  className={`px-3.5 py-2 rounded-xl border text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center gap-2 shadow-sm ${
+                    isActive ? pref.activeBg + " scale-[1.02] ring-2 ring-offset-1 ring-primary/5" : "bg-white/60 text-primary/50 border-primary/5 " + pref.hoverBg
+                  }`}
+                >
+                  {pref.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>

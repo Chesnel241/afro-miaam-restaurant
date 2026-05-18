@@ -74,6 +74,28 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
           {item.name}
         </h3>
         <p className="text-sm text-primary/65 line-clamp-2">{item.description}</p>
+        
+        {/* Preference indicators on client card */}
+        {(item as any).preferences && (item as any).preferences.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {(item as any).preferences.map((p: string) => {
+              let label = "";
+              let style = "";
+              if (p === "veg") { label = "🥬 Veg"; style = "bg-emerald-50 text-emerald-700 border-emerald-200"; }
+              else if (p === "spicy") { label = "🌶️ Épicé"; style = "bg-red-50 text-red-700 border-red-200"; }
+              else if (p === "halal") { label = "🌙 Halal"; style = "bg-amber-50 text-amber-700 border-amber-200"; }
+              else if (p === "nutfree") { label = "🥜 Sans arachide"; style = "bg-indigo-50 text-indigo-700 border-indigo-200"; }
+              else if (p === "glutenfree") { label = "🌾 Sans gluten"; style = "bg-sky-50 text-sky-700 border-sky-200"; }
+              
+              if (!label) return null;
+              return (
+                <span key={p} className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${style}`}>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         {/* Sélecteur de saveurs */}
         {hasFlavors && isAvailable && (

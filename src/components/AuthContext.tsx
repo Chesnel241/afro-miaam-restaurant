@@ -84,6 +84,7 @@ export type MenuItemDynamic = {
   tags?: string[];
   available: boolean;
   flavors?: Flavor[];
+  preferences?: string[];
 };
 
 export type NewsletterSubscriber = {

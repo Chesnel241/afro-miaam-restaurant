@@ -24,6 +24,7 @@ type MenuFormState = {
   tags: string[];
   available: boolean;
   flavors: FlavorDraft[];
+  preferences: string[];
 };
 
 const EMPTY_FORM: MenuFormState = {
@@ -35,6 +36,7 @@ const EMPTY_FORM: MenuFormState = {
   tags: [],
   available: true,
   flavors: [],
+  preferences: [],
 };
 
 export function AdminMenuManager() {
@@ -64,6 +66,7 @@ export function AdminMenuManager() {
         name: f.name,
         supplement: f.supplement.toString(),
       })),
+      preferences: item.preferences || [],
     });
     setIsAdding(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -98,6 +101,7 @@ export function AdminMenuManager() {
         tags: form.tags,
         available: form.available,
         ...(flavors.length > 0 ? { flavors } : {}),
+        preferences: form.preferences || [],
       };
 
       if (editingId) {
@@ -398,6 +402,39 @@ export function AdminMenuManager() {
               )}
             </div>
 
+            {/* Preferences Selection */}
+            <div className="sm:col-span-2 space-y-3 pt-4 border-t border-cream/20 animate-fade-in">
+              <label className="text-xs font-black uppercase tracking-widest text-primary/60">
+                Préférences & Régimes Alimentaires (Choix multiple)
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { id: "veg", label: "🥬 Végétarien" },
+                  { id: "spicy", label: "🌶️ Épicé" },
+                  { id: "halal", label: "🌙 Halal" },
+                  { id: "nutfree", label: "🥜 Sans arachide" },
+                  { id: "glutenfree", label: "🌾 Sans gluten" },
+                ].map((pref) => {
+                  const isChecked = form.preferences?.includes(pref.id);
+                  return (
+                    <button
+                      key={pref.id}
+                      type="button"
+                      onClick={() => {
+                        const newPrefs = isChecked
+                          ? form.preferences.filter((p) => p !== pref.id)
+                          : [...(form.preferences || []), pref.id];
+                        setForm({ ...form, preferences: newPrefs });
+                      }}
+                      className={"px-4 py-2 rounded-2xl text-xs font-bold transition-all border shadow-sm " + (isChecked ? 'bg-accent text-white border-accent' : 'bg-creamSoft text-primary border-cream/20 hover:bg-cream')}
+                    >
+                      {pref.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="sm:col-span-2 flex items-center justify-end gap-4 mt-4 pt-6 border-t border-cream/20">
               <button
                 type="button"
@@ -452,6 +489,18 @@ export function AdminMenuManager() {
                         <span className="text-[10px] text-primary/40 truncate max-w-[200px] mt-1">
                           {item.description}
                         </span>
+                        {item.preferences && item.preferences.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {item.preferences.map((p) => {
+                              const label = p === "veg" ? "🥬 Veg" : p === "spicy" ? "🌶️ Épicé" : p === "halal" ? "🌙 Halal" : p === "nutfree" ? "🥜 Sans arachide" : p === "glutenfree" ? "🌾 Sans gluten" : p;
+                              return (
+                                <span key={p} className="text-[8px] font-black uppercase tracking-wider bg-creamSoft/70 text-primary/70 px-1.5 py-0.5 rounded-md border border-cream/10">
+                                  {label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>

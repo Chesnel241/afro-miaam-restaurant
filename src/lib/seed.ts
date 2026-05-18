@@ -29,6 +29,29 @@ export async function seedMenu(force = false) {
     console.log("Seeding menu starting...");
     let count = 0;
     
+    const getInitialPreferences = (item: any) => {
+      const prefs = [];
+      const vegetarianIds = [
+        "frites-patates-douces", "banane-bouillie", "riz", "attieke", "beignets", "frites", "manioc",
+        "pancakes", "tiramisu", "degue", "crepes", "fondant-chocolat", "gateau-banane", "gateau-farine",
+        "boisson-detox", "bissap", "jus-orange-presse", "eau", "jus-gingembre", "feuilles-manioc"
+      ];
+      if (vegetarianIds.includes(item.id)) prefs.push("veg");
+      
+      const spicyIds = ["pastels", "odika-poulet", "jus-gingembre"];
+      if (spicyIds.includes(item.id)) prefs.push("spicy");
+      
+      // Default fallback is halal for all Afro Miaam dishes
+      prefs.push("halal");
+      
+      if (!item.id.includes("mafe")) prefs.push("nutfree");
+      
+      const containGluten = ["samoussa-boeuf", "pastels", "samoussa-thon", "pancakes", "crepes", "fondant-chocolat", "gateau-banane", "gateau-farine"];
+      if (!containGluten.includes(item.id)) prefs.push("glutenfree");
+      
+      return prefs;
+    };
+
     for (const item of menuItems) {
       await addDoc(collection(db, "menu"), {
         name: item.name || "Sans nom",
@@ -38,6 +61,7 @@ export async function seedMenu(force = false) {
         category: item.category || "plat",
         tags: item.tags || [],
         available: true,
+        preferences: getInitialPreferences(item),
         createdAt: serverTimestamp(),
       });
       count++;
