@@ -199,9 +199,14 @@ service cloud.firestore {
               .hasOnly(['hasReviewed', 'review'])
           && request.resource.data.review is map
           && request.resource.data.review.keys().hasOnly(['rating', 'comment', 'createdAt'])
-          && request.resource.data.review.rating is int
-          && request.resource.data.review.rating >= 1
-          && request.resource.data.review.rating <= 5
+          && request.resource.data.review.rating is number
+          && (
+            request.resource.data.review.rating == 1
+            || request.resource.data.review.rating == 2
+            || request.resource.data.review.rating == 3
+            || request.resource.data.review.rating == 4
+            || request.resource.data.review.rating == 5
+          )
           && request.resource.data.review.comment is string
           && request.resource.data.review.comment.size() <= 500
         )
