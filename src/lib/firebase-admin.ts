@@ -95,7 +95,9 @@ if (!getApps().length) {
   }
 }
 
-export const adminDb = admin.firestore();
+const db = admin.firestore();
+db.settings({ ignoreUndefinedProperties: true });
+export const adminDb = db;
 export const adminAuth = admin.auth();
 
 export async function verifyAppCheckToken(appCheckToken: string) {

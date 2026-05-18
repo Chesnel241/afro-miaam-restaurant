@@ -326,9 +326,9 @@ export async function POST(request: Request) {
       const discounts = {
         referralCredits: creditsToUse,
         welcomeOffer: welcomeDiscount > 0,
-        referralCodeUsed: payload.referralCode && payload.referralCode.length >= 5 ? clean(payload.referralCode, 20) : undefined,
-        promoCodeUsed: promoCodeUsed || undefined,
-        promoDiscount: promoDiscount > 0 ? promoDiscount : undefined,
+        referralCodeUsed: payload.referralCode && payload.referralCode.length >= 5 ? clean(payload.referralCode, 20) : null,
+        promoCodeUsed: promoCodeUsed || null,
+        promoDiscount: promoDiscount > 0 ? promoDiscount : null,
       };
 
       const orderData = {
