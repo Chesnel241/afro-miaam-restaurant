@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #1f3d2b;
+  --color-primary-dark: #1a3526;
+  --color-primary-light: #244a33;
+  --color-accent: #e85d2a;
+  --color-cream: #f4ede4;
+  --color-cream-soft: #fbf7f1;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: #1a1a1a;
+  font-feature-settings: "ss01", "cv11";
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-container px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-md {
+    @apply min-h-12 px-8 text-base;
+  }
+
+  .btn-lg {
+    @apply min-h-14 px-10 text-lg;
+  }
+
+  .btn-primary {
+    @apply bg-accent text-white shadow-glow hover:opacity-95 hover:shadow-soft;
+  }
+
+  .btn-secondary {
+    @apply border border-cream/40 bg-transparent text-cream hover:bg-cream/10;
+  }
+
+  .btn-ghost-dark {
+    @apply border border-primary/20 bg-white text-primary hover:bg-cream;
+  }
+
+  .btn-danger {
+    @apply bg-accent text-white shadow-glow hover:opacity-90;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 text-sm font-medium text-primary transition;
+  }
+
+  .chip-active {
+    @apply border-primary bg-primary text-cream;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide;
+  }
+
+  .badge-orange {
+    @apply bg-accent/15 text-accent;
+  }
+
+  .badge-green {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .card-soft {
+    @apply rounded-2xl bg-white shadow-card;
+  }
+
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.18em] text-accent;
+  }
+
+  .heading-display {
+    @apply font-display font-extrabold leading-[1.05] tracking-tight;
+  }
+}
+
+/* Texture grain (issue du kit) */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+/* Dégradé subtil de la primary */
+.bg-primary-gradient {
+  background: linear-gradient(135deg, #1f3d2b 0%, #244a33 50%, #1a3526 100%);
+}
+
+/* Diviseur losanges */
+.afro-divider {
+  height: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 24' width='80' height='24'%3E%3Cg fill='none' stroke='%23E85D2A' stroke-width='1.5'%3E%3Cpath d='M0 12 L10 4 L20 12 L30 4 L40 12 L50 4 L60 12 L70 4 L80 12'/%3E%3Cpath d='M0 12 L10 20 L20 12 L30 20 L40 12 L50 20 L60 12 L70 20 L80 12' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 80px 24px;
+  opacity: 0.6;
+}
+
+/* Bande latérale décorative façon kente, façon mockup */
+.afro-side-pattern {
+  background-image: repeating-linear-gradient(
+      45deg,
+      rgba(244, 237, 228, 0.06) 0,
+      rgba(244, 237, 228, 0.06) 10px,
+      transparent 10px,
+      transparent 20px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(232, 93, 42, 0.06) 0,
+      rgba(232, 93, 42, 0.06) 10px,
+      transparent 10px,
+      transparent 20px
+    );
+}
+
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="date"],
+textarea,
+select {
+  font-family: inherit;
+}
+
+.focus-ring:focus-visible {
+  @apply outline-none ring-4 ring-accent/40;
+}
+
+/* Champs partagés pour formulaires */
+.field {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 61, 43, 0.15);
+  background: #fff;
+  padding: 0 20px;
+  color: #1a1a1a;
+  font-size: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  text-align: left;
+}
+.field[type="date"],
+.field select,
+select.field {
+  text-align: center;
+}
+.field[type="date"] {
+  width: 85%;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+.field:focus-visible {
+  outline: none;
+  border-color: #e85d2a;
+  box-shadow: 0 0 0 4px rgba(232, 93, 42, 0.18);
+}
+
+/* Animation fluide du badge 24h */
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.spin-slow { animation: spin-slow 30s linear infinite; }
+
+/* Écran de chargement, animations */
+@keyframes logo-pop {
+  0%   { opacity: 0; transform: scale(0.92); }
+  60%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-logo-pop {
+  animation: logo-pop 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 1s ease-out forwards;
+}
+
+@keyframes steam-slow {
+  0% { transform: translateY(0) scaleX(1); opacity: 0; }
+  25% { opacity: 0.4; }
+  100% { transform: translateY(-100px) scaleX(2); opacity: 0; }
+}
+
+@keyframes smoke-drift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+  50% { transform: translate(20px, -10px) scale(1.1); opacity: 0.4; }
+  100% { transform: translate(-10px, -20px) scale(1); opacity: 0.2; }
+}
+
+.smoke-particle {
+  position: absolute;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(20px);
+  animation: steam-slow 8s infinite linear;
+}

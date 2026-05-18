@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" role="img" aria-label="Afro Miaam — Restaurant afro gastronomique">
+  <style>
+    .brand { font-family: 'Poppins', system-ui, sans-serif; font-weight: 800; fill: #F4EDE4; }
+    .tag { font-family: 'Poppins', system-ui, sans-serif; font-weight: 600; fill: #6BAA75; letter-spacing: 5px; }
+  </style>
+
+  <text class="brand" x="60" y="130" font-size="130">Afr</text>
+
+  <g transform="translate(310,68)">
+    <circle cx="42" cy="42" r="42" fill="none" stroke="#E85D2A" stroke-width="18"/>
+    <path d="M70 8 C82 -2 96 -2 102 6 C96 14 82 18 70 12 Z" fill="#6BAA75"/>
+    <path d="M82 22 C92 12 104 12 110 18 C104 28 92 30 82 26 Z" fill="#6BAA75"/>
+    <line x1="68" y1="14" x2="60" y2="22" stroke="#3F6B45" stroke-width="2" stroke-linecap="round"/>
+    <line x1="86" y1="26" x2="78" y2="34" stroke="#3F6B45" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <text class="brand" x="160" y="270" font-size="130">M</text>
+
+  <g transform="translate(290,150)">
+    <circle cx="14" cy="10" r="10" fill="#E85D2A"/>
+    <rect x="2"  y="32" width="6" height="22" rx="2" fill="#E85D2A"/>
+    <rect x="11" y="32" width="6" height="22" rx="2" fill="#E85D2A"/>
+    <rect x="20" y="32" width="6" height="22" rx="2" fill="#E85D2A"/>
+    <rect x="6"  y="50" width="16" height="62" rx="6" fill="#E85D2A"/>
+  </g>
+
+  <text class="brand" x="332" y="270" font-size="130">aam</text>
+
+  <g transform="translate(0,320)">
+    <circle cx="190" cy="6" r="6" fill="#E85D2A"/>
+    <text class="tag" x="210" y="11" font-size="20">RESTAURANT AFRO GASTRONOMIQUE</text>
+    <circle cx="612" cy="6" r="6" fill="#E85D2A"/>
+  </g>
+</svg>

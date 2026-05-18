@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Assistant Afro Miaam">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.7">
+      <stop offset="0%" stop-color="#244A33"/>
+      <stop offset="100%" stop-color="#1A3526"/>
+    </radialGradient>
+    <clipPath id="circle">
+      <circle cx="120" cy="120" r="120"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#circle)">
+    <rect width="240" height="240" fill="url(#bg)"/>
+
+    <!-- Tresses (arrière) -->
+    <ellipse cx="60" cy="170" rx="22" ry="65" fill="#3a1d0e"/>
+    <ellipse cx="180" cy="170" rx="22" ry="65" fill="#3a1d0e"/>
+
+    <!-- Cou -->
+    <rect x="100" y="135" width="40" height="30" rx="14" fill="#7a3f1a"/>
+
+    <!-- Visage -->
+    <ellipse cx="120" cy="105" rx="44" ry="50" fill="#8a4a23"/>
+
+    <!-- Tresses (avant, sur épaules) -->
+    <path d="M76 150 Q70 200 90 240 L60 240 Q40 195 50 150 Z" fill="#3a1d0e"/>
+    <path d="M164 150 Q170 200 150 240 L180 240 Q200 195 190 150 Z" fill="#3a1d0e"/>
+
+    <!-- Boucles d'oreilles -->
+    <circle cx="80" cy="120" r="4" fill="#E85D2A"/>
+    <circle cx="160" cy="120" r="4" fill="#E85D2A"/>
+
+    <!-- Yeux -->
+    <ellipse cx="105" cy="100" rx="3" ry="4" fill="#1A1A1A"/>
+    <ellipse cx="135" cy="100" rx="3" ry="4" fill="#1A1A1A"/>
+
+    <!-- Sourcils -->
+    <path d="M97 90 Q105 86 113 90" stroke="#1A1A1A" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M127 90 Q135 86 143 90" stroke="#1A1A1A" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <!-- Sourire -->
+    <path d="M104 120 Q120 132 136 120" stroke="#3a1d0e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+    <!-- Tablier crème avec logo -->
+    <path d="M50 240 L70 175 Q120 165 170 175 L190 240 Z" fill="#E9E0D4"/>
+    <text x="120" y="220" text-anchor="middle" font-family="Poppins, system-ui, sans-serif"
+          font-size="18" font-weight="800" fill="#1F3D2B">Mi<tspan fill="#E85D2A">aa</tspan>m</text>
+  </g>
+
+  <!-- Liseré orange -->
+  <circle cx="120" cy="120" r="118" fill="none" stroke="#E85D2A" stroke-width="3"/>
+</svg>

@@ -1,0 +1,24 @@
+name: Create and sync main branch
+
+on:
+  push:
+    branches:
+      - 'copilot/merge-claude-into-main'
+
+jobs:
+  sync-to-main:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin HEAD:refs/heads/main --force
