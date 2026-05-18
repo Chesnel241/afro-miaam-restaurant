@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TruckIcon, UserIcon, GiftIcon, ClockIcon, ArrowRightIcon, CheckIcon } from "@/components/Icons";
+import { TruckIcon, GiftIcon, ClockIcon, ArrowRightIcon, CheckIcon } from "@/components/Icons";
 import { formatPrice } from "@/lib/utils";
 
 const PRESTATIONS = [
@@ -21,23 +21,14 @@ const PRESTATIONS = [
     icon: <GiftIcon className="h-8 w-8" />,
     basePrice: 45,
     image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=2070&auto=format&fit=crop"
-  },
-  {
-    id: "chef",
-    title: "Chef à Domicile",
-    description: "L'expérience d'un restaurant gastronomique chez vous. Un menu sur-mesure préparé sous vos yeux.",
-    icon: <UserIcon className="h-8 w-8" />,
-    basePrice: 85,
-    image: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop"
   }
 ];
 
 const SHOWCASE_IMAGES = [
-  "https://images.unsplash.com/photo-1535232352032-665a4b0b11c9?q=80&w=2070&auto=format&fit=crop", // Pâtisserie Anniversaire
-  "https://images.unsplash.com/photo-1530103043960-ef38714abb15?q=80&w=2070&auto=format&fit=crop", // Déco Table
-  "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?q=80&w=2070&auto=format&fit=crop", // Gâteau design
-  "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2070&auto=format&fit=crop", // Réception
-  "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?q=80&w=2070&auto=format&fit=crop"  // Ambiance Pro
+  "/img/prestations/prestation1.png",
+  "/img/prestations/prestation2.png",
+  "/img/prestations/prestation3.png",
+  "/img/prestations/prestation4.png"
 ];
 
 export default function PrestationsPage() {
@@ -103,7 +94,7 @@ export default function PrestationsPage() {
 
       {/* --- SERVICES PILLARS --- */}
       <section className="container-x relative z-20 py-16 md:py-24 xl:py-28">
-        <div className="grid gap-6 md:grid-cols-3 xl:gap-8">
+        <div className="grid gap-6 md:grid-cols-2 max-w-5xl mx-auto xl:gap-8">
           {PRESTATIONS.map((item) => (
             <motion.button
               key={item.id}
