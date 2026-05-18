@@ -31,7 +31,7 @@ export const menuItems: MenuItem[] = [
     name: "Menu Découverte",
     description: "1 Entrée + 1 Plat + 1 Accompagnement + 1 Boisson au choix.",
     price: 15.99,
-    image: "/img/menu/garba.png",
+    image: "/logo-afromiaam.png",
     tags: ["Formule Populaire"],
   },
   {
@@ -40,7 +40,7 @@ export const menuItems: MenuItem[] = [
     name: "Menu Gourmand",
     description: "1 Entrée + 1 Plat Premium + 1 Accompagnement Premium + 1 Dessert + 1 Boisson au choix.",
     price: 24.99,
-    image: "/img/menu/tiep-poisson.png",
+    image: "/logo-afromiaam.png",
     tags: ["Formule Gourmande"],
   },
   // Plats (dossier public/img/menu)
