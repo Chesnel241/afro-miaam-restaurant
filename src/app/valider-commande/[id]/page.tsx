@@ -89,7 +89,7 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
       }, 3000);
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la validation.");
+      setError("Erreur lors de la validation de la livraison. Veuillez réessayer.");
     } finally {
       setIsUpdating(false);
     }
