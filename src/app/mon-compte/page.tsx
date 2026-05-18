@@ -381,12 +381,21 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const [showReview, setShowReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [reviewStatus, setReviewStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-clear success message after 5 seconds
+  useEffect(() => {
+    if (reviewStatus === 'success') {
+      const timer = setTimeout(() => setReviewStatus('idle'), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [reviewStatus]);
 
   const handleReorder = () => {
     order.items.forEach(item => {
@@ -409,6 +418,18 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const orderIdDisplay = typeof order.id === "string" 
     ? `#${order.id.substring(0, 8).toUpperCase()}` 
     : `#${String(order.id).substring(0, 8).toUpperCase()}`;
+
+  const handleSubmitReview = async () => {
+    setReviewStatus('sending');
+    try {
+      await addOrderReview(order.id, rating, comment);
+      setShowReview(false);
+      setReviewStatus('success');
+    } catch (err) {
+      console.error(err);
+      setReviewStatus('error');
+    }
+  };
 
   return (
     <div className="py-8 first:pt-0 last:pb-0 border-b border-cream/20 last:border-0">
@@ -439,7 +460,7 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {order.status === 'Livré' && !order.hasReviewed && (
+          {order.status === 'Livré' && !order.hasReviewed && reviewStatus !== 'success' && (
             <button 
               onClick={() => setShowReview(true)}
               className="btn btn-xs bg-accent/10 text-accent hover:bg-accent hover:text-white border-none px-4"
@@ -462,6 +483,39 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
            {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
          </p>
       </div>
+
+      {/* Toast de feedback review */}
+      <AnimatePresence>
+        {reviewStatus === 'success' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mt-4 p-4 rounded-2xl bg-green-50 border border-green-200 flex items-center gap-3"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <p className="text-sm font-bold text-green-700">
+              {isReviewRewardActive
+                ? "Merci pour votre avis ! 1€ sera ajouté à votre Afro Wallet."
+                : "Merci pour votre avis ! Votre retour est précieux pour nous."}
+            </p>
+          </motion.div>
+        )}
+        {reviewStatus === 'error' && !showReview && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mt-4 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3"
+          >
+            <p className="text-sm font-bold text-red-600">
+              Une erreur est survenue. Votre avis a peut-être déjà été enregistré, rechargez la page.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showReview && (
@@ -488,27 +542,35 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
                 value={comment}
                 onChange={e => setComment(e.target.value)}
               />
+
+              {/* Error inline dans le form */}
+              {reviewStatus === 'error' && (
+                <p className="text-xs font-bold text-red-500 bg-red-50 p-3 rounded-xl">
+                  ⚠ Erreur lors de l&apos;envoi. Vérifiez votre connexion et réessayez.
+                </p>
+              )}
+
               <div className="flex justify-end gap-3 pt-2">
-                <button onClick={() => setShowReview(false)} className="px-4 py-2 text-[10px] font-black text-primary/40 uppercase tracking-widest hover:text-primary transition-colors">Annuler</button>
                 <button 
-                  onClick={async () => {
-                    try {
-                      await addOrderReview(order.id, rating, comment);
-                      setShowReview(false);
-                      if (isReviewRewardActive) {
-                        alert("Merci ! 1€ a été ajouté à votre Afro Wallet.");
-                      } else {
-                        alert("Merci pour votre avis ! Votre retour est précieux pour nous.");
-                      }
-                    } catch (err) {
-                      console.error(err);
-                      alert("Votre avis a été noté, mais il y a un petit souci technique avec l'ajout automatique de votre crédit. Pas d'inquiétude, l'équipe va régulariser cela !");
-                      setShowReview(false);
-                    }
-                  }} 
-                  className="btn btn-sm btn-primary px-8 uppercase font-black tracking-widest"
+                  onClick={() => { setShowReview(false); setReviewStatus('idle'); }} 
+                  disabled={reviewStatus === 'sending'}
+                  className="px-4 py-2 text-[10px] font-black text-primary/40 uppercase tracking-widest hover:text-primary transition-colors"
                 >
-                  Envoyer
+                  Annuler
+                </button>
+                <button 
+                  onClick={handleSubmitReview}
+                  disabled={reviewStatus === 'sending'}
+                  className="btn btn-sm btn-primary px-8 uppercase font-black tracking-widest flex items-center gap-2"
+                >
+                  {reviewStatus === 'sending' ? (
+                    <>
+                      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Envoi...
+                    </>
+                  ) : (
+                    "Envoyer"
+                  )}
                 </button>
               </div>
             </div>

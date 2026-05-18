@@ -41,7 +41,10 @@ export default function AdminPage() {
     allOrders, 
     allCustomers, 
     newsletterSubscribers,
-    updateOrderStatus 
+    updateOrderStatus,
+    isReviewRewardActive,
+    isWelcomeOfferActive,
+    updateGlobalSettings,
   } = useAuth();
   
   const router = useRouter();
@@ -229,6 +232,45 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+
+            {/* --- PARAMÈTRES PROMOTIONS --- */}
+            <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10">
+              <h3 className="heading-display mb-6 text-xl text-primary">Paramètres Promotions</h3>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-creamSoft/50 border border-cream/20">
+                  <div>
+                    <p className="text-sm font-bold text-primary">Bonus +1€ pour avis client</p>
+                    <p className="text-[10px] text-primary/40 mt-1">Les clients reçoivent 1€ en Afro Wallet après chaque avis sur une commande livrée.</p>
+                  </div>
+                  <button
+                    onClick={() => updateGlobalSettings({ isReviewRewardActive: !isReviewRewardActive })}
+                    className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full transition-colors duration-300 ${
+                      isReviewRewardActive ? 'bg-accent' : 'bg-primary/20'
+                    }`}
+                  >
+                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-300 mt-1 ${
+                      isReviewRewardActive ? 'translate-x-7' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-creamSoft/50 border border-cream/20">
+                  <div>
+                    <p className="text-sm font-bold text-primary">Offre de bienvenue (-5€)</p>
+                    <p className="text-[10px] text-primary/40 mt-1">Les nouveaux clients bénéficient de 5€ de réduction sur leur première commande.</p>
+                  </div>
+                  <button
+                    onClick={() => updateGlobalSettings({ isWelcomeOfferActive: !isWelcomeOfferActive })}
+                    className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full transition-colors duration-300 ${
+                      isWelcomeOfferActive ? 'bg-accent' : 'bg-primary/20'
+                    }`}
+                  >
+                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-300 mt-1 ${
+                      isWelcomeOfferActive ? 'translate-x-7' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -283,29 +325,56 @@ export default function AdminPage() {
               const currentInCycle = customer.ordersCount % maxOrders;
               const percentage = Math.min((currentInCycle / maxOrders) * 100, 100);
               const isEligible = customer.ordersCount > 0 && currentInCycle === 0;
+              const isNew = (customer as any).isFirstLogin === true;
+              const hasUsedWelcome = (customer as any).hasUsedWelcomeOffer === true;
+              const createdAt = (customer as any).createdAt;
+              const createdDate = createdAt?.toDate ? createdAt.toDate().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : createdAt ? new Date(createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
               return (
                 <div key={customer.id} className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 flex flex-col justify-between hover:scale-[1.02] transition-transform">
                   <div>
-                    <div className="flex justify-between items-start mb-6">
+                    <div className="flex justify-between items-start mb-4">
                       <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary">
                         <UserIcon className="h-6 w-6" />
                       </div>
-                      {isEligible && <GiftIcon className="h-8 w-8 text-accent animate-bounce shadow-glow" />}
+                      <div className="flex items-center gap-2">
+                        {isNew && (
+                          <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-blue-100 text-blue-600 animate-pulse">
+                            🆕 Nouveau
+                          </span>
+                        )}
+                        {isEligible && <GiftIcon className="h-8 w-8 text-accent animate-bounce shadow-glow" />}
+                      </div>
                     </div>
                     <h3 className="font-display font-black text-primary text-lg truncate">{customer.name}</h3>
                     <p className="text-xs text-primary/40 truncate">{customer.email}</p>
                     <p className="text-xs font-black text-accent mt-2 tracking-widest">{customer.phone || "---"}</p>
+                    {createdDate && (
+                      <p className="text-[9px] text-primary/30 mt-1">Inscrit le {createdDate}</p>
+                    )}
                   </div>
                   
-                  <div className="mt-8 pt-6 border-t border-cream/10">
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                      <span className="text-primary/60">Fidélité</span>
-                      <span className="text-accent">{currentInCycle} / 10</span>
+                  <div className="mt-6 space-y-3">
+                    {/* Badge offre bienvenue */}
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[9px] font-black uppercase tracking-widest ${
+                        hasUsedWelcome
+                          ? 'bg-gray-100 text-primary/40'
+                          : 'bg-accent/10 text-accent'
+                      }`}>
+                        🎁 {hasUsedWelcome ? 'Bienvenue utilisée' : 'Bienvenue disponible'}
+                      </span>
                     </div>
-                    <div className="h-2 w-full rounded-full bg-creamSoft overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-1000 ${isEligible ? 'bg-accent' : 'bg-primary'}`} style={{ width: `${percentage}%` }} />
+
+                    <div className="pt-3 border-t border-cream/10">
+                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
+                        <span className="text-primary/60">Fidélité</span>
+                        <span className="text-accent">{currentInCycle} / 10</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-creamSoft overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${isEligible ? 'bg-accent' : 'bg-primary'}`} style={{ width: `${percentage}%` }} />
+                      </div>
+                      <p className="mt-2 text-[9px] text-primary/40 italic">Total commandes : {customer.ordersCount}</p>
                     </div>
-                    <p className="mt-2 text-[9px] text-primary/40 italic">Total commandes : {customer.ordersCount}</p>
                   </div>
                 </div>
               );

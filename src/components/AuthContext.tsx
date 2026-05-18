@@ -120,7 +120,9 @@ type AuthContextType = {
   updateMenuItem: (id: string, item: Partial<MenuItemDynamic>) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
   isReviewRewardActive: boolean;
+  isWelcomeOfferActive: boolean;
   addOrderReview: (orderId: string, rating: number, comment: string) => Promise<void>;
+  updateGlobalSettings: (settings: Record<string, boolean>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -622,6 +624,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const [isReviewRewardActive, setIsReviewRewardActive] = useState(true);
+  const [isWelcomeOfferActive, setIsWelcomeOfferActive] = useState(true);
 
   useEffect(() => {
     // Firestore rules require auth for settings reads (C10).
@@ -632,7 +635,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       doc(db, "settings", "global"),
       (snap) => {
         if (snap.exists()) {
-          setIsReviewRewardActive(snap.data().isReviewRewardActive ?? true);
+          const data = snap.data();
+          setIsReviewRewardActive(data.isReviewRewardActive ?? true);
+          setIsWelcomeOfferActive(data.isWelcomeOfferActive ?? true);
         }
       },
       (err) => {
@@ -642,6 +647,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
     return () => unsub();
   }, [user]);
+
+  const updateGlobalSettings = useCallback(async (settings: Record<string, boolean>) => {
+    const settingsRef = doc(db, "settings", "global");
+    await setDoc(settingsRef, settings, { merge: true });
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -661,7 +671,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dynamicMenu,
         placeOrder,
         isReviewRewardActive,
+        isWelcomeOfferActive,
         addOrderReview,
+        updateGlobalSettings,
         updateOrderStatus,
         requestOrderDeletion,
         confirmOrderDeletion,
