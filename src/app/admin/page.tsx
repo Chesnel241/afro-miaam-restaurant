@@ -8,7 +8,7 @@ import { AdminMenuManager } from "@/components/AdminMenuManager";
 import { QRCodeSVG } from "qrcode.react";
 
 import { db } from "@/lib/firebase";
-type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions";
+type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions" | "reviews";
 
 // Modal QR Code
 function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
@@ -277,6 +277,8 @@ export default function AdminPage() {
 
   const maxOrders = 10;
 
+  const reviewedOrders = allOrders.filter(o => o.hasReviewed && o.review);
+
   // Category popularity aggregation for SVG charts
   const categoryCounts = allOrders.reduce((acc, o) => {
     (o.items || []).forEach(item => {
@@ -393,6 +395,7 @@ export default function AdminPage() {
         <TabButton id="newsletter" active={activeTab === "newsletter"} onClick={setActiveTab} label="Newsletter" />
         <TabButton id="menu" active={activeTab === "menu"} onClick={setActiveTab} label="La Carte" />
         <TabButton id="promotions" active={activeTab === "promotions"} onClick={setActiveTab} label="Codes Promos" />
+        <TabButton id="reviews" active={activeTab === "reviews"} onClick={setActiveTab} label={`Avis Clients (${reviewedOrders.length})`} />
       </div>
 
       <div className="mt-10">
@@ -864,6 +867,83 @@ export default function AdminPage() {
                   </form>
                 </div>
               </aside>
+            </div>
+          </div>
+        )}
+
+        {/* --- ONGLET : AVIS CLIENTS --- */}
+        {activeTab === "reviews" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <KPI 
+                title="Total Avis" 
+                value={reviewedOrders.length.toString()} 
+                sub="Avis cumulés sur commandes livrées"
+                variant="primary"
+              />
+              <KPI 
+                title="Bon 😋" 
+                value={reviewedOrders.filter(o => o.review?.reaction === 'bon').length.toString()} 
+                sub="Avis positifs"
+              />
+              <KPI 
+                title="Moyen 😐" 
+                value={reviewedOrders.filter(o => o.review?.reaction === 'moyen').length.toString()} 
+                sub="Avis neutres"
+              />
+              <KPI 
+                title="Pas bon 😞" 
+                value={reviewedOrders.filter(o => o.review?.reaction === 'pas_bon').length.toString()} 
+                sub="Avis insatisfaits"
+              />
+            </div>
+
+            <div className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-cream/10">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[700px]">
+                  <thead className="bg-creamSoft/50 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
+                    <tr>
+                      <th className="px-8 py-5">Date</th>
+                      <th className="px-8 py-5">Commande</th>
+                      <th className="px-8 py-5">Client</th>
+                      <th className="px-8 py-5">Avis / Réaction</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-cream/10">
+                    {reviewedOrders.map(order => {
+                      const reaction = order.review?.reaction;
+                      const emoji = reaction === 'bon' ? '😋 Bon' : reaction === 'moyen' ? '😐 Moyen' : '😞 Pas bon';
+                      const badgeClass = reaction === 'bon' 
+                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                        : reaction === 'moyen' 
+                          ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                          : 'bg-red-50 text-red-600 border border-red-100';
+                      const dateStr = order.review?.createdAt
+                        ? new Date(order.review.createdAt.toDate ? order.review.createdAt.toDate() : order.review.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : "Date inconnue";
+
+                      return (
+                        <tr key={order.id} className="text-sm hover:bg-cream/5 transition-colors">
+                          <td className="px-8 py-5 text-primary/60">{dateStr}</td>
+                          <td className="px-8 py-5 font-black text-primary uppercase">#{order.id.substring(0, 8)}</td>
+                          <td className="px-8 py-5">
+                            <div className="font-bold text-primary">{order.userName}</div>
+                            <div className="text-xs text-primary/40">{order.userEmail}</div>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-wider ${badgeClass}`}>
+                              {emoji}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {reviewedOrders.length === 0 && (
+                <p className="p-20 text-center text-primary/30 italic font-medium">Aucun avis client soumis pour le moment.</p>
+              )}
             </div>
           </div>
         )}

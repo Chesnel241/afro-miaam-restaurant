@@ -601,33 +601,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const addOrderReview = useCallback(async (orderId: string, reaction: 'bon' | 'moyen' | 'pas_bon') => {
-    if (!user) return;
+    if (!user || !auth.currentUser) return;
     try {
-      // Read first to enforce one-review-per-order at the client level too.
-      // Defense in depth: the Firestore rule also rejects the update when
-      // hasReviewed is already true.
-      const orderRef = doc(db, "orders", orderId);
-      const snap = await getDoc(orderRef);
-      if (!snap.exists()) throw new Error("ORDER_NOT_FOUND");
-      const existing = snap.data() as { userId?: string; userEmail?: string; hasReviewed?: boolean };
-      const isOwnerByUid = existing.userId === user.id;
-      const isOwnerByEmail = typeof existing.userEmail === 'string' &&
-        existing.userEmail.trim().toLowerCase() === user.email.trim().toLowerCase();
-      
-      if (!isOwnerByUid && !isOwnerByEmail) throw new Error("FORBIDDEN");
-      if (existing.hasReviewed === true) throw new Error("ALREADY_REVIEWED");
-
-      await updateDoc(orderRef, {
-        hasReviewed: true,
-        review: { reaction, createdAt: serverTimestamp() },
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/review", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ orderId, reaction })
       });
-
-      // NOTE: referralCredits reward is NOT incremented from the client.
-      // The hardened users/update rule only allows credits to DECREASE
-      // (anti-farming). Credits for reviews are granted manually by admin
-      // until an Admin SDK API moves this server-side.
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Erreur lors de la soumission de l'avis");
+      }
     } catch (err) {
-      console.warn("REVIEW_SUBMISSION_FAILED", (err as { code?: string; message?: string }).code ?? (err as Error).message ?? "unknown");
+      console.warn("REVIEW_SUBMISSION_FAILED", (err as Error).message);
       throw err;
     }
   }, [user]);
