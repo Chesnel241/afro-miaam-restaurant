@@ -51,6 +51,26 @@ export default function ReservationPage() {
   const [promoError, setPromoError] = useState("");
   const [isVerifyingPromo, setIsVerifyingPromo] = useState(false);
 
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchClosures = async () => {
+      try {
+        const { doc, getDoc } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
+        const snap = await getDoc(doc(db, "settings", "closures"));
+        if (snap.exists() && isMounted) {
+          setBlockedDates(snap.data().blockedDates || []);
+        }
+      } catch (err) {
+        console.warn("Failed to load holiday closures", err);
+      }
+    };
+    fetchClosures();
+    return () => { isMounted = false; };
+  }, []);
+
   const handleApplyPromo = async () => {
     if (!promoCodeInput.trim()) return;
     setPromoError("");
@@ -142,6 +162,11 @@ export default function ReservationPage() {
 
     if (form.date < minDate) {
       alert("Désolé, les réservations doivent être effectuées au moins 24h à l'avance. Veuillez choisir une date à partir de demain.");
+      return;
+    }
+
+    if (blockedDates.includes(form.date)) {
+      alert("Désolé, le restaurant est fermé exceptionnellement à cette date. Veuillez choisir un autre jour.");
       return;
     }
 
@@ -414,10 +439,13 @@ export default function ReservationPage() {
                 type="date"
                 required
                 min={minDate}
-                className="field"
+                className={`field ${blockedDates.includes(form.date) ? 'border-red-500 bg-red-50 text-red-900' : ''}`}
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
               />
+              {blockedDates.includes(form.date) && (
+                <p className="text-[10px] font-bold text-red-600 mt-1 uppercase tracking-widest">⚠ Le restaurant est fermé à cette date.</p>
+              )}
             </div>
             <div>
               <label htmlFor="slot" className="label">Créneau horaire</label>

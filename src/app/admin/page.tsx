@@ -8,7 +8,7 @@ import { AdminMenuManager } from "@/components/AdminMenuManager";
 import { QRCodeSVG } from "qrcode.react";
 
 import { db } from "@/lib/firebase";
-type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions" | "reviews";
+type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions" | "reviews" | "closures";
 
 // Modal QR Code
 function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
@@ -63,6 +63,61 @@ export default function AdminPage() {
   const [promotions, setPromotions] = useState<Record<string, { code: string; discountType: "percentage" | "fixed"; discountValue: number; isActive: boolean }>>({});
   const [promoForm, setPromoForm] = useState({ code: "", discountType: "percentage" as "percentage" | "fixed", discountValue: 0, isActive: true });
   const [isLoadingPromos, setIsLoadingPromos] = useState(false);
+
+  // Closures state & CRUD handlers
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [closureDate, setClosureDate] = useState("");
+  const [isLoadingClosures, setIsLoadingClosures] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "closures") {
+      const loadClosures = async () => {
+        setIsLoadingClosures(true);
+        try {
+          const { doc, getDoc } = await import("firebase/firestore");
+          const snap = await getDoc(doc(db, "settings", "closures"));
+          if (snap.exists()) {
+            setBlockedDates(snap.data().blockedDates || []);
+          }
+        } catch (err) {
+          console.error("Error loading closures:", err);
+        } finally {
+          setIsLoadingClosures(false);
+        }
+      };
+      loadClosures();
+    }
+  }, [activeTab]);
+
+  const handleAddClosure = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!closureDate) return;
+    if (blockedDates.includes(closureDate)) {
+      alert("Cette date est déjà bloquée.");
+      return;
+    }
+    const updated = [...blockedDates, closureDate].sort();
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(db, "settings", "closures"), { blockedDates: updated });
+      setBlockedDates(updated);
+      setClosureDate("");
+    } catch (err) {
+      alert("Erreur lors du blocage de la date.");
+    }
+  };
+
+  const handleDeleteClosure = async (dateToDelete: string) => {
+    if (!confirm(`Débloquer la date ${dateToDelete} ?`)) return;
+    const updated = blockedDates.filter(d => d !== dateToDelete);
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(db, "settings", "closures"), { blockedDates: updated });
+      setBlockedDates(updated);
+    } catch (err) {
+      alert("Erreur lors du déblocage de la date.");
+    }
+  };
 
   // KDS Mode & Audio Alert State
   const [isKdsMode, setIsKdsMode] = useState(false);
@@ -292,6 +347,23 @@ export default function AdminPage() {
   
   const maxCatCount = Math.max(...Object.values(categoryCounts), 1);
 
+  // Slots popularity aggregation for BI charts
+  const slotCounts = allOrders.reduce((acc, o) => {
+    const slot = (o as any).customer?.slot || "Autre";
+    acc[slot] = (acc[slot] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const maxSlotCount = Math.max(...Object.values(slotCounts), 1);
+
+  // Delivery mode aggregation for BI charts
+  const deliveryCounts = allOrders.reduce((acc: any, o) => {
+    const mode = (o as any).customer?.deliveryMode || "retrait";
+    acc[mode] = (acc[mode] || 0) + 1;
+    return acc;
+  }, { retrait: 0, livraison: 0 } as any);
+  const totalDeliveryCount = deliveryCounts.retrait + deliveryCounts.livraison || 1;
+  const deliveryPct = Math.round((deliveryCounts.livraison / totalDeliveryCount) * 100);
+
   // Calculs statistiques
   const totalRevenue = allOrders.reduce((acc, o) => acc + o.total, 0);
   const totalOrdersCount = allOrders.length;
@@ -396,6 +468,7 @@ export default function AdminPage() {
         <TabButton id="menu" active={activeTab === "menu"} onClick={setActiveTab} label="La Carte" />
         <TabButton id="promotions" active={activeTab === "promotions"} onClick={setActiveTab} label="Codes Promos" />
         <TabButton id="reviews" active={activeTab === "reviews"} onClick={setActiveTab} label={`Avis Clients (${reviewedOrders.length})`} />
+        <TabButton id="closures" active={activeTab === "closures"} onClick={setActiveTab} label="Fermetures" />
       </div>
 
       <div className="mt-10">
@@ -405,7 +478,7 @@ export default function AdminPage() {
         {/* --- ONGLET : VUE D'ENSEMBLE --- */}
         {activeTab === "overview" && (
           <div className="space-y-12 animate-fade-in">
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <KPI 
                 title="Chiffre d'Affaires" 
                 value={`${totalRevenue.toFixed(2)} €`} 
@@ -424,6 +497,36 @@ export default function AdminPage() {
                 sub={`${currentMonthOrders.length} nouvelles commandes`}
                 trend="up"
               />
+              
+              {/* Circular progress SVG monthly target gauge */}
+              <div className="relative overflow-hidden rounded-3xl p-6 shadow-card ring-1 ring-cream/10 bg-white text-primary flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/30">Objectif Mensuel</h2>
+                  <p className="text-xl font-display font-black mt-2 truncate">{(currentMonthRevenue).toFixed(2)} €</p>
+                  <p className="mt-1 text-[9px] text-primary/45 font-bold uppercase tracking-wider">Cible : 5000 €</p>
+                </div>
+                
+                <div className="relative h-16 w-16 shrink-0">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="32" cy="32" r="26" stroke="#f1f1ee" strokeWidth="5" fill="transparent" />
+                    <circle 
+                      cx="32" 
+                      cy="32" 
+                      r="26" 
+                      stroke="#ff7d1a" 
+                      strokeWidth="5" 
+                      fill="transparent" 
+                      strokeDasharray="163" 
+                      strokeDashoffset={163 * (1 - Math.min(currentMonthRevenue / 5000, 1))}
+                      strokeLinecap="round"
+                      className="transition-all duration-1000 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-primary">
+                    {Math.round(Math.min((currentMonthRevenue / 5000) * 100, 100))}%
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-2">
@@ -511,6 +614,75 @@ export default function AdminPage() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            </div>
+
+            {/* BI Charts Row 2: Peak Hours & Delivery Mode */}
+            <div className="grid gap-8 lg:grid-cols-2 mt-8">
+              {/* Delivery vs Takeout Distribution */}
+              <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 flex flex-col justify-between">
+                <div>
+                  <h3 className="heading-display text-xl text-primary mb-2">Répartition des Canaux</h3>
+                  <p className="text-xs text-primary/45 font-bold uppercase tracking-wider mb-6">Proportion Retrait sur Place vs Livraison</p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-black text-primary">{deliveryCounts.retrait} commandes</p>
+                      <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest mt-1">🍽 Retrait sur Place</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-base font-black text-accent">{deliveryCounts.livraison} commandes</p>
+                      <p className="text-[10px] text-accent/80 font-bold uppercase tracking-widest mt-1">🚚 Livraison à domicile</p>
+                    </div>
+                  </div>
+
+                  <div className="h-6 w-full rounded-2xl bg-creamSoft overflow-hidden flex shadow-inner">
+                    <div 
+                      className="h-full bg-primary transition-all duration-1000" 
+                      style={{ width: `${100 - deliveryPct}%` }} 
+                      title={`Retrait: ${100 - deliveryPct}%`}
+                    />
+                    <div 
+                      className="h-full bg-accent transition-all duration-1000" 
+                      style={{ width: `${deliveryPct}%` }} 
+                      title={`Livraison: ${deliveryPct}%`}
+                    />
+                  </div>
+
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary/40 pt-2">
+                    <span>{100 - deliveryPct}% Retrait</span>
+                    <span>{deliveryPct}% Livraison</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Peak Booking Hours Slot Chart */}
+              <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 flex flex-col justify-between">
+                <div>
+                  <h3 className="heading-display text-xl text-primary mb-2">Créneaux Horaires Phares</h3>
+                  <p className="text-xs text-primary/45 font-bold uppercase tracking-wider mb-6">Volume de Commandes par Créneau</p>
+                </div>
+
+                <div className="space-y-4 max-h-[220px] overflow-y-auto pr-2 no-scrollbar">
+                  {Object.entries(slotCounts).length > 0 ? (
+                    Object.entries(slotCounts).map(([slot, count]) => {
+                      const pct = Math.min((count / maxSlotCount) * 100, 100);
+                      return (
+                        <div key={slot} className="flex items-center gap-3">
+                          <span className="w-28 text-[10px] font-black uppercase text-primary/60 truncate tracking-wide">{slot}</span>
+                          <div className="flex-1 h-3 bg-creamSoft rounded-full overflow-hidden relative">
+                            <div className="h-full bg-accent rounded-full transition-all duration-1000" style={{ width: pct + "%" }} />
+                          </div>
+                          <span className="text-xs font-bold text-primary shrink-0 w-8 text-right">{count}</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-center py-12 text-primary/30 italic text-xs font-medium">Aucun créneau réservé pour le moment.</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -944,6 +1116,75 @@ export default function AdminPage() {
               {reviewedOrders.length === 0 && (
                 <p className="p-20 text-center text-primary/30 italic font-medium">Aucun avis client soumis pour le moment.</p>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* --- ONGLET : PLANIFICATEUR DE FERMETURES --- */}
+        {activeTab === "closures" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="grid gap-10 xl:grid-cols-[1.5fr_1fr]">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="heading-display text-2xl text-primary">Planificateur de Fermetures Exceptionnelles</h2>
+                    <p className="text-xs text-primary/45 font-bold uppercase tracking-wider mt-1">Gérez les jours fériés et vacances exceptionnels</p>
+                  </div>
+                  {isLoadingClosures && <span className="text-xs text-primary/40 font-bold">Chargement...</span>}
+                </div>
+
+                <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10">
+                  {blockedDates.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                      {blockedDates.map(dateStr => {
+                        const dateObj = new Date(dateStr);
+                        const formatted = !isNaN(dateObj.getTime())
+                          ? dateObj.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                          : dateStr;
+                        return (
+                          <div key={dateStr} className="p-4 rounded-2xl bg-red-50/50 border border-red-100 flex items-center justify-between group">
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-primary truncate">{formatted}</p>
+                              <p className="text-[9px] text-primary/40 font-bold mt-0.5">{dateStr}</p>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteClosure(dateStr)}
+                              className="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
+                              title="Débloquer cette date"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-primary/30 italic text-sm font-medium">Aucune fermeture exceptionnelle programmée.</p>
+                      <p className="text-xs text-primary/40 mt-1">Le restaurant est actuellement ouvert tous les jours de l'année.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <aside className="space-y-8">
+                <div className="rounded-3xl bg-creamSoft/50 p-6 border border-cream/20">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-primary/50 mb-6">Ajouter un jour de fermeture</h3>
+                  <form onSubmit={handleAddClosure} className="space-y-5">
+                    <div>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-primary/60 mb-2 block">Choisir une date</label>
+                      <input
+                        type="date"
+                        value={closureDate}
+                        onChange={(e) => setClosureDate(e.target.value)}
+                        required
+                        className="field bg-white h-11 text-sm font-bold"
+                      />
+                    </div>
+                    <button type="submit" className="btn btn-md btn-primary w-full shadow-glow">Bloquer cette date 🔒</button>
+                  </form>
+                </div>
+              </aside>
             </div>
           </div>
         )}

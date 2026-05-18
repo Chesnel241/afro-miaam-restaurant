@@ -223,6 +223,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: data.role || "customer",
               ordersCount: data.ordersCount || 0,
               isFirstLogin: data.isFirstLogin ?? false,
+              referralCode: data.referralCode || "",
+              referralCredits: data.referralCredits || 0,
+              hasUsedWelcomeOffer: data.hasUsedWelcomeOffer ?? false,
+              referredBy: data.referredBy || "",
             });
           } else {
             // Créer le profil s'il n'existe pas

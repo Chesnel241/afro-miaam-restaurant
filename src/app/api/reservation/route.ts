@@ -194,6 +194,19 @@ export async function POST(request: Request) {
   const date = clean(payload.date, 10);
   const slot = clean(payload.slot, 32);
   if (!ISO_DATE_RE.test(date)) return bad("Date invalide.");
+
+  // Check exception closures/holidays (blocked dates)
+  try {
+    const closureSnap = await adminDb.collection("settings").doc("closures").get();
+    if (closureSnap.exists) {
+      const blockedDates = closureSnap.data()?.blockedDates || [];
+      if (blockedDates.includes(date)) {
+        return bad("Désolé, le restaurant est fermé exceptionnellement à cette date.");
+      }
+    }
+  } catch (e) {
+    console.warn("CLOSURE_CHECK_FAILED", e);
+  }
   if (!slot) return bad("Créneau invalide.");
   if (!ALLOWED_SLOTS.has(slot)) return bad("Créneau non autorisé.");
 

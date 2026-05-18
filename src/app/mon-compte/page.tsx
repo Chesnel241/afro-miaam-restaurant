@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { MemberCard } from "@/components/MemberCard";
 import { useCart } from "@/components/CartContext";
+import { auth } from "@/lib/firebase";
 
 const QRScannerModal = dynamic(
   () => import("@/components/QRScannerModal").then((mod) => mod.QRScannerModal),
@@ -26,6 +27,39 @@ function MonCompteContent() {
   
   // Onglet par défaut ou depuis l'URL
   const [activeTab, setActiveTab] = useState<Tab>("menu");
+
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "dashboard" || !auth.currentUser) return;
+    
+    let isMounted = true;
+    const fetchReferrals = async () => {
+      setIsLoadingReferrals(true);
+      try {
+        const token = await auth.currentUser!.getIdToken();
+        const res = await fetch("/api/referrals", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) setReferrals(data.referrals || []);
+        }
+      } catch (err) {
+        console.error("Failed to load referrals", err);
+      } finally {
+        if (isMounted) setIsLoadingReferrals(false);
+      }
+    };
+
+    fetchReferrals();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     const tab = searchParams.get("tab") as Tab;
@@ -389,6 +423,42 @@ function MonCompteContent() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Vos Parrainages Card */}
+                      <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-cream/20">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary/40 mb-4">Vos Parrainages</h3>
+                        {isLoadingReferrals ? (
+                          <div className="space-y-3">
+                            <div className="h-12 bg-creamSoft animate-pulse rounded-2xl w-full" />
+                            <div className="h-12 bg-creamSoft animate-pulse rounded-2xl w-full" />
+                          </div>
+                        ) : referrals.length > 0 ? (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {referrals.map((ref, idx) => {
+                              const date = ref.joinedAt ? new Date(ref.joinedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "";
+                              return (
+                                <div key={idx} className="p-4 rounded-2xl bg-creamSoft/30 border border-cream/15 flex items-center justify-between">
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-black text-primary truncate">{ref.name}</p>
+                                    <p className="text-[9px] text-primary/40 font-bold mt-0.5">Inscrit le {date}</p>
+                                  </div>
+                                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
+                                    ref.hasContributed 
+                                      ? "bg-emerald-100 text-emerald-700" 
+                                      : "bg-primary/5 text-primary/40"
+                                  }`}>
+                                    {ref.hasContributed ? "Validé 🎉 (+5€)" : "Inscrit"}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-center py-6 text-primary/30 italic text-xs font-medium">
+                            Aucun ami parrainé pour le moment. Partagez votre code pour commencer !
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* -- DROITE : APPLE CARD VIRTUAL WALLET -- */}
@@ -749,6 +819,94 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
          <p className="text-xs font-medium text-primary/70 leading-relaxed italic border-l-2 border-cream/30 pl-3">
            {order.items.map(i => `${i.quantity}x ${i.name}`).join(", ")}
          </p>
+      </div>
+
+      {/* Dynamic tracking stepper */}
+      <div className="mt-6 sm:ml-19 pl-1">
+        <div className="rounded-2xl bg-creamSoft/30 border border-cream/15 p-5">
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary/30 mb-4">Suivi de commande en temps réel</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative">
+            {/* Step 1: Acompte */}
+            <div className="flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-black transition-all ${
+                order.status === "Attente Acompte"
+                  ? "bg-amber-500 text-white animate-pulse shadow-lg shadow-amber-200"
+                  : "bg-emerald-500 text-white"
+              }`}>
+                {order.status === "Attente Acompte" ? "💳" : "✓"}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-primary leading-tight">Acompte</p>
+                <p className="text-[9px] text-primary/40 font-bold uppercase tracking-wider mt-0.5">
+                  {order.status === "Attente Acompte" ? "À régler" : "Validé"}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2: Validée */}
+            <div className="flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-black transition-all ${
+                ["Acompte Reçu", "En attente"].includes(order.status)
+                  ? "bg-accent text-white animate-pulse shadow-lg shadow-accent/20"
+                  : ["En cours", "Livré"].includes(order.status)
+                    ? "bg-emerald-500 text-white"
+                    : "bg-primary/5 text-primary/30"
+              }`}>
+                {["En cours", "Livré"].includes(order.status) ? "✓" : "🍳"}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-primary leading-tight">Confirmée</p>
+                <p className="text-[9px] text-primary/40 font-bold uppercase tracking-wider mt-0.5">
+                  {["Acompte Reçu", "En attente"].includes(order.status)
+                    ? "Reçue"
+                    : ["En cours", "Livré"].includes(order.status)
+                      ? "Validée"
+                      : "En attente"}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3: En cuisine */}
+            <div className="flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-black transition-all ${
+                order.status === "En cours"
+                  ? "bg-amber-500 text-white animate-pulse shadow-lg shadow-amber-200"
+                  : order.status === "Livré"
+                    ? "bg-emerald-500 text-white"
+                    : "bg-primary/5 text-primary/30"
+              }`}>
+                {order.status === "Livré" ? "✓" : "🧑‍🍳"}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-primary leading-tight">En cuisine</p>
+                <p className="text-[9px] text-primary/40 font-bold uppercase tracking-wider mt-0.5">
+                  {order.status === "En cours"
+                    ? "Préparation"
+                    : order.status === "Livré"
+                      ? "Prêt"
+                      : "À venir"}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4: Livré */}
+            <div className="flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-black transition-all ${
+                order.status === "Livré"
+                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200"
+                  : "bg-primary/5 text-primary/30"
+              }`}>
+                😋
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-primary leading-tight">Livrée</p>
+                <p className="text-[9px] text-primary/40 font-bold uppercase tracking-wider mt-0.5">
+                  {order.status === "Livré" ? "Dégusté" : "Livraison"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Toast de feedback review */}
