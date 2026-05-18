@@ -31,7 +31,7 @@ export function Hero() {
           </div>
         )}
 
-        <div className={`lg:grid lg:items-start lg:gap-12 xl:gap-16 ${isCustomer ? "lg:grid-cols-1" : "lg:grid-cols-[1.05fr_1fr]"}`}>
+        <div className={`lg:grid lg:items-start lg:gap-12 xl:gap-24 ${isCustomer ? "lg:grid-cols-1" : "lg:grid-cols-[1.05fr_1fr]"}`}>
           <div>
             <p className="eyebrow text-accentSoft uppercase tracking-[0.3em]">
               {isCustomer ? `Ravi de vous revoir, ${user?.name}` : "Afro dans l'âme, gastro dans l'assiette"}

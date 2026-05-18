@@ -46,7 +46,7 @@ const config: Config = {
         "nav-mobile": "0 -8px 30px -10px rgba(26, 53, 38, 0.35)",
       },
       maxWidth: {
-        container: "1440px",
+        container: "1600px",
       },
       keyframes: {
         floaty: {

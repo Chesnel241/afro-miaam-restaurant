@@ -48,7 +48,7 @@ export default function CartPage() {
             </Link>
           </div>
         ) : (
-          <div className="mt-10 grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1.5fr_1fr] xl:gap-12 xl:grid-cols-[1.8fr_1fr]">
             <ul className="space-y-4">
               {lines.map((line) => (
                 <li

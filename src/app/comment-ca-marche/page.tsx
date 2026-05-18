@@ -73,8 +73,8 @@ export default function HowItWorksPage() {
       <HowItWorks withCta={false} />
 
       <section className="bg-creamSoft py-16">
-        <div className="container-x grid gap-10 md:grid-cols-2">
-          <div className="rounded-lg bg-white p-8 shadow-soft">
+        <div className="container-x grid gap-10 md:grid-cols-2 xl:gap-16">
+          <div className="rounded-lg bg-white p-8 xl:p-12 shadow-soft">
             <h2 className="font-display text-2xl font-bold text-primary">
               Retrait sur place
             </h2>
@@ -88,7 +88,7 @@ export default function HowItWorksPage() {
               <li>• Aucune attente, votre commande est prête</li>
             </ul>
           </div>
-          <div className="rounded-lg bg-white p-8 shadow-soft">
+          <div className="rounded-lg bg-white p-8 xl:p-12 shadow-soft">
             <h2 className="font-display text-2xl font-bold text-primary">
               Livraison à Lyon
             </h2>
@@ -106,11 +106,11 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="py-16">
-        <div className="container-x rounded-xl bg-primary p-8 text-cream shadow-soft sm:p-12">
+        <div className="container-x rounded-xl bg-primary p-8 text-cream shadow-soft sm:p-12 xl:p-16">
           <h2 className="heading-display text-3xl sm:text-4xl">
             Et le paiement&nbsp;?
           </h2>
-          <p className="mt-3 max-w-2xl text-cream/85">
+          <p className="mt-3 max-w-2xl xl:max-w-3xl text-cream/85">
             Pour cette première version, le paiement n&apos;est pas en ligne.
             Après votre réservation, notre équipe vous rappelle pour confirmer
             les détails et finaliser le paiement par téléphone. C&apos;est

@@ -126,7 +126,7 @@ export function BenefitsGrid() {
         </div>
 
         {/* --- VERSION DESKTOP : GRID --- */}
-        <div className="hidden lg:grid gap-8 grid-cols-3">
+        <div className="hidden lg:grid gap-8 xl:gap-12 grid-cols-3">
           {BENEFITS.map((benefit, i) => (
             <motion.div
               key={i}
@@ -134,7 +134,7 @@ export function BenefitsGrid() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className={`group relative overflow-hidden rounded-[2.5rem] p-8 text-cream shadow-soft transition-all hover:scale-[1.02] ${benefit.color}`}
+              className={`group relative overflow-hidden rounded-[2.5rem] p-8 xl:p-12 text-cream shadow-soft transition-all hover:scale-[1.02] ${benefit.color}`}
             >
               {/* Pattern Wax spécifique à la carte */}
               <div className="absolute inset-0 opacity-10 mix-blend-overlay group-hover:opacity-20 transition-opacity" 

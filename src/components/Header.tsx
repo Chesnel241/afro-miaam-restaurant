@@ -52,7 +52,7 @@ export function Header() {
 
         <nav
           aria-label="Navigation principale"
-          className="hidden items-center gap-7 lg:flex"
+          className="hidden items-center gap-7 xl:gap-10 lg:flex"
         >
           {navItems.map((item) => (
             <Link

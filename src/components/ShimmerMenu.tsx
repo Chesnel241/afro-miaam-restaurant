@@ -14,7 +14,7 @@ export function ShimmerMenu() {
           <div className="h-5 w-16 rounded-lg bg-primary/10 animate-pulse" />
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((_, idx) => (
             <div
               key={idx}

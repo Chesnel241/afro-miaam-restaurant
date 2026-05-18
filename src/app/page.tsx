@@ -60,7 +60,7 @@ export default function HomePage() {
           </div>
           </div>
 
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:gap-8 xl:mt-14">
             {signatures.map((item) => (
               <ProductCard key={item.id} item={item} />
             ))}
@@ -69,22 +69,22 @@ export default function HomePage() {
       </section>
 
       {/* Valeurs (on les garde car elles renforcent la marque même pour les clients habituels, mais on peut les condenser si besoin) */}
-      <section className="relative overflow-hidden bg-cream py-14 sm:py-20">
+      <section className="relative overflow-hidden bg-cream py-14 sm:py-20 xl:py-28">
         <div className="container-x">
-          <div className="grid gap-12 md:grid-cols-[1.2fr_1fr] md:items-center">
+          <div className="grid gap-12 md:grid-cols-[1.2fr_1fr] xl:gap-20 md:items-center">
             <div>
               <p className="eyebrow">Notre promesse</p>
               <h2 className="heading-display mt-3 text-3xl text-primary sm:text-4xl lg:text-5xl">
                 Une cuisine généreuse, authentique
                 <span className="text-accent"> et raffinée.</span>
               </h2>
-              <p className="mt-4 max-w-xl text-primary/75">
+              <p className="mt-4 max-w-xl xl:max-w-2xl text-primary/75">
                 Afro Miaam, c&apos;est la rencontre entre les saveurs
                 authentiques de l&apos;Afrique et le raffinement de la
                 gastronomie française.
               </p>
 
-              <ul className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 sm:gap-8">
+              <ul className="mt-8 grid gap-6 sm:mt-10 sm:grid-cols-2 sm:gap-8 xl:gap-10">
                 <Value
                   icon={<LeafIcon className="h-6 w-6" />}
                   title="Ingrédients frais"
@@ -120,22 +120,22 @@ export default function HomePage() {
       </section>
 
       {/* CTA final */}
-      <section className="py-12 sm:py-16">
+      <section className="py-12 sm:py-16 xl:py-24">
         <div className="container-x">
-          <div className="relative overflow-hidden rounded-2xl bg-primary-gradient bg-grain p-6 text-cream shadow-soft sm:p-10 lg:p-12">
+          <div className="relative overflow-hidden rounded-2xl bg-primary-gradient bg-grain p-6 text-cream shadow-soft sm:p-10 lg:p-12 xl:p-16">
             <div className="afro-side-pattern absolute inset-0 opacity-50" aria-hidden="true" />
-            <div className="relative grid gap-6 md:grid-cols-[1.5fr_auto] md:items-center">
+            <div className="relative grid gap-6 md:grid-cols-[1.5fr_auto] xl:grid-cols-[2fr_auto] xl:gap-12 md:items-center">
               <div>
                 <p className="eyebrow text-accentSoft">Prêt à commander ?</p>
-                <h2 className="heading-display mt-3 text-2xl sm:text-3xl lg:text-4xl">
+                <h2 className="heading-display mt-3 text-2xl sm:text-3xl lg:text-4xl xl:text-5xl">
                   Commande aujourd&apos;hui, savoure demain.
                 </h2>
-                <p className="mt-3 text-sm text-cream/80 sm:text-base">
+                <p className="mt-3 text-sm text-cream/80 sm:text-base xl:text-lg">
                   Paiement après validation par téléphone. Vous réservez, on
                   vous rappelle.
                 </p>
               </div>
-              <Link href="/menu" className="btn btn-md btn-primary">
+              <Link href="/menu" className="btn btn-md btn-primary px-10 xl:btn-lg">
                 Commander maintenant
               </Link>
             </div>

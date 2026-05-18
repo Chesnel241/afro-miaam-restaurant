@@ -102,14 +102,14 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- SERVICES PILLARS --- */}
-      <section className="container-x relative z-20 py-16 md:py-24">
-        <div className="grid gap-6 md:grid-cols-3">
+      <section className="container-x relative z-20 py-16 md:py-24 xl:py-28">
+        <div className="grid gap-6 md:grid-cols-3 xl:gap-8">
           {PRESTATIONS.map((item) => (
             <motion.button
               key={item.id}
               onClick={() => setSelectedType(item.id)}
               whileHover={{ y: -5 }}
-              className={`group relative overflow-hidden rounded-[2rem] p-8 text-left transition-all ${
+              className={`group relative overflow-hidden rounded-[2.5rem] p-8 xl:p-10 text-left transition-all ${
                 selectedType === item.id 
                   ? "bg-primary text-white shadow-2xl ring-4 ring-accent" 
                   : "bg-white text-primary shadow-soft hover:shadow-xl"
@@ -133,12 +133,12 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- QUOTE BUILDER --- */}
-      <section id="quote-builder" className="container-x py-20">
+      <section id="quote-builder" className="container-x py-20 xl:py-28">
         <div className="rounded-[3rem] bg-white shadow-soft ring-1 ring-cream/20 overflow-hidden">
           <div className="grid lg:grid-cols-2">
             {/* Left: Inputs */}
-            <div className="p-8 sm:p-16 border-r border-cream/30">
-              <h2 className="heading-display text-3xl text-primary mb-2">Simulateur de Devis</h2>
+            <div className="p-8 sm:p-16 xl:p-20 border-r border-cream/30">
+              <h2 className="heading-display text-3xl xl:text-4xl text-primary mb-2">Simulateur de Devis</h2>
               <p className="text-primary/60 mb-10 italic">Obtenez une première estimation en quelques clics.</p>
               
               <div className="space-y-12">
@@ -188,7 +188,7 @@ export default function PrestationsPage() {
             </div>
 
             {/* Right: Results */}
-            <div className="bg-primary-gradient bg-grain p-8 sm:p-16 text-cream relative">
+            <div className="bg-primary-gradient bg-grain p-8 sm:p-16 xl:p-20 text-cream relative">
               <div className="afro-side-pattern absolute inset-0 opacity-10 pointer-events-none" />
               
               <AnimatePresence mode="wait">
@@ -242,11 +242,11 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- SHOWCASE GALLERY --- */}
-      <section className="py-20 overflow-hidden bg-creamSoft">
+      <section className="py-20 xl:py-28 overflow-hidden bg-creamSoft">
         <div className="container-x mb-12">
-          <h2 className="heading-display text-3xl text-primary">Nos Réalisations</h2>
+          <h2 className="heading-display text-3xl xl:text-4xl text-primary">Nos Réalisations</h2>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-8 px-4 no-scrollbar">
+        <div className="flex gap-4 xl:gap-6 overflow-x-auto pb-8 px-4 no-scrollbar">
           {SHOWCASE_IMAGES.map((img, idx) => (
             <motion.div 
               key={idx}
@@ -260,14 +260,14 @@ export default function PrestationsPage() {
       </section>
 
       {/* --- REASSURANCE --- */}
-      <section className="bg-white py-24">
+      <section className="bg-white py-24 xl:py-32">
         <div className="container-x">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="heading-display text-4xl text-primary">Plus qu&apos;un traiteur, un <span className="text-accent">partenaire</span></h2>
+          <div className="text-center max-w-3xl mx-auto mb-20 xl:mb-24">
+            <h2 className="heading-display text-4xl xl:text-5xl text-primary">Plus qu&apos;un traiteur, un <span className="text-accent">partenaire</span></h2>
             <p className="mt-4 text-primary/60">Nous prenons en charge chaque détail pour que vous puissiez vous concentrer sur l&apos;essentiel : vos invités.</p>
           </div>
 
-          <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4 xl:gap-16">
             <FeatureBox title="Logistique Totale" desc="Livraison, installation et reprise du matériel." />
             <FeatureBox title="Art de la Table" desc="Décoration aux couleurs et textures de l'Afrique." />
             <FeatureBox title="Sur-Mesure" desc="Adaptation aux régimes spéciaux (végan, sans gluten)." />
