@@ -370,7 +370,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: d.id,
         ...(d.data() as Omit<MenuItemDynamic, "id">),
       }));
-      setDynamicMenu(items);
+
+      // Injecter les formules par défaut si elles ne sont pas encore présentes dans Firestore
+      const formulas = [
+        {
+          id: "menu-decouverte",
+          category: "formule",
+          name: "Menu Découverte",
+          description: "1 Entrée + 1 Plat + 1 Accompagnement + 1 Boisson au choix.",
+          price: 15.99,
+          image: "/img/menu/garba.png",
+          tags: ["Formule Populaire"],
+          available: true,
+          preferences: ["halal", "nutfree", "glutenfree"],
+        },
+        {
+          id: "menu-gourmand",
+          category: "formule",
+          name: "Menu Gourmand",
+          description: "1 Entrée + 1 Plat Premium + 1 Accompagnement Premium + 1 Dessert + 1 Boisson au choix.",
+          price: 24.99,
+          image: "/img/menu/tiep-poisson.png",
+          tags: ["Formule Gourmande"],
+          available: true,
+          preferences: ["halal", "nutfree", "glutenfree"],
+        }
+      ];
+
+      const finalItems = [...items];
+      formulas.forEach(f => {
+        if (!items.some(it => it.id === f.id || it.name === f.name)) {
+          finalItems.unshift(f as any);
+        }
+      });
+
+      setDynamicMenu(finalItems);
     });
     return () => unsub();
   }, []);
