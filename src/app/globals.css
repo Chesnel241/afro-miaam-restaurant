@@ -221,21 +221,21 @@ select.field {
 }
 
 /* Animation de défilement infini pour les réalisations */
-@keyframes marquee-right {
+@keyframes marquee-left {
   0% {
-    transform: translateX(-50%);
-  }
-  100% {
     transform: translateX(0%);
   }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
-.animate-marquee-right {
+.animate-marquee-left {
   display: flex;
   width: max-content;
-  animation: marquee-right 35s linear infinite;
+  animation: marquee-left 35s linear infinite;
 }
 
-.animate-marquee-right:hover {
+.animate-marquee-left:hover {
   animation-play-state: paused;
 }

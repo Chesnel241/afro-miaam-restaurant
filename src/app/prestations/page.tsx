@@ -242,7 +242,7 @@ export default function PrestationsPage() {
           <div className="absolute left-0 top-0 z-10 h-full w-12 bg-gradient-to-r from-creamSoft to-transparent pointer-events-none md:w-32" />
           <div className="absolute right-0 top-0 z-10 h-full w-12 bg-gradient-to-l from-creamSoft to-transparent pointer-events-none md:w-32" />
           
-          <div className="animate-marquee-right flex gap-6 xl:gap-8 py-4">
+          <div className="animate-marquee-left flex gap-6 xl:gap-8 py-4">
             {[...SHOWCASE_IMAGES, ...SHOWCASE_IMAGES, ...SHOWCASE_IMAGES].map((img, idx) => (
               <motion.div 
                 key={idx}
