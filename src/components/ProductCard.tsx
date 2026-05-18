@@ -28,6 +28,28 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
 
   const [isOpen, setIsOpen] = useState(false);
 
+  const entreeOptions = isDecouverte
+    ? ["Samoussa boeuf", "Samoussa thon"]
+    : ["Pastels", "Samoussa au choix"];
+  const platOptions = isDecouverte
+    ? ["Mafé poulet", "Poulet Yassa", "Haricot / Beignets"]
+    : ["Tièp poisson", "Poulet Mayo", "Mafé boeuf", "Odika poulet"];
+  const accOptions = isDecouverte
+    ? ["Riz parfumé", "Attiéké", "Banane vapeur"]
+    : ["Frites de patates douces", "Manioc", "Attiéké"];
+  const dessertOptions = ["Fondant chocolat", "Dégué", "Tiramisu"];
+  const boissonOptions = isDecouverte
+    ? ["Bissap", "Jus de gingembre", "Eau"]
+    : ["Bissap", "Jus gingembre", "Boisson detox"];
+
+  function handleFormuleAction() {
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
+      handleAdd();
+    } else {
+      setIsOpen(true);
+    }
+  }
+
   const hasFlavors = item.flavors && item.flavors.length > 0;
   
   const currentFlavor = useMemo(() => {
@@ -140,16 +162,77 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
             </div>
           ) : null}
 
-          {/* Formule Action Guide */}
+          {/* Formule Action Guide (Mobile only — opens Bottom Sheet) */}
           {isFormule && isAvailable && (
             <button
               type="button"
               onClick={() => setIsOpen(true)}
-              className="mt-3 w-full py-2.5 px-4 rounded-xl border-2 border-dashed border-accent/40 bg-accent/5 text-xs font-black uppercase tracking-wider text-accent transition hover:bg-accent/10 flex items-center justify-center gap-2"
+              className="mt-3 w-full py-2.5 px-4 rounded-xl border-2 border-dashed border-accent/40 bg-accent/5 text-xs font-black uppercase tracking-wider text-accent transition hover:bg-accent/10 flex items-center justify-center gap-2 lg:hidden"
             >
               <span>🍲 Composer mon Menu</span>
               <span className="text-[10px] bg-accent text-white px-2 py-0.5 rounded-lg">Choix</span>
             </button>
+          )}
+
+          {/* Formule inline composer (Desktop only — keeps original layout) */}
+          {isFormule && isAvailable && (
+            <div className="mt-3 hidden lg:block space-y-2 animate-fade-in">
+              <label className="text-[10px] font-black uppercase tracking-widest text-primary/40">
+                Composez votre formule :
+              </label>
+              <select
+                value={entree}
+                onChange={(e) => setEntree(e.target.value)}
+                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
+              >
+                <option value="">— Entrée —</option>
+                {entreeOptions.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              <select
+                value={plat}
+                onChange={(e) => setPlat(e.target.value)}
+                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
+              >
+                <option value="">— Plat —</option>
+                {platOptions.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              <select
+                value={acc}
+                onChange={(e) => setAcc(e.target.value)}
+                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
+              >
+                <option value="">— Accompagnement —</option>
+                {accOptions.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              {isGourmand && (
+                <select
+                  value={dessert}
+                  onChange={(e) => setDessert(e.target.value)}
+                  className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
+                >
+                  <option value="">— Dessert —</option>
+                  {dessertOptions.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              )}
+              <select
+                value={boisson}
+                onChange={(e) => setBoisson(e.target.value)}
+                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
+              >
+                <option value="">— Boisson —</option>
+                {boissonOptions.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           {/* Sélecteur de saveurs */}
@@ -182,7 +265,7 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
             </div>
             <button
               type="button"
-              onClick={isFormule ? () => setIsOpen(true) : handleAdd}
+              onClick={isFormule ? handleFormuleAction : handleAdd}
               disabled={!isAvailable}
               aria-label={isAvailable ? `Ajouter ${item.name} au panier` : `${item.name} est épuisé`}
               className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-white transition shadow-md focus-ring ${
@@ -195,17 +278,17 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
         </div>
       </article>
 
-      {/* --- PREMIUM BOTTOM SHEET DIALOG --- */}
+      {/* --- PREMIUM BOTTOM SHEET DIALOG (mobile only) --- */}
       {isFormule && isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center lg:hidden">
           {/* Backdrop Blur Overlay */}
-          <div 
+          <div
             onClick={() => setIsOpen(false)}
             className="fixed inset-0 bg-primaryDark/80 backdrop-blur-md transition-opacity animate-fade-in"
           />
 
           {/* Bottom Sheet Body */}
-          <div className="relative z-50 flex flex-col w-full max-h-[88vh] sm:max-w-lg bg-cream rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up border border-cream/10">
+          <div className="relative z-50 flex flex-col w-full max-h-[88vh] bg-cream rounded-t-[2.5rem] shadow-2xl overflow-hidden animate-slide-up border border-cream/10">
             
             {/* Visual drag handle indicator at the top for premium mobile feel */}
             <div className="w-full flex justify-center py-3">
