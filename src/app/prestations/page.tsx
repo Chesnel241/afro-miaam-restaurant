@@ -237,16 +237,22 @@ export default function PrestationsPage() {
         <div className="container-x mb-12">
           <h2 className="heading-display text-3xl xl:text-4xl text-primary">Nos Réalisations</h2>
         </div>
-        <div className="flex gap-4 xl:gap-6 overflow-x-auto pb-8 px-4 no-scrollbar">
-          {SHOWCASE_IMAGES.map((img, idx) => (
-            <motion.div 
-              key={idx}
-              whileHover={{ scale: 1.05 }}
-              className="relative h-[300px] w-[250px] sm:h-[400px] sm:w-[320px] shrink-0 overflow-hidden rounded-[2rem] shadow-xl"
-            >
-              <img src={img} alt="Réalisation Afro Miaam" className="h-full w-full object-cover" />
-            </motion.div>
-          ))}
+        <div className="relative w-full overflow-hidden select-none">
+          {/* Gradients de fondu sur les côtés pour un effet premium et moderne */}
+          <div className="absolute left-0 top-0 z-10 h-full w-12 bg-gradient-to-r from-creamSoft to-transparent pointer-events-none md:w-32" />
+          <div className="absolute right-0 top-0 z-10 h-full w-12 bg-gradient-to-l from-creamSoft to-transparent pointer-events-none md:w-32" />
+          
+          <div className="animate-marquee-right flex gap-6 xl:gap-8 py-4">
+            {[...SHOWCASE_IMAGES, ...SHOWCASE_IMAGES, ...SHOWCASE_IMAGES].map((img, idx) => (
+              <motion.div 
+                key={idx}
+                whileHover={{ scale: 1.05 }}
+                className="relative h-[250px] w-[200px] sm:h-[350px] sm:w-[280px] shrink-0 overflow-hidden rounded-[2rem] shadow-xl transition-all duration-300 hover:shadow-glow"
+              >
+                <img src={img} alt="Réalisation Afro Miaam" className="h-full w-full object-cover" />
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
