@@ -85,6 +85,7 @@ export type MenuItemDynamic = {
   available: boolean;
   flavors?: Flavor[];
   preferences?: string[];
+  allergensList?: { id: string; name: string; emoji: string; value: string }[];
 };
 
 export type NewsletterSubscriber = {

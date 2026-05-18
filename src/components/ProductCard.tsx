@@ -76,7 +76,25 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
         <p className="text-sm text-primary/65 line-clamp-2">{item.description}</p>
         
         {/* Preference indicators on client card */}
-        {(item as any).preferences && (item as any).preferences.length > 0 && (
+        {(item as any).allergensList && (item as any).allergensList.length > 0 ? (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {(item as any).allergensList.map((a: any) => {
+              let style = "bg-creamSoft text-primary border-cream/20";
+              if (a.id === "veg") style = "bg-emerald-50 text-emerald-700 border-emerald-200";
+              else if (a.id === "spicy") style = "bg-red-50 text-red-700 border-red-200";
+              else if (a.id === "halal") style = "bg-amber-50 text-amber-700 border-amber-200";
+              else if (a.id === "nutfree") style = "bg-indigo-50 text-indigo-700 border-indigo-200";
+              else if (a.id === "glutenfree") style = "bg-sky-50 text-sky-700 border-sky-200";
+              
+              const displayLabel = a.value ? `${a.emoji} ${a.name} (${a.value})` : `${a.emoji} ${a.name}`;
+              return (
+                <span key={a.id} className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${style}`}>
+                  {displayLabel}
+                </span>
+              );
+            })}
+          </div>
+        ) : (item as any).preferences && (item as any).preferences.length > 0 ? (
           <div className="flex flex-wrap gap-1 mt-1">
             {(item as any).preferences.map((p: string) => {
               let label = "";
@@ -95,7 +113,7 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
               );
             })}
           </div>
-        )}
+        ) : null}
 
         {/* Sélecteur de saveurs */}
         {hasFlavors && isAvailable && (
