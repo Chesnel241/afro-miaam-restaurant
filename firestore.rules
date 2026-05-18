@@ -203,7 +203,7 @@ service cloud.firestore {
           )
           && resource.data.get('hasReviewed', false) == false
           && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['hasReviewed', 'review'])
+              .hasOnly(['hasReviewed', 'review', 'review.reaction', 'review.createdAt'])
           && request.resource.data.review is map
           && request.resource.data.review.keys().hasOnly(['reaction', 'createdAt'])
           && request.resource.data.review.reaction is string
