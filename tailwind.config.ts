@@ -43,6 +43,7 @@ const config: Config = {
         soft: "0 12px 40px rgba(0, 0, 0, 0.12)",
         glow: "0 24px 60px -20px rgba(232, 93, 42, 0.45)",
         card: "0 8px 24px -8px rgba(31, 61, 43, 0.18)",
+        "nav-mobile": "0 -8px 30px -10px rgba(26, 53, 38, 0.35)",
       },
       maxWidth: {
         container: "1240px",
@@ -66,12 +67,35 @@ const config: Config = {
           "30%": { transform: "translateY(-2px) scale(1.02) rotate(1deg)" },
           "60%": { transform: "translateY(1px) scale(0.98) rotate(-1deg)" },
         },
+        "slide-up": {
+          from: { transform: "translateY(100%)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+        "scale-in": {
+          from: { transform: "scale(0.6)", opacity: "0" },
+          to: { transform: "scale(1)", opacity: "1" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         floaty: "floaty 6s ease-in-out infinite",
         "rotate-slow": "rotate 20s linear infinite",
         "pivot-slow": "pivot 5s ease-in-out infinite",
         simmer: "simmer 3s ease-in-out infinite",
+        "slide-up": "slide-up 350ms cubic-bezier(0.22, 1, 0.36, 1) both",
+        "scale-in": "scale-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both",
+        shimmer: "shimmer 2.2s linear infinite",
+      },
+      backgroundImage: {
+        "accent-gradient":
+          "linear-gradient(135deg, #E85D2A 0%, #F4814F 60%, #E85D2A 100%)",
+      },
+      spacing: {
+        "safe-bottom": "env(safe-area-inset-bottom)",
+        "4.5": "1.125rem",
       },
     },
   },
