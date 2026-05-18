@@ -16,7 +16,8 @@ export default function CgvPage() {
 
         <Block title="1. Objet">
           Les présentes Conditions Générales de Vente (CGV) régissent sans restriction ni réserve l&apos;ensemble des réservations et précommandes 
-          de repas et de services traiteurs effectuées par des clients non professionnels sur le site Internet <strong>afro-miaam.fr</strong>. 
+          de repas et de services traiteurs effectuées par des clients non professionnels sur le site Internet <strong>afro-miaam.fr</strong> auprès de 
+          l&apos;entreprise individuelle de <strong>Kecia NTSAME ABAGHA</strong> (propriétaire de la marque Afro Miaam). 
           Toute commande validée par le client implique l&apos;adhésion entière et sans réserve aux présentes CGV.
         </Block>
 

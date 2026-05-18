@@ -15,15 +15,15 @@ export default function LegalPage() {
         <hr className="border-cream/20" />
 
         <Block title="1. Éditeur du Site">
-          Le site <strong>Afro Miaam</strong> est édité par la société <strong>Afro Miaam SAS</strong>, 
-          société par actions simplifiée au capital social de 5 000 €, immatriculée au Registre du Commerce et des Sociétés (RCS) de Lyon, 
+          Le site <strong>Afro Miaam</strong> est édité par l&apos;entreprise individuelle (Auto-entreprise) de <strong>Kecia NTSAME ABAGHA</strong>, 
+          immatriculée au Répertoire des Entreprises et des Établissements à Lyon, 
           dont le siège social est situé à Lyon (69000), France.
           <br />
           <span className="inline-block mt-2 font-bold text-accent">Email de contact : afromiaam@gmail.com</span>
         </Block>
 
         <Block title="2. Directeur de la Publication">
-          Le Directeur de la publication du Site est le représentant légal de la société Afro Miaam SAS.
+          La Directrice de la publication du Site est <strong>Kecia NTSAME ABAGHA</strong>, en sa qualité d&apos;exploitante et propriétaire d&apos;Afro Miaam.
         </Block>
 
         <Block title="3. Hébergement du Site">
