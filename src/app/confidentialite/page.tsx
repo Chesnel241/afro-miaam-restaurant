@@ -16,7 +16,7 @@ export default function PrivacyPage() {
 
         <Block title="1. Responsable du Traitement">
           L&apos;entreprise individuelle de <strong>Kecia NTSAME ABAGHA</strong>, sous l&apos;enseigne <strong>Afro Miaam</strong>, en sa qualité de responsable du traitement, s&apos;engage à ce que la collecte 
-          et le traitement de vos données personnelles effectués sur le site <strong>afro-miaam.fr</strong> soient conformes au Règlement Général sur la Protection des Données (RGPD) 
+          et le traitement de vos données personnelles effectués sur le site <strong>afromiaam.com</strong> soient conformes au Règlement Général sur la Protection des Données (RGPD) 
           et à la loi Informatique et Libertés.
         </Block>
 
