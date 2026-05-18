@@ -36,7 +36,7 @@ export default function CgvPage() {
         </Block>
 
         <Block title="4. Tarifs et Règlement">
-          Les prix de nos plats sont indiqués en Euros TTC (TVA applicable au jour de la commande). 
+          Les prix de nos plats sont indiqués en Euros nets de taxe (TVA non applicable, en vertu de l&apos;article 293 B du Code Général des Impôts - CGI). 
           Le règlement s&apos;effectue de manière sécurisée en ligne pour la partie acompte, ou par téléphone lors de la confirmation par nos conseillers clients. 
           Afro Miaam se réserve le droit de suspendre ou d&apos;annuler toute exécution de commande en cas de défaut de paiement.
         </Block>
