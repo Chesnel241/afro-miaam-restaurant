@@ -638,8 +638,7 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const { addOrderReview, isReviewRewardActive } = useAuth();
   const router = useRouter();
   const [showReview, setShowReview] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
+  const [reaction, setReaction] = useState<'bon' | 'moyen' | 'pas_bon'>('bon');
   const [reviewStatus, setReviewStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
 
   const [mounted, setMounted] = useState(false);
@@ -681,7 +680,7 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const handleSubmitReview = async () => {
     setReviewStatus('sending');
     try {
-      await addOrderReview(order.id, rating, comment);
+      await addOrderReview(order.id, reaction);
       setShowReview(false);
       setReviewStatus('success');
     } catch (err) {
@@ -794,22 +793,34 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
             className="overflow-hidden"
           >
             <div className="mt-6 p-6 rounded-3xl bg-creamSoft border border-cream/30 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-black text-primary uppercase tracking-[0.2em]">Votre note</p>
-                <div className="flex gap-1.5">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <button key={s} onClick={() => setRating(s)} className={`transition-all hover:scale-125 ${rating >= s ? 'text-accent' : 'text-primary/10'}`}>
-                      <StarIcon className="h-7 w-7" />
-                    </button>
-                  ))}
+              <div className="flex flex-col gap-3">
+                <p className="text-xs font-black text-primary uppercase tracking-[0.2em] text-center sm:text-left">
+                  Qu&apos;avez-vous pensé de votre repas ?
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: 'bon', label: 'Bon 😋', activeStyle: 'bg-emerald-500 text-white border-emerald-500 shadow-emerald-200' },
+                    { id: 'moyen', label: 'Moyen 😐', activeStyle: 'bg-amber-500 text-white border-amber-500 shadow-amber-200' },
+                    { id: 'pas_bon', label: 'Pas bon 😞', activeStyle: 'bg-red-500 text-white border-red-500 shadow-red-200' }
+                  ].map((r) => {
+                    const isActive = reaction === r.id;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setReaction(r.id as any)}
+                        className={`py-4 rounded-2xl text-xs sm:text-sm font-black transition-all border shadow-sm flex flex-col items-center justify-center gap-1 active:scale-95 ${
+                          isActive
+                            ? r.activeStyle + ' shadow-lg scale-105'
+                            : 'bg-white text-primary/60 border-cream/20 hover:bg-cream hover:text-primary'
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <textarea 
-                placeholder="Un petit mot sur votre repas ?" 
-                className="field bg-white min-h-[100px] text-sm"
-                value={comment}
-                onChange={e => setComment(e.target.value)}
-              />
 
               {/* Error inline dans le form */}
               {reviewStatus === 'error' && (

@@ -123,7 +123,7 @@ type AuthContextType = {
   deleteMenuItem: (id: string) => Promise<void>;
   isReviewRewardActive: boolean;
   isWelcomeOfferActive: boolean;
-  addOrderReview: (orderId: string, rating: number, comment: string) => Promise<void>;
+  addOrderReview: (orderId: string, reaction: "bon" | "moyen" | "pas_bon") => Promise<void>;
   updateGlobalSettings: (settings: Record<string, boolean>) => Promise<void>;
 };
 
@@ -597,7 +597,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await updateDoc(doc(db, "menu", id), { available: false, deletedAt: serverTimestamp() });
   }, [user]);
 
-  const addOrderReview = useCallback(async (orderId: string, rating: number, comment: string) => {
+  const addOrderReview = useCallback(async (orderId: string, reaction: 'bon' | 'moyen' | 'pas_bon') => {
     if (!user) return;
     try {
       // Read first to enforce one-review-per-order at the client level too.
@@ -616,7 +616,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await updateDoc(orderRef, {
         hasReviewed: true,
-        review: { rating, comment, createdAt: serverTimestamp() },
+        review: { reaction, createdAt: serverTimestamp() },
       });
 
       // NOTE: referralCredits reward is NOT incremented from the client.
