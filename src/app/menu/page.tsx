@@ -136,15 +136,15 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <section className="sticky top-20 z-30 border-b border-primary/10 bg-cream/95 py-3 backdrop-blur sm:top-24">
+      <section className="sticky top-12 z-30 border-b border-primary/10 bg-cream/95 py-2 backdrop-blur lg:top-20 lg:py-3">
         <div className="container-x">
           <CategoryTabs active={filter} onChange={setFilter} />
           
-          {/* Corporate Preference Filter Bar */}
-          <div className="mt-4 flex flex-wrap gap-2.5 items-center justify-center sm:justify-start pt-3 border-t border-primary/5 animate-fade-in">
-            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary/40 mr-1.5 flex items-center gap-1.5">
+          {/* Preference Filter Bar — horizontal scroll on mobile */}
+          <div className="mt-2 flex gap-2 items-center overflow-x-auto pt-2 border-t border-primary/5 pb-1 scrollbar-hide lg:mt-4 lg:flex-wrap lg:gap-2.5 lg:justify-start lg:pt-3 lg:overflow-visible">
+            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary/40 mr-1 flex items-center gap-1.5 shrink-0">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              Préférences :
+              Filtres :
             </span>
             {[
               { id: "veg", label: "🥬 Végétarien", activeBg: "bg-emerald-600/10 text-emerald-700 border-emerald-600/30", hoverBg: "hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-600/20" },
@@ -158,7 +158,7 @@ export default function MenuPage() {
                 <button
                   key={pref.id}
                   onClick={() => togglePref(pref.id)}
-                  className={`px-3.5 py-2 rounded-xl border text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center gap-2 shadow-sm ${
+                  className={`shrink-0 px-3 py-1.5 rounded-xl border text-[10px] uppercase font-black tracking-widest transition-all duration-300 flex items-center gap-1.5 shadow-sm lg:px-3.5 lg:py-2 ${
                     isActive ? pref.activeBg + " scale-[1.02] ring-2 ring-offset-1 ring-primary/5" : "bg-white/60 text-primary/50 border-primary/5 " + pref.hoverBg
                   }`}
                 >

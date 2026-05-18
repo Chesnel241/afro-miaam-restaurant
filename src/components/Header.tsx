@@ -41,11 +41,13 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-40 transition-colors duration-300 w-full overflow-hidden ${
+      className={`sticky top-0 z-40 transition-all duration-300 w-full overflow-hidden ${
         scrolled ? "bg-primary/95 backdrop-blur" : "bg-primary"
       }`}
     >
-      <div className="container-x flex h-20 items-center justify-between gap-4 sm:h-24">
+      <div className={`container-x flex items-center justify-between gap-4 transition-all duration-300 ${
+        scrolled ? "h-12 lg:h-20" : "h-14 lg:h-24"
+      }`}>
         <Logo variant="light" size="lg" withTagline />
 
         <nav
@@ -72,10 +74,11 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Hidden on mobile — BottomNavBar handles these */}
           <Link
             href={userLink}
             aria-label={user ? "Mon Compte" : "Connexion / Inscription"}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
+            className="hidden lg:inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
           >
             <UserIcon className="h-5 w-5" />
           </Link>
@@ -83,7 +86,7 @@ export function Header() {
           <Link
             href="/panier"
             aria-label={`Panier, ${itemCount} article${itemCount > 1 ? "s" : ""}`}
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
+            className="hidden lg:inline-flex relative h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20"
           >
             <CartIcon className="h-5 w-5" />
             {itemCount > 0 && (
@@ -97,7 +100,7 @@ export function Header() {
             aria-label="Menu"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 lg:hidden"
+            className="hidden lg:hidden"
           >
             <BurgerIcon open={open} />
           </button>

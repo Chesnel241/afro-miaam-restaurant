@@ -147,8 +147,8 @@ export function Chatbot() {
 
   return (
     <>
-      {/* Bouton flottant : avatar + point vert + animation */}
-      <div className="pointer-events-none fixed bottom-24 right-6 z-50 sm:bottom-6 sm:right-6">
+      {/* Bouton flottant : avatar + point vert + animation — masqué sur mobile pour ne pas gêner la Bottom Nav */}
+      <div className="pointer-events-none fixed bottom-6 right-6 z-50 hidden lg:block">
         <div className="flex flex-col items-end gap-2">
           {tooltip && !open && (
             <div className="pointer-events-auto animate-floaty rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-primary shadow-soft">
@@ -211,7 +211,7 @@ export function Chatbot() {
         <div
           role="dialog"
           aria-label="Chat Afro Miaam"
-          className="fixed inset-x-3 bottom-24 z-50 flex max-h-[78vh] flex-col overflow-hidden rounded-2xl bg-white shadow-soft sm:inset-auto sm:bottom-28 sm:right-6 sm:w-[380px]"
+          className="fixed inset-x-3 bottom-28 z-50 hidden max-h-[78vh] flex-col overflow-hidden rounded-2xl bg-white shadow-soft lg:flex lg:inset-auto lg:bottom-28 lg:right-6 lg:w-[380px]"
         >
           <header className="relative flex items-center gap-3 bg-primary-gradient bg-grain p-4 text-cream">
             <span className="relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-cream ring-2 ring-accent">

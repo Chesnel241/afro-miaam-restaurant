@@ -125,7 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AppOverlay />
           <CartProvider>
             <Header />
-            <main id="main-content" role="main" className="flex-1 pb-24 lg:pb-0">{children}</main>
+            <main id="main-content" role="main" className="flex-1 pb-28 lg:pb-0 animate-fade-in">{children}</main>
             <Footer />
             <BottomNavBar />
             <FloatingCart />

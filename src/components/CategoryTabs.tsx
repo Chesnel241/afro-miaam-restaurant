@@ -22,24 +22,29 @@ export function CategoryTabs({
   ];
 
   return (
-    <div className="-mx-5 overflow-x-auto sm:mx-0">
-      <div className="flex min-w-max items-center gap-2 px-5 sm:flex-wrap sm:px-0">
-        {items.map((it) => (
-          <button
-            key={it.id}
-            type="button"
-            onClick={() => onChange(it.id)}
-            aria-pressed={active === it.id}
-            aria-label={`Filtrer par ${it.label}`}
-            className={classNames(
-              "chip focus-ring",
-              active === it.id && "chip-active",
-            )}
-          >
-            {it.label}
-          </button>
-        ))}
+    <div className="relative">
+      {/* Scrollable tabs */}
+      <div className="-mx-5 overflow-x-auto scrollbar-hide sm:mx-0">
+        <div className="flex min-w-max items-center gap-2 px-5 sm:flex-wrap sm:px-0">
+          {items.map((it) => (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => onChange(it.id)}
+              aria-pressed={active === it.id}
+              aria-label={`Filtrer par ${it.label}`}
+              className={classNames(
+                "chip focus-ring",
+                active === it.id && "chip-active",
+              )}
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
       </div>
+      {/* Right fade hint for mobile scroll */}
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-cream/95 to-transparent sm:hidden" aria-hidden="true" />
     </div>
   );
 }

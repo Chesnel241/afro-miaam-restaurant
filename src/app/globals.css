@@ -184,11 +184,11 @@ select.field {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fade-in 1s ease-out forwards;
+  animation: fade-in 400ms ease-out forwards;
 }
 
 @keyframes steam-slow {
@@ -209,4 +209,13 @@ select.field {
   border-radius: 50%;
   filter: blur(20px);
   animation: steam-slow 8s infinite linear;
+}
+
+/* Hide scrollbar but keep scroll functionality (mobile UX) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
