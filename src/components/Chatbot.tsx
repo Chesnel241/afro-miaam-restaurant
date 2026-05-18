@@ -67,6 +67,26 @@ export function Chatbot() {
   const [imgFailed, setImgFailed] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 80) {
+        // Scrolling down
+        setVisible(false);
+      } else {
+        // Scrolling up
+        setVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const isAdmin = pathname?.startsWith("/admin") || user?.role === "admin";
 
   // Persist history
@@ -147,8 +167,10 @@ export function Chatbot() {
 
   return (
     <>
-      {/* Bouton flottant : avatar + point vert + animation — masqué sur mobile pour ne pas gêner la Bottom Nav */}
-      <div className="pointer-events-none fixed bottom-6 right-6 z-50 hidden lg:block">
+      {/* Bouton flottant : avatar + point vert + animation — visible et rétractable sur mobile */}
+      <div className={`pointer-events-none fixed z-50 transition-all duration-300 bottom-20 right-4 lg:bottom-6 lg:right-6 ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
+      }`}>
         <div className="flex flex-col items-end gap-2">
           {tooltip && !open && (
             <div className="pointer-events-auto animate-floaty rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-primary shadow-soft">
@@ -163,7 +185,7 @@ export function Chatbot() {
             }
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="pointer-events-auto group relative inline-flex h-16 w-16 items-center justify-center rounded-full bg-cream shadow-soft ring-2 ring-accent transition hover:scale-105 sm:h-20 sm:w-20"
+            className="pointer-events-auto group relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-cream shadow-soft ring-2 ring-accent transition active:scale-95 duration-75 lg:h-16 lg:w-16 lg:hover:scale-105"
           >
             <span
               aria-hidden="true"
@@ -211,7 +233,7 @@ export function Chatbot() {
         <div
           role="dialog"
           aria-label="Chat Afro Miaam"
-          className="fixed inset-x-3 bottom-28 z-50 hidden max-h-[78vh] flex-col overflow-hidden rounded-2xl bg-white shadow-soft lg:flex lg:inset-auto lg:bottom-28 lg:right-6 lg:w-[380px]"
+          className="fixed inset-x-3 bottom-20 z-50 flex max-h-[78vh] flex-col overflow-hidden rounded-2xl bg-white shadow-soft lg:inset-auto lg:bottom-28 lg:right-6 lg:w-[380px]"
         >
           <header className="relative flex items-center gap-3 bg-primary-gradient bg-grain p-4 text-cream">
             <span className="relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-cream ring-2 ring-accent">

@@ -89,7 +89,7 @@ export function BottomNavBar() {
             <Link
               key={it.href}
               href={it.href}
-              className={`group flex flex-col items-center justify-center w-16 h-full transition-all ${
+              className={`group flex flex-col items-center justify-center w-16 h-full transition-all active:scale-90 duration-75 ${
                 isActive ? "text-accent" : "text-cream/55 hover:text-cream"
               }`}
             >
