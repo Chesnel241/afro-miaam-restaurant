@@ -201,11 +201,16 @@ service cloud.firestore {
               && resource.data.userEmail.lower() == request.auth.token.email.lower()
             )
           )
-          && resource.data.get('hasReviewed', false) == false
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['hasReviewed', 'review', 'review.reaction', 'review.createdAt'])
+          && (
+            resource.data.get('hasReviewed', false) == false
+            || resource.data.get('hasReviewed', null) == null
+          )
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.total == resource.data.total
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.items == resource.data.items
+          && request.resource.data.createdAt == resource.data.createdAt
           && request.resource.data.review is map
-          && request.resource.data.review.keys().hasOnly(['reaction', 'createdAt'])
           && request.resource.data.review.reaction is string
           && request.resource.data.review.reaction in ['bon', 'moyen', 'pas_bon']
         )
