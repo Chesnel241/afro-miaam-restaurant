@@ -52,6 +52,7 @@ export type Order = {
   createdAt: string;
   hasReviewed?: boolean;
   referrerId?: string;
+  review?: any;
 };
 
 export type UserProfile = {
@@ -186,6 +187,8 @@ function docToOrder(id: string, data: Record<string, unknown>): Order {
     total: (data.total as number) || 0,
     status: (data.status as OrderStatus) || "En attente",
     createdAt: dateStr,
+    hasReviewed: (data.hasReviewed as boolean) || false,
+    review: (data.review as any) || null,
   };
 }
 
