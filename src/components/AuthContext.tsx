@@ -394,13 +394,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           tags: ["Formule Gourmande"],
           available: true,
           preferences: ["halal", "nutfree", "glutenfree"],
+        },
+        {
+          id: "lait-caille",
+          category: "dessert",
+          name: "Lait caillé",
+          description: "Dessert traditionnel doux et onctueux.",
+          price: 4,
+          image: "/img/desserts/Lait caillé.png",
+          tags: [],
+          available: true,
+          preferences: ["halal", "nutfree", "glutenfree", "veg"],
         }
       ];
 
       const finalItems = [...items];
       formulas.forEach(f => {
         if (!items.some(it => it.id === f.id || it.name === f.name)) {
-          finalItems.unshift(f as any);
+          finalItems.push(f as any);
         }
       });
 

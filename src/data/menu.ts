@@ -221,6 +221,14 @@ export const menuItems: MenuItem[] = [
 
   // Desserts (dossier public/img/desserts)
   {
+    id: "lait-caille",
+    category: "dessert",
+    name: "Lait caillé",
+    description: "Dessert traditionnel doux et onctueux.",
+    price: 4,
+    image: "/img/desserts/Lait caillé.png",
+  },
+  {
     id: "pancakes",
     category: "dessert",
     name: "Pancakes",
