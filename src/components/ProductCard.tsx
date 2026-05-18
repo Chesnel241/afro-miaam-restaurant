@@ -180,58 +180,35 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
               <label className="text-[10px] font-black uppercase tracking-widest text-primary/40">
                 Composez votre formule :
               </label>
-              <select
-                value={entree}
-                onChange={(e) => setEntree(e.target.value)}
-                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
-              >
-                <option value="">— Entrée —</option>
-                {entreeOptions.map((o) => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-              <select
-                value={plat}
-                onChange={(e) => setPlat(e.target.value)}
-                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
-              >
-                <option value="">— Plat —</option>
-                {platOptions.map((o) => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-              <select
-                value={acc}
-                onChange={(e) => setAcc(e.target.value)}
-                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
-              >
-                <option value="">— Accompagnement —</option>
-                {accOptions.map((o) => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-              {isGourmand && (
-                <select
-                  value={dessert}
-                  onChange={(e) => setDessert(e.target.value)}
-                  className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
-                >
-                  <option value="">— Dessert —</option>
-                  {dessertOptions.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              )}
-              <select
-                value={boisson}
-                onChange={(e) => setBoisson(e.target.value)}
-                className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
-              >
-                <option value="">— Boisson —</option>
-                {boissonOptions.map((o) => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
+              {[
+                { value: entree, set: setEntree, label: "Entrée", options: entreeOptions },
+                { value: plat, set: setPlat, label: "Plat", options: platOptions },
+                { value: acc, set: setAcc, label: "Accompagnement", options: accOptions },
+                ...(isGourmand
+                  ? [{ value: dessert, set: setDessert, label: "Dessert", options: dessertOptions }]
+                  : []),
+                { value: boisson, set: setBoisson, label: "Boisson", options: boissonOptions },
+              ].map(({ value, set, label, options }) => (
+                <div key={label} className="flex items-center gap-2">
+                  <Image
+                    src="/logo-afromiaam.png"
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="rounded-full ring-1 ring-cream/40 bg-white shrink-0"
+                  />
+                  <select
+                    value={value}
+                    onChange={(e) => set(e.target.value)}
+                    className="w-full rounded-lg border border-cream/30 bg-creamSoft/30 px-3 py-2 text-xs font-bold text-primary outline-none focus:border-accent transition-colors"
+                  >
+                    <option value="">{label}</option>
+                    {options.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
             </div>
           )}
 

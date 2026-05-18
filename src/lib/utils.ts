@@ -17,7 +17,7 @@ export function classNames(...parts: Array<string | false | null | undefined>): 
 export function getProductImage(item: { name: string, image: string }): string {
   // Cas spécifique demandé par l'utilisateur pour le Lait caillé
   if (item.name.toLowerCase().includes("lait caill") || item.name.toLowerCase().includes("lait caille")) {
-    return "/img/desserts/Lait caillé.png";
+    return "/img/desserts/lait-caille.png";
   }
   
   // Si l'image est vide ou semble être un placeholder d'erreur Firebase
