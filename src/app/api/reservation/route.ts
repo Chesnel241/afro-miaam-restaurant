@@ -20,6 +20,7 @@ type Payload = {
   deliveryMode?: "retrait" | "livraison";
   useCredits?: boolean;
   referralCode?: string;
+  promoCode?: string;
   customer?: {
     firstName?: string;
     lastName?: string;
@@ -283,12 +284,31 @@ export async function POST(request: Request) {
       // Logic des réductions
       const welcomeDiscount = (!hasUsedWelcomeOffer && ordersCount === 0) ? 5 : 0;
       let creditsToUse = 0;
+      let promoDiscount = 0;
+      let promoCodeUsed = "";
+
+      if (payload.promoCode) {
+        const promoSnap = await tx.get(adminDb.collection("settings").doc("promotions"));
+        if (promoSnap.exists) {
+          const promoData = promoSnap.data() || {};
+          const codes = promoData.codes || {};
+          const codeData = codes[payload.promoCode.toUpperCase().trim()];
+          if (codeData && codeData.isActive === true) {
+            promoCodeUsed = codeData.code;
+            if (codeData.discountType === "percentage") {
+              promoDiscount = round2((serverTotalBeforeDiscount - welcomeDiscount) * (codeData.discountValue / 100));
+            } else if (codeData.discountType === "fixed") {
+              promoDiscount = codeData.discountValue;
+            }
+          }
+        }
+      }
       
       if (payload.useCredits) {
-        creditsToUse = Math.min(currentCredits, serverTotalBeforeDiscount - welcomeDiscount);
+        creditsToUse = Math.min(currentCredits, serverTotalBeforeDiscount - welcomeDiscount - promoDiscount);
       }
 
-      finalTotal = round2(Math.max(0, serverTotalBeforeDiscount - welcomeDiscount - creditsToUse));
+      finalTotal = round2(Math.max(0, serverTotalBeforeDiscount - welcomeDiscount - promoDiscount - creditsToUse));
       finalDeposit = round2(finalTotal * 0.5);
 
       // MED-1 (pass 6): explicit reject. Firestore rule requires total > 0;
@@ -307,6 +327,8 @@ export async function POST(request: Request) {
         referralCredits: creditsToUse,
         welcomeOffer: welcomeDiscount > 0,
         referralCodeUsed: payload.referralCode && payload.referralCode.length >= 5 ? clean(payload.referralCode, 20) : undefined,
+        promoCodeUsed: promoCodeUsed || undefined,
+        promoDiscount: promoDiscount > 0 ? promoDiscount : undefined,
       };
 
       const orderData = {

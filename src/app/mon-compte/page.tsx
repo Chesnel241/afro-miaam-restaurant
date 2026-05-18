@@ -20,6 +20,7 @@ type Tab = "menu" | "orders" | "dashboard" | "profile";
 
 function MonCompteContent() {
   const { user, loading, logout, deleteAccount, userOrders, dynamicMenu, updateProfile, confirmOrderDeletion } = useAuth();
+  const { addItem, clearCart } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -41,6 +42,8 @@ function MonCompteContent() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMsg, setUpdateMsg] = useState("");
   const [showScanner, setShowScanner] = useState(false);
+  const [showWalletDetails, setShowWalletDetails] = useState(false);
+  const [cardTilt, setCardTilt] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -238,53 +241,309 @@ function MonCompteContent() {
               </div>
             )}
 
-            {activeTab === "dashboard" && (
-              <div className="space-y-6">
-                <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
-                  <StatCard title="Commandes" value={totalOrders} sub="Total passé" />
-                  <StatCard title="Fidélité (Repas livrés)" value={deliveredOrders} sub={`${remaining} restants avant cadeau`} />
-                </div>
+                        {activeTab === "dashboard" && (() => {
+              // Calculate wallet transactions dynamically
+              const signupDate = user.createdAt?.toDate ? user.createdAt.toDate() : user.createdAt ? new Date(user.createdAt) : new Date();
+              const transactions = [
+                {
+                  id: "welcome-credit",
+                  type: "credit",
+                  amount: 5.0,
+                  description: "Offre de Bienvenue — Crédit initial",
+                  createdAt: signupDate,
+                }
+              ];
 
-                <div className="rounded-3xl bg-primary-gradient p-8 text-cream shadow-soft relative overflow-hidden">
-                  <div className="afro-side-pattern absolute inset-0 opacity-10 pointer-events-none" />
-                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                    <div className="flex-1">
-                      <h3 className="heading-display text-2xl mb-2">Afro Family</h3>
-                      <p className="text-sm text-cream/70 font-medium max-w-md">
-                        Invitez vos amis et gagnez <span className="text-accent font-bold">5€</span> pour chaque nouvelle commande passée via votre code !
-                      </p>
-                      <div className="mt-6 flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-accent">
-                          <GiftIcon className="h-6 w-6" />
+              userOrders.forEach((order: any) => {
+                if (order.discounts?.welcomeOffer || order.welcomeOffer) {
+                  const date = order.createdAt ? new Date(order.createdAt) : new Date();
+                  transactions.push({
+                    id: `welcome-debit-${order.id}`,
+                    type: "debit",
+                    amount: 5.0,
+                    description: `Offre de Bienvenue utilisée — Commande #${order.id.substring(0,8).toUpperCase()}`,
+                    createdAt: date,
+                  });
+                }
+                if (order.status === "Livré" && order.hasReviewed) {
+                  const date = order.review?.createdAt?.toDate ? order.review.createdAt.toDate() : order.createdAt ? new Date(order.createdAt) : new Date();
+                  transactions.push({
+                    id: `review-credit-${order.id}`,
+                    type: "credit",
+                    amount: 1.0,
+                    description: `Avis sur la commande #${order.id.substring(0,8).toUpperCase()}`,
+                    createdAt: date,
+                  });
+                }
+                if (order.discounts?.referralCredits > 0) {
+                  const date = order.createdAt ? new Date(order.createdAt) : new Date();
+                  transactions.push({
+                    id: `wallet-spend-${order.id}`,
+                    type: "debit",
+                    amount: order.discounts.referralCredits,
+                    description: `Utilisation Afro Wallet — Commande #${order.id.substring(0,8).toUpperCase()}`,
+                    createdAt: date,
+                  });
+                }
+              });
+
+              // Sort by newest first
+              transactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+              const latestDeliveredOrder = userOrders.find(o => o.status === "Livré");
+
+              const handleExpressReorder = () => {
+                if (!latestDeliveredOrder) return;
+                clearCart();
+                latestDeliveredOrder.items.forEach((item: any) => {
+                  addItem({
+                    id: item.itemId || item.name,
+                    name: item.name,
+                    price: item.price,
+                    image: item.image || "",
+                    flavor: item.flavor
+                  }, item.quantity);
+                });
+                router.push("/panier");
+              };
+
+              const handleMouseMove = (e: any) => {
+                const card = e.currentTarget;
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                const tiltX = (y / (rect.height / 2)) * -12;
+                const tiltY = (x / (rect.width / 2)) * 12;
+                setCardTilt({ x: tiltX, y: tiltY });
+              };
+
+              const handleMouseLeave = () => {
+                setCardTilt({ x: 0, y: 0 });
+              };
+
+              return (
+                <div className="space-y-8">
+                  <div className="grid gap-6 lg:grid-cols-[1fr_360px] items-start">
+                    
+                    {/* -- GAUCHE : STATS & ACTIONS -- */}
+                    <div className="space-y-6">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <StatCard title="Commandes" value={totalOrders} sub="Total passé" />
+                        <StatCard title="Fidélité (Repas livrés)" value={deliveredOrders} sub={`${remaining} restants avant cadeau`} />
+                      </div>
+
+                      {/* 1-Click Express Reorder Widget */}
+                      {latestDeliveredOrder && (
+                        <div className="relative overflow-hidden rounded-3xl bg-white p-6 shadow-soft ring-1 ring-cream/20 border-l-4 border-accent animate-fade-in">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                              <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-accent/10 text-accent">
+                                Fast-Pass
+                              </span>
+                              <h3 className="font-display font-black text-primary text-base mt-2">Votre commande préférée vous manque ?</h3>
+                              <p className="text-xs text-primary/50 mt-1">
+                                Recommandez votre dernier repas du ${latestDeliveredOrder.createdAt ? new Date(latestDeliveredOrder.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "récemment"} en un seul clic !
+                              </p>
+                              <p className="text-[10px] text-accent font-bold mt-2 truncate">
+                                ${latestDeliveredOrder.items.map((i) => `${i.quantity}x ${i.name}`).join(", ")}
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleExpressReorder}
+                              className="btn btn-sm btn-primary shrink-0 px-6 uppercase font-black tracking-widest flex items-center gap-2"
+                            >
+                              <CartIcon className="h-3.5 w-3.5" />
+                              1-Clic Express
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-cream/40 leading-none mb-1">Vos crédits</p>
-                          <p className="text-2xl font-black text-white">{(user as any).referralCredits || 0}€</p>
+                      )}
+
+                      {/* Parrainage card */}
+                      <div className="rounded-3xl bg-primary-gradient p-6 text-cream shadow-soft relative overflow-hidden bg-grain">
+                        <div className="afro-side-pattern absolute inset-0 opacity-10 pointer-events-none" />
+                        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                          <div className="flex-1">
+                            <h3 className="heading-display text-xl mb-1">Afro Family</h3>
+                            <p className="text-xs text-cream/70 font-medium max-w-md">
+                              Gagnez <span className="text-accentSoft font-bold">5€</span> pour chaque ami parrainé lors de sa première commande !
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-cream/60 mb-2 text-center">Votre code de parrainage</p>
+                            <div className="flex items-center gap-2">
+                              <code className="bg-white text-primary px-4 py-2 rounded-xl font-black tracking-widest text-sm">
+                                {user.referralCode || "---"}
+                              </code>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(user.referralCode || "");
+                                  alert("Code copié !");
+                                }}
+                                className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center hover:scale-105 transition-transform"
+                              >
+                                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="shrink-0 bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/10">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-cream/60 mb-3 text-center">Votre code de parrainage</p>
-                      <div className="flex items-center gap-2">
-                        <code className="bg-white text-primary px-5 py-3 rounded-xl font-black tracking-widest text-lg">
-                          {(user as any).referralCode || "---"}
-                        </code>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText((user as any).referralCode || "");
-                            alert("Code copié !");
+                    {/* -- DROITE : APPLE CARD VIRTUAL WALLET -- */}
+                    <div className="space-y-4 text-center sm:text-left">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40 pl-1">Mon Mode de Paiement</p>
+                      
+                      <div 
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                        onClick={() => setShowWalletDetails(true)}
+                        style={{
+                          transform: `perspective(1000px) rotateX(${cardTilt.x}deg) rotateY(${cardTilt.y}deg)`,
+                          transition: "transform 0.1s ease-out, shadow 0.1s ease-out"
+                        }}
+                        className="relative aspect-[1.58/1] w-full rounded-[2rem] p-6 shadow-2xl ring-1 ring-white/20 overflow-hidden cursor-pointer hover:shadow-glow group select-none"
+                      >
+                        {/* Background metallic gradient with glowing layers */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary via-[#2E5E43] to-accent/90 opacity-95 transition-all duration-300 group-hover:scale-105" />
+                        <div 
+                          className="absolute inset-0 opacity-40 transition-opacity duration-300 group-hover:opacity-60 mix-blend-overlay"
+                          style={{
+                            background: `radial-gradient(circle at ${50 + cardTilt.y * 3}% ${50 - cardTilt.x * 3}%, rgba(255,255,255,0.4) 0%, transparent 60%)`
                           }}
-                          className="h-12 w-12 rounded-xl bg-accent text-white flex items-center justify-center hover:scale-110 transition-transform shadow-glow"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-                        </button>
+                        />
+
+                        {/* Top Line: Chip and Logo */}
+                        <div className="relative z-10 flex items-center justify-between">
+                          {/* Golden SIM Chip Graphic */}
+                          <div className="h-8 w-11 rounded-lg bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 p-0.5 opacity-80 shadow-md flex flex-col justify-between">
+                            <div className="flex justify-between h-[30%] border-b border-yellow-700/20"><div className="w-[30%] border-r border-yellow-700/20"/><div className="w-[30%]"/></div>
+                            <div className="flex justify-between h-[30%] border-b border-yellow-700/20"><div className="w-[30%] border-r border-yellow-700/20"/><div className="w-[30%]"/></div>
+                            <div className="flex justify-between h-[30%]"><div className="w-[30%] border-r border-yellow-700/20"/><div className="w-[30%]"/></div>
+                          </div>
+                          
+                          <span className="font-display font-black text-xs text-white/40 tracking-[0.25em] uppercase">Afro Card</span>
+                        </div>
+
+                        {/* Middle Line: Balance */}
+                        <div className="relative z-10 mt-6 sm:mt-10">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-white/50 leading-none">Solde Disponible</p>
+                          <h4 className="font-display text-3xl sm:text-4xl font-black text-white mt-2 leading-none drop-shadow-md">
+                            ${((user).referralCredits || 0).toFixed(2)} €
+                          </h4>
+                        </div>
+
+                        {/* Bottom Line: Cardholder & Exp */}
+                        <div className="relative z-10 mt-auto flex items-end justify-between pt-6 sm:pt-10">
+                          <div>
+                            <p className="text-[8px] font-bold uppercase tracking-widest text-white/40 leading-none">Titulaire</p>
+                            <p className="text-xs font-black text-white uppercase mt-1 leading-none truncate max-w-[180px]">{user.name}</p>
+                          </div>
+                          
+                          <div className="shrink-0 flex flex-col items-end">
+                            <span className="h-8 w-12 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center text-[8px] font-black text-white uppercase tracking-widest hover:bg-white/20 transition-all">
+                              Détails
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Reflected light sheen */}
+                        <div className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-150%] transition-transform duration-1000 group-hover:translate-x-[150%]" />
                       </div>
+                      <p className="text-[10px] text-primary/40 font-bold italic text-center">💡 Cliquez sur la carte pour voir l&apos;historique de vos gains</p>
                     </div>
                   </div>
+
+                  {/* -- WALLET TRANSACTION DRAWER (APPLE WALLET STYLE) -- */}
+                  <AnimatePresence>
+                    {showWalletDetails && (
+                      <>
+                        {/* Drawer Backdrop */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 0.5 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowWalletDetails(false)}
+                          className="fixed inset-0 z-[105] bg-black"
+                        />
+
+                        {/* Drawer Panel */}
+                        <motion.div
+                          initial={{ x: "100%" }}
+                          animate={{ x: 0 }}
+                          exit={{ x: "100%" }}
+                          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                          className="fixed right-0 top-0 bottom-0 z-[110] w-full sm:w-[460px] bg-creamSoft p-6 sm:p-8 shadow-2xl flex flex-col overflow-hidden"
+                        >
+                          {/* Close Button Header */}
+                          <div className="flex items-center justify-between pb-6 border-b border-primary/10 shrink-0">
+                            <div>
+                              <h3 className="font-display font-black text-primary text-xl leading-tight">Historique Afro Wallet</h3>
+                              <p className="text-[10px] font-bold text-accent uppercase tracking-widest mt-1">Vos transactions</p>
+                            </div>
+                            <button 
+                              onClick={() => setShowWalletDetails(false)}
+                              className="h-10 w-10 rounded-full bg-primary/5 hover:bg-primary/10 flex items-center justify-center text-primary transition-all"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                          </div>
+
+                          {/* Stat Mini Panel */}
+                          <div className="mt-6 p-6 rounded-3xl bg-white shadow-sm ring-1 ring-cream/15 flex justify-between items-center shrink-0">
+                            <div>
+                              <p className="text-[9px] font-black text-primary/40 uppercase tracking-widest">Solde Actuel</p>
+                              <p className="text-2xl font-black text-primary mt-1">${((user).referralCredits || 0).toFixed(2)} €</p>
+                            </div>
+                            <div className="h-12 w-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            </div>
+                          </div>
+
+                          {/* List of transactions */}
+                          <div className="flex-1 overflow-y-auto no-scrollbar py-6 space-y-4">
+                            <p className="text-[9px] font-black text-primary/30 uppercase tracking-widest pl-1">Transactions récentes</p>
+                            
+                            {transactions.length > 0 ? (
+                              <div className="space-y-3">
+                                {transactions.map((tx, idx) => {
+                                  const dateStr = tx.createdAt.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+                                  const timeStr = tx.createdAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+                                  return (
+                                    <div key={tx.id || idx} className="bg-white p-4 rounded-2xl ring-1 ring-cream/10 shadow-sm flex items-center justify-between hover:scale-[1.01] transition-transform">
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-bold text-primary truncate leading-tight">{tx.description}</p>
+                                        <p className="text-[9px] text-primary/40 font-medium mt-1 uppercase tracking-widest">{dateStr} à {timeStr}</p>
+                                      </div>
+                                      
+                                      <div className={`shrink-0 font-display font-black text-sm pl-4 ${
+                                        tx.type === "credit" ? "text-green-600" : "text-primary/70"
+                                      }`}>
+                                        {tx.type === "credit" ? "+" : "-"}{tx.amount.toFixed(2)} €
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-center py-12">
+                                <p className="text-primary/40 text-xs italic">Aucune transaction.</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Footer */}
+                          <div className="pt-4 border-t border-primary/10 shrink-0 text-center text-[9px] text-primary/40 font-medium">
+                            Afro Wallet sécurisé par cryptage AES-256.
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {activeTab === "profile" && (
               <div className="space-y-8 max-w-full overflow-hidden">

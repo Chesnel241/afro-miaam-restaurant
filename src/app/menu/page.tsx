@@ -12,7 +12,45 @@ import { CartIcon, GiftIcon } from "@/components/Icons";
 
 export default function MenuPage() {
   const [filter, setFilter] = useState<CategoryFilter>("all");
+  const [prefFilter, setPrefFilter] = useState<string[]>([]);
   const { itemCount, total } = useCart();
+
+  const togglePref = (pref: string) => {
+    setPrefFilter(prev => 
+      prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref]
+    );
+  };
+
+  const isVegetarian = (item: any) => {
+    const vegetarianIds = [
+      "frites-patates-douces", "banane-bouillie", "riz", "attieke", "beignets", "frites", "manioc",
+      "pancakes", "tiramisu", "degue", "crepes", "fondant-chocolat", "gateau-banane", "gateau-farine",
+      "boisson-detox", "bissap", "jus-orange-presse", "eau", "jus-gingembre", "feuilles-manioc"
+    ];
+    return vegetarianIds.includes(item.id);
+  };
+
+  const isSpicy = (item: any) => {
+    const spicyIds = ["pastels", "odika-poulet", "jus-gingembre"];
+    return spicyIds.includes(item.id) || item.description?.toLowerCase().includes("épicé") || item.description?.toLowerCase().includes("relevé");
+  };
+
+  const isNutFree = (item: any) => {
+    return !item.id.includes("mafe");
+  };
+
+  const isGlutenFree = (item: any) => {
+    const containGluten = ["samoussa-boeuf", "pastels", "samoussa-thon", "pancakes", "crepes", "fondant-chocolat", "gateau-banane", "gateau-farine"];
+    return !containGluten.includes(item.id);
+  };
+
+  const matchesPrefs = (item: any) => {
+    if (prefFilter.includes("veg") && !isVegetarian(item)) return false;
+    if (prefFilter.includes("spicy") && !isSpicy(item)) return false;
+    if (prefFilter.includes("nutfree") && !isNutFree(item)) return false;
+    if (prefFilter.includes("glutenfree") && !isGlutenFree(item)) return false;
+    return true;
+  };
   const { dynamicMenu } = useAuth();
 
   // Remonter en haut du menu lors du changement de catégorie
@@ -90,6 +128,51 @@ export default function MenuPage() {
       <section className="sticky top-20 z-30 border-b border-primary/10 bg-cream/95 py-3 backdrop-blur sm:top-24">
         <div className="container-x">
           <CategoryTabs active={filter} onChange={setFilter} />
+          
+          {/* Preference Toggles */}
+          <div className="mt-4 flex flex-wrap gap-2 items-center justify-center sm:justify-start">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary/40 mr-2">Préférences :</span>
+            <button
+              onClick={() => togglePref("veg")}
+              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                prefFilter.includes("veg")
+                  ? "bg-green-600 text-white border-green-600 shadow-glow"
+                  : "bg-white text-primary/60 border-primary/10 hover:border-green-600/35 hover:text-green-600"
+              }`}
+            >
+              🥬 Végétarien
+            </button>
+            <button
+              onClick={() => togglePref("spicy")}
+              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                prefFilter.includes("spicy")
+                  ? "bg-red-600 text-white border-red-600 shadow-glow"
+                  : "bg-white text-primary/60 border-primary/10 hover:border-red-600/35 hover:text-red-600"
+              }`}
+            >
+              🌶️ Épicé
+            </button>
+            <button
+              onClick={() => togglePref("nutfree")}
+              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                prefFilter.includes("nutfree")
+                  ? "bg-[#D9A752] text-white border-[#D9A752] shadow-glow"
+                  : "bg-white text-primary/60 border-primary/10 hover:border-[#D9A752]/35 hover:text-[#D9A752]"
+              }`}
+            >
+              🥜 Sans arachide
+            </button>
+            <button
+              onClick={() => togglePref("glutenfree")}
+              className={`btn btn-xs rounded-full px-3 py-1.5 border transition-all text-[10px] uppercase font-black tracking-wider flex items-center gap-1.5 ${
+                prefFilter.includes("glutenfree")
+                  ? "bg-blue-600 text-white border-blue-600 shadow-glow"
+                  : "bg-white text-primary/60 border-primary/10 hover:border-blue-600/35 hover:text-blue-600"
+              }`}
+            >
+              🌾 Sans gluten
+            </button>
+          </div>
         </div>
       </section>
 
@@ -106,9 +189,26 @@ export default function MenuPage() {
                 </span>
               </div>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {items.map((item) => (
-                  <ProductCard key={item.id} item={item} />
-                ))}
+                {items.map((item) => {
+                  const active = matchesPrefs(item);
+                  return (
+                    <div 
+                      key={item.id} 
+                      className={`transition-all duration-500 relative ${
+                        active ? "opacity-100 scale-100" : "opacity-30 blur-[1px] pointer-events-none scale-[0.98]"
+                      }`}
+                    >
+                      <ProductCard item={item} />
+                      {!active && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
+                          <span className="bg-primary/90 backdrop-blur-sm text-cream text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg ring-1 ring-white/10">
+                            Non compatible
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

@@ -7,7 +7,8 @@ import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon,
 import { AdminMenuManager } from "@/components/AdminMenuManager";
 import { QRCodeSVG } from "qrcode.react";
 
-type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu";
+import { db } from "@/lib/firebase";
+type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions";
 
 // Modal QR Code
 function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
@@ -45,11 +46,111 @@ export default function AdminPage() {
     isReviewRewardActive,
     isWelcomeOfferActive,
     updateGlobalSettings,
+    dynamicMenu,
+    updateMenuItem,
   } = useAuth();
+
+  // Séparation des commandes (scope declared early for KDS and BI charts)
+  const depositPendingOrders = allOrders.filter(o => o.status === "Attente Acompte");
+  const activeOrders = allOrders.filter(o => o.status === "En attente" || o.status === "En cours" || o.status === "Acompte Reçu");
+  const historyOrders = allOrders.filter(o => o.status === "Livré");
   
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [selectedOrderForQR, setSelectedOrderForQR] = useState<string | null>(null);
+
+  // Promotions State & CRUD Handlers
+  const [promotions, setPromotions] = useState<Record<string, { code: string; discountType: "percentage" | "fixed"; discountValue: number; isActive: boolean }>>({});
+  const [promoForm, setPromoForm] = useState({ code: "", discountType: "percentage" as "percentage" | "fixed", discountValue: 0, isActive: true });
+  const [isLoadingPromos, setIsLoadingPromos] = useState(false);
+
+  // KDS Mode & Audio Alert State
+  const [isKdsMode, setIsKdsMode] = useState(false);
+  const [lastOrdersCount, setLastOrdersCount] = useState(0);
+
+  useEffect(() => {
+    const activeCount = activeOrders.length;
+    if (activeCount > lastOrdersCount && lastOrdersCount > 0) {
+      // Play audio notification chime for new order
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-120.wav");
+      audio.play().catch(() => {});
+    }
+    setLastOrdersCount(activeCount);
+  }, [activeOrders.length]);
+
+  useEffect(() => {
+    if (activeTab === "promotions") {
+      const loadPromotions = async () => {
+        setIsLoadingPromos(true);
+        try {
+          const { doc, getDoc } = await import("firebase/firestore");
+          const snap = await getDoc(doc(db, "settings", "promotions"));
+          if (snap.exists()) {
+            setPromotions(snap.data().codes || {});
+          }
+        } catch (err) {
+          console.error("Error loading promotions:", err);
+        } finally {
+          setIsLoadingPromos(false);
+        }
+      };
+      loadPromotions();
+    }
+  }, [activeTab]);
+
+  const handleSavePromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoForm.code.trim() || promoForm.discountValue <= 0) return;
+    
+    const codeKey = promoForm.code.toUpperCase().trim();
+    const updatedCodes = {
+      ...promotions,
+      [codeKey]: {
+        code: codeKey,
+        discountType: promoForm.discountType,
+        discountValue: promoForm.discountValue,
+        isActive: promoForm.isActive
+      }
+    };
+
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
+      setPromotions(updatedCodes);
+      setPromoForm({ code: "", discountType: "percentage", discountValue: 0, isActive: true });
+    } catch (err) {
+      alert("Erreur lors de la sauvegarde.");
+    }
+  };
+
+  const handleDeletePromo = async (codeKey: string) => {
+    if (!confirm("Voulez-vous supprimer ce code promo ?")) return;
+    const { [codeKey]: _, ...updatedCodes } = promotions;
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
+      setPromotions(updatedCodes);
+    } catch (err) {
+      alert("Erreur lors de la suppression.");
+    }
+  };
+
+  const handleTogglePromoStatus = async (codeKey: string) => {
+    const updatedCodes = {
+      ...promotions,
+      [codeKey]: {
+        ...promotions[codeKey],
+        isActive: !promotions[codeKey].isActive
+      }
+    };
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
+      setPromotions(updatedCodes);
+    } catch (err) {
+      alert("Erreur lors de la mise à jour.");
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -69,12 +170,125 @@ export default function AdminPage() {
 
   if (!user || user.role !== "admin") return null;
 
+  if (isKdsMode) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-[#0c0c0c] text-white flex flex-col font-sans select-none overflow-hidden">
+        {/* KDS Header */}
+        <header className="bg-black/40 border-b border-white/5 px-8 py-5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <span className="text-2xl">📟</span>
+            <div>
+              <h1 className="font-display font-black text-lg tracking-widest text-accent uppercase">KITCHEN DISPLAY SYSTEM</h1>
+              <p className="text-[10px] text-white/45 font-bold uppercase tracking-wider mt-0.5">Afro Miaam Cookroom</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <span className="text-xl font-bold font-mono text-accentSoft">Cuisine</span>
+              <p className="text-[9px] text-white/30 uppercase tracking-widest font-bold mt-0.5">Lyon Kitchen</p>
+            </div>
+            <button
+              onClick={() => setIsKdsMode(false)}
+              className="btn btn-sm bg-white/10 hover:bg-white/20 text-white font-black px-6 uppercase tracking-wider h-11 rounded-xl"
+            >
+              Quitter KDS
+            </button>
+          </div>
+        </header>
+
+        {/* KDS Grid */}
+        <main className="flex-1 overflow-x-auto p-8 flex gap-6 align-stretch items-stretch no-scrollbar">
+          {activeOrders.map(order => {
+            const timeDiff = Math.round((new Date().getTime() - new Date(order.createdAt).getTime()) / 60000) || 0;
+            return (
+              <div
+                key={order.id}
+                className="w-[320px] shrink-0 bg-black/60 border border-white/10 rounded-3xl p-6 flex flex-col justify-between ring-1 ring-white/5 shadow-2xl relative overflow-hidden"
+              >
+                {timeDiff > 20 && (
+                  <div className="absolute top-0 inset-x-0 h-1 bg-red-500 animate-pulse" />
+                )}
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Commande</p>
+                      <h3 className="font-display font-black text-xl text-white mt-0.5">#{order.id.substring(0, 8).toUpperCase()}</h3>
+                    </div>
+                    <span className={"px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest " + (timeDiff > 20 ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-accent/20 text-accent')}>
+                      ⏱ {timeDiff} min
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-bold text-accentSoft mb-4 truncate uppercase tracking-wide">👨‍🍳 {order.userName}</p>
+
+                  <div className="border-t border-white/5 pt-4 space-y-3">
+                    {order.items.map((item: any, idx) => (
+                      <div key={idx} className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded-lg border-white/10 bg-white/5 text-accent focus:ring-accent accent-accent mt-0.5 cursor-pointer shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-white/90 leading-tight">
+                            {item.quantity}x {item.name}
+                          </p>
+                          {item.flavor && (
+                            <p className="text-[10px] text-accentSoft font-bold uppercase tracking-wider mt-0.5">
+                              {item.flavor}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/5">
+                  {order.status === "En attente" ? (
+                    <button
+                      onClick={() => handleStatusChange(order.id, "En cours")}
+                      className="w-full btn btn-md bg-accent text-white font-black py-4 rounded-2xl uppercase tracking-wider shadow-glow hover:scale-[1.02] transition-transform"
+                    >
+                      🍳 Commencer
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleStatusChange(order.id, "Livré")}
+                      className="w-full btn btn-md bg-white text-black font-black py-4 rounded-2xl uppercase tracking-wider hover:scale-[1.02] transition-transform"
+                    >
+                      ✅ Servie & Livrée
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {activeOrders.length === 0 && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
+              <span className="text-6xl mb-6 animate-bounce">🍳</span>
+              <h2 className="font-display font-black text-2xl tracking-widest uppercase">Cuisine Propre</h2>
+              <p className="text-sm text-white/40 mt-2 font-medium">Aucune commande en attente de préparation pour le moment.</p>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
   const maxOrders = 10;
 
-  // Séparation des commandes
-  const depositPendingOrders = allOrders.filter(o => o.status === "Attente Acompte");
-  const activeOrders = allOrders.filter(o => o.status === "En attente" || o.status === "En cours" || o.status === "Acompte Reçu");
-  const historyOrders = allOrders.filter(o => o.status === "Livré");
+  // Category popularity aggregation for SVG charts
+  const categoryCounts = allOrders.reduce((acc, o) => {
+    (o.items || []).forEach(item => {
+      // Find category if possible or default to signature
+      const matched = dynamicMenu.find(m => m.name === item.name);
+      const cat = matched ? matched.category : "signature";
+      acc[cat] = (acc[cat] || 0) + item.quantity;
+    });
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const maxCatCount = Math.max(...Object.values(categoryCounts), 1);
 
   // Calculs statistiques
   const totalRevenue = allOrders.reduce((acc, o) => acc + o.total, 0);
@@ -152,15 +366,23 @@ export default function AdminPage() {
           </h1>
           <p className="mt-2 text-primary/60 font-medium italic">Tableau de bord : {user.name}</p>
         </div>
-        <button
-          onClick={async () => {
-            await logout();
-            router.push("/login");
-          }}
-          className="btn btn-md bg-afro-red text-white px-8 shadow-md"
-        >
-          Se déconnecter
-        </button>
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => setIsKdsMode(true)}
+            className="btn btn-md bg-accent text-white px-6 shadow-glow"
+          >
+            📟 Mode Cuisine (KDS)
+          </button>
+          <button
+            onClick={async () => {
+              await logout();
+              router.push("/login");
+            }}
+            className="btn btn-md bg-afro-red text-white px-8 shadow-md"
+          >
+            Se déconnecter
+          </button>
+        </div>
       </div>
 
       {/* Navigation Onglets */}
@@ -170,6 +392,7 @@ export default function AdminPage() {
         <TabButton id="customers" active={activeTab === "customers"} onClick={setActiveTab} label="Clients & Fidélité" />
         <TabButton id="newsletter" active={activeTab === "newsletter"} onClick={setActiveTab} label="Newsletter" />
         <TabButton id="menu" active={activeTab === "menu"} onClick={setActiveTab} label="La Carte" />
+        <TabButton id="promotions" active={activeTab === "promotions"} onClick={setActiveTab} label="Codes Promos" />
       </div>
 
       <div className="mt-10">
@@ -201,34 +424,90 @@ export default function AdminPage() {
             </div>
 
             <div className="grid gap-8 lg:grid-cols-2">
-              <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10">
-                <h3 className="heading-display mb-6 text-xl text-primary">Commandes récentes</h3>
-                <div className="divide-y divide-cream/10">
-                  {allOrders.slice(0, 5).map(o => (
-                    <div key={o.id} className="py-4 flex justify-between items-center group">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-primary group-hover:text-accent transition-colors">{o.userName}</span>
-                        <span className="text-[10px] text-primary/40 uppercase tracking-widest">{o.createdAt}</span>
-                      </div>
-                      <span className="font-display font-black text-primary">{o.total.toFixed(2)} €</span>
-                    </div>
-                  ))}
+              {/* Sales Trend Chart (Pure SVG Line Graph) */}
+              <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 flex flex-col justify-between">
+                <div>
+                  <h3 className="heading-display text-xl text-primary mb-2">Tendance des Ventes</h3>
+                  <p className="text-xs text-primary/45 font-bold uppercase tracking-wider mb-6">Chiffre d'Affaires Récent (7 Commandes)</p>
+                </div>
+                
+                <div className="w-full relative h-[180px]">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 400 180">
+                    <defs>
+                      <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ff7d1a" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#ff7d1a" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    
+                    {/* Horizontal Grid lines */}
+                    <line x1="30" y1="30" x2="370" y2="30" stroke="#f1f1ee" strokeDasharray="4 4" />
+                    <line x1="30" y1="80" x2="370" y2="80" stroke="#f1f1ee" strokeDasharray="4 4" />
+                    <line x1="30" y1="130" x2="370" y2="130" stroke="#f1f1ee" strokeDasharray="4 4" />
+                    
+                    {/* Render Area & Trend Line */}
+                    {(() => {
+                      const recentList = [...allOrders].slice(0, 7).reverse();
+                      if (recentList.length < 2) return null;
+                      const maxVal = Math.max(...recentList.map(o => o.total), 50);
+                      const points = recentList.map((o, idx) => {
+                        const x = 30 + (idx * (340 / (recentList.length - 1)));
+                        const y = 150 - (o.total / maxVal) * 110;
+                        return { x, y, total: o.total };
+                      });
+                      
+                      const pathData = points.reduce((acc, p, idx) => {
+                        return acc + (idx === 0 ? "M " : " L ") + p.x + " " + p.y;
+                      }, "");
+                      
+                      const areaData = pathData + " L " + points[points.length - 1].x + " 150 L " + points[0].x + " 150 Z";
+                      
+                      return (
+                        <>
+                          <path d={areaData} fill="url(#salesGrad)" />
+                          <path d={pathData} fill="none" stroke="#ff7d1a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                          {points.map((p, idx) => (
+                            <g key={idx} className="group/dot cursor-pointer">
+                              <circle cx={p.x} cy={p.y} r="5" fill="#ffffff" stroke="#ff7d1a" strokeWidth="3" className="transition-all duration-300 group-hover/dot:r-7" />
+                              <title>{p.total.toFixed(2)} €</title>
+                            </g>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </svg>
                 </div>
               </div>
-              <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10">
-                <h3 className="heading-display mb-6 text-xl text-primary">Performances Mensuelles</h3>
+
+              {/* Category Popularity (Pure SVG Bar Chart) */}
+              <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 flex flex-col justify-between">
+                <div>
+                  <h3 className="heading-display text-xl text-primary mb-2">Popularité par Catégorie</h3>
+                  <p className="text-xs text-primary/45 font-bold uppercase tracking-wider mb-6">Volumes de Commandes par Type de Plat</p>
+                </div>
+
                 <div className="space-y-5">
-                  {monthlyDataArray.map((data, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <span className="text-xs font-black text-primary/60 uppercase tracking-widest truncate">{data.month}</span>
-                      <div className="flex items-center gap-4">
-                         <span className="h-1.5 w-24 rounded-full bg-creamSoft overflow-hidden hidden sm:block">
-                            <div className="h-full bg-accent opacity-50" style={{ width: `${Math.min((data.revenue / 5000) * 100, 100)}%` }} />
-                         </span>
-                         <span className="text-sm font-black text-accent">{data.revenue.toFixed(2)} €</span>
+                  {Object.entries({
+                    signature: "Plats Signatures",
+                    accompagnement: "Accompagnements",
+                    boisson: "Boissons",
+                    dessert: "Desserts"
+                  }).map(([key, label], idx) => {
+                    const count = categoryCounts[key] || 0;
+                    const pct = Math.min((count / maxCatCount) * 100, 100);
+                    const color = key === 'signature' ? '#ff7d1a' : key === 'accompagnement' ? '#1aa05f' : key === 'boisson' ? '#2563eb' : '#db2777';
+                    return (
+                      <div key={key} className="space-y-2">
+                        <div className="flex justify-between items-center text-xs font-black uppercase tracking-wider">
+                          <span className="text-primary/60">{label}</span>
+                          <span className="text-primary">{count} plats</span>
+                        </div>
+                        <div className="h-3 w-full bg-creamSoft rounded-full overflow-hidden relative">
+                          <div className="h-full rounded-full transition-all duration-1000" style={{ width: pct + "%", backgroundColor: color }} />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -269,6 +548,33 @@ export default function AdminPage() {
                     }`} />
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* --- RUPTURE DE STOCK D'URGENCE --- */}
+            <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 mt-8">
+              <h3 className="heading-display mb-6 text-xl text-primary">Rupture de Stock d'Urgence (1-Clic)</h3>
+              <p className="text-xs text-primary/50 mb-6 italic">Activez ou désactivez instantanément la disponibilité des plats phares en cuisine en plein rush.</p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {dynamicMenu.slice(0, 6).map(item => (
+                  <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-creamSoft/50 border border-cream/20">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-cream">
+                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-primary truncate">{item.name}</p>
+                        <p className="text-[9px] text-primary/45 uppercase tracking-wider mt-0.5">{item.available ? "Disponible" : "Épuisé"}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => updateMenuItem(item.id, { available: !item.available })}
+                      className={"relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-300 " + (item.available ? 'bg-green-500' : 'bg-red-500')}
+                    >
+                      <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 mt-1 " + (item.available ? 'translate-x-6' : 'translate-x-1')} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -449,6 +755,118 @@ export default function AdminPage() {
 
         {/* --- ONGLET : LA CARTE (MENU) --- */}
         {activeTab === "menu" && <div className="animate-fade-in"><AdminMenuManager /></div>}
+
+        {/* --- ONGLET : PARAMÈTRES CODES PROMOS CRUD --- */}
+        {activeTab === "promotions" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="grid gap-10 xl:grid-cols-[1.5fr_1fr]">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="heading-display text-2xl text-primary">Gestion des Codes Promos</h2>
+                  {isLoadingPromos && <span className="text-xs text-primary/40 font-bold">Chargement...</span>}
+                </div>
+
+                <div className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-cream/10">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                      <thead className="bg-creamSoft/50 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
+                        <tr>
+                          <th className="px-8 py-5">Code</th>
+                          <th className="px-8 py-5">Réduction</th>
+                          <th className="px-8 py-5">Statut</th>
+                          <th className="px-8 py-5">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-cream/10">
+                        {Object.values(promotions).map(promo => (
+                          <tr key={promo.code} className="text-sm hover:bg-cream/5 transition-colors">
+                            <td className="px-8 py-5 font-black text-primary uppercase tracking-wider">{promo.code}</td>
+                            <td className="px-8 py-5 font-bold text-accent">
+                              {promo.discountType === 'percentage' ? promo.discountValue + '%' : promo.discountValue + ' €'}
+                            </td>
+                            <td className="px-8 py-5">
+                              <button
+                                onClick={() => handleTogglePromoStatus(promo.code)}
+                                className={"inline-flex rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest transition-all " + (promo.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600')}
+                              >
+                                {promo.isActive ? 'Actif' : 'Inactif'}
+                              </button>
+                            </td>
+                            <td className="px-8 py-5">
+                              <button
+                                onClick={() => handleDeletePromo(promo.code)}
+                                className="p-2 rounded-full bg-red-50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                title="Supprimer le code"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {Object.keys(promotions).length === 0 && !isLoadingPromos && (
+                    <p className="p-20 text-center text-primary/30 italic font-medium">Aucun code promo configuré.</p>
+                  )}
+                </div>
+              </div>
+
+              <aside className="space-y-8">
+                <div className="rounded-3xl bg-creamSoft/50 p-6 border border-cream/20">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-primary/50 mb-6">Ajouter / Modifier un Code</h3>
+                  <form onSubmit={handleSavePromo} className="space-y-5">
+                    <div>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-primary/60 mb-2 block">Code</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: AFRO15"
+                        value={promoForm.code}
+                        onChange={(e) => setPromoForm({ ...promoForm, code: e.target.value })}
+                        required
+                        className="field bg-white h-11 text-sm font-bold uppercase tracking-wider"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-primary/60 mb-2 block">Type de Réduction</label>
+                      <select
+                        value={promoForm.discountType}
+                        onChange={(e) => setPromoForm({ ...promoForm, discountType: e.target.value as 'percentage' | 'fixed' })}
+                        className="field bg-white h-11 text-sm font-bold"
+                      >
+                        <option value="percentage">Pourcentage (%)</option>
+                        <option value="fixed">Montant Fixe (€)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black uppercase tracking-widest text-primary/60 mb-2 block">Valeur de Réduction</label>
+                      <input
+                        type="number"
+                        placeholder="Ex: 15"
+                        value={promoForm.discountValue || ''}
+                        onChange={(e) => setPromoForm({ ...promoForm, discountValue: Number(e.target.value) })}
+                        required
+                        min="1"
+                        className="field bg-white h-11 text-sm font-bold"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-white border border-cream/10">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">Activer le code</span>
+                      <button
+                        type="button"
+                        onClick={() => setPromoForm({ ...promoForm, isActive: !promoForm.isActive })}
+                        className={"relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-300 " + (promoForm.isActive ? 'bg-accent' : 'bg-primary/20')}
+                      >
+                        <span className={"inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 mt-1 " + (promoForm.isActive ? 'translate-x-6' : 'translate-x-1')} />
+                      </button>
+                    </div>
+                    <button type="submit" className="btn btn-md btn-primary w-full shadow-glow">Sauvegarder</button>
+                  </form>
+                </div>
+              </aside>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

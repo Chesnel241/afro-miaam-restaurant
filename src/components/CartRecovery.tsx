@@ -20,8 +20,32 @@ export function CartRecovery() {
         const lines = Array.isArray(parsed?.lines) ? parsed.lines : [];
         if (lines.length > 0) {
           setCartCount(lines.length);
+          
+          // Initial trigger after 3s
           const timer = setTimeout(() => setShow(true), 3000);
-          return () => clearTimeout(timer);
+          
+          // Inactivity tracker (2 minutes = 120000ms)
+          let idleTimer: NodeJS.Timeout;
+          const resetIdleTimer = () => {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+              setShow(true);
+            }, 120000);
+          };
+          
+          window.addEventListener("mousemove", resetIdleTimer);
+          window.addEventListener("keydown", resetIdleTimer);
+          window.addEventListener("click", resetIdleTimer);
+          
+          resetIdleTimer();
+
+          return () => {
+            clearTimeout(timer);
+            clearTimeout(idleTimer);
+            window.removeEventListener("mousemove", resetIdleTimer);
+            window.removeEventListener("keydown", resetIdleTimer);
+            window.removeEventListener("click", resetIdleTimer);
+          };
         }
       } catch (e) {
         console.error("Cart parsing error", e);

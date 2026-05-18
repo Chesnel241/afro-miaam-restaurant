@@ -44,6 +44,44 @@ export default function ReservationPage() {
   const [referralCode, setReferralCode] = useState("");
   const [useCredits, setUseCredits] = useState(false);
   const [isReferralValid, setIsReferralValid] = useState<boolean | null>(null);
+  
+  // Promo Codes State
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discountType: "percentage" | "fixed"; discountValue: number } | null>(null);
+  const [promoError, setPromoError] = useState("");
+  const [isVerifyingPromo, setIsVerifyingPromo] = useState(false);
+
+  const handleApplyPromo = async () => {
+    if (!promoCodeInput.trim()) return;
+    setPromoError("");
+    setIsVerifyingPromo(true);
+    try {
+      const { doc, getDoc } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      const snap = await getDoc(doc(db, "settings", "promotions"));
+      if (snap.exists()) {
+        const promoData = snap.data() || {};
+        const codes = promoData.codes || {};
+        const codeData = codes[promoCodeInput.toUpperCase().trim()];
+        if (codeData && codeData.isActive === true) {
+          setAppliedPromo({
+            code: codeData.code,
+            discountType: codeData.discountType,
+            discountValue: codeData.discountValue
+          });
+          setPromoCodeInput("");
+        } else {
+          setPromoError("Code invalide ou expiré.");
+        }
+      } else {
+        setPromoError("Code invalide.");
+      }
+    } catch (err) {
+      setPromoError("Impossible de vérifier le code.");
+    } finally {
+      setIsVerifyingPromo(false);
+    }
+  };
 
   // Pré-remplir avec les infos du compte
   useEffect(() => {
@@ -73,9 +111,20 @@ export default function ReservationPage() {
   
   // Calcul des remises
   const welcomeDiscount = (user && !user.hasUsedWelcomeOffer && (user as any).ordersCount === 0) ? 5 : 0; // 5€ de bienvenue
-  const creditsToUse = useCredits ? Math.min((user as any).referralCredits || 0, totalBeforeDiscount - welcomeDiscount) : 0;
   
-  const total = Math.max(0, totalBeforeDiscount - welcomeDiscount - creditsToUse);
+  // Promo code calculation
+  let promoDiscount = 0;
+  if (appliedPromo) {
+    if (appliedPromo.discountType === "percentage") {
+      promoDiscount = Math.round((totalBeforeDiscount - welcomeDiscount) * (appliedPromo.discountValue / 100) * 100) / 100;
+    } else {
+      promoDiscount = appliedPromo.discountValue;
+    }
+  }
+
+  const creditsToUse = useCredits ? Math.min((user as any).referralCredits || 0, totalBeforeDiscount - welcomeDiscount - promoDiscount) : 0;
+  
+  const total = Math.max(0, totalBeforeDiscount - welcomeDiscount - promoDiscount - creditsToUse);
   const depositAmount = total * 0.5;
 
   // Calcul de la date minimale (Demain) - Directement au rendu pour éviter le délai d'effet
@@ -141,6 +190,7 @@ export default function ReservationPage() {
           deliveryMode: form.deliveryMode,
           useCredits,
           referralCode: isReferralValid ? referralCode : undefined,
+          promoCode: appliedPromo ? appliedPromo.code : undefined,
           customer: {
             firstName: form.firstName,
             lastName: form.lastName,
