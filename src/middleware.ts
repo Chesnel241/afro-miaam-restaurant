@@ -39,6 +39,11 @@ function buildCsp(nonce: string): string {
 function withNonce(request: NextRequest, nonce: string) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-csp-nonce", nonce);
+
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   requestHeaders.set("content-security-policy", buildCsp(nonce));
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", buildCsp(nonce));

@@ -100,7 +100,7 @@ export function Header() {
             aria-label="Menu"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="hidden lg:hidden"
+            className="block lg:hidden"
           >
             <BurgerIcon open={open} />
           </button>
