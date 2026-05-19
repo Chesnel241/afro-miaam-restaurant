@@ -16,3 +16,6 @@ next-env.d.ts
 .turbo
 .vercel
 .env*.local
+
+# Local agent worktrees created by Claude Code
+.claude/
