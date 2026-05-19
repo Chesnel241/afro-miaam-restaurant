@@ -8,6 +8,7 @@ import { AdminMenuManager } from "@/components/AdminMenuManager";
 import { QRCodeSVG } from "qrcode.react";
 
 import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions" | "reviews" | "closures";
 
 // Modal QR Code
@@ -74,7 +75,6 @@ export default function AdminPage() {
       const loadClosures = async () => {
         setIsLoadingClosures(true);
         try {
-          const { doc, getDoc } = await import("firebase/firestore");
           const snap = await getDoc(doc(db, "settings", "closures"));
           if (snap.exists()) {
             setBlockedDates(snap.data().blockedDates || []);
@@ -98,7 +98,6 @@ export default function AdminPage() {
     }
     const updated = [...blockedDates, closureDate].sort();
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       await setDoc(doc(db, "settings", "closures"), { blockedDates: updated });
       setBlockedDates(updated);
       setClosureDate("");
@@ -111,7 +110,6 @@ export default function AdminPage() {
     if (!confirm(`Débloquer la date ${dateToDelete} ?`)) return;
     const updated = blockedDates.filter(d => d !== dateToDelete);
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       await setDoc(doc(db, "settings", "closures"), { blockedDates: updated });
       setBlockedDates(updated);
     } catch (err) {
@@ -138,7 +136,6 @@ export default function AdminPage() {
       const loadPromotions = async () => {
         setIsLoadingPromos(true);
         try {
-          const { doc, getDoc } = await import("firebase/firestore");
           const snap = await getDoc(doc(db, "settings", "promotions"));
           if (snap.exists()) {
             setPromotions(snap.data().codes || {});
@@ -169,7 +166,6 @@ export default function AdminPage() {
     };
 
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
       setPromotions(updatedCodes);
       setPromoForm({ code: "", discountType: "percentage", discountValue: 0, isActive: true });
@@ -182,7 +178,6 @@ export default function AdminPage() {
     if (!confirm("Voulez-vous supprimer ce code promo ?")) return;
     const { [codeKey]: _, ...updatedCodes } = promotions;
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
       setPromotions(updatedCodes);
     } catch (err) {
@@ -199,7 +194,6 @@ export default function AdminPage() {
       }
     };
     try {
-      const { doc, setDoc } = await import("firebase/firestore");
       await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
       setPromotions(updatedCodes);
     } catch (err) {

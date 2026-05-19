@@ -4,7 +4,7 @@ import { useAuth } from "@/components/AuthContext";
 import { useCart } from "@/components/CartContext";
 import { appCheck, auth } from "@/lib/firebase";
 import { formatPrice } from "@/lib/utils";
-import { collection, addDoc, serverTimestamp, doc, runTransaction } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, runTransaction, getDoc } from "firebase/firestore";
 import { getToken } from "firebase/app-check";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -57,7 +57,6 @@ export default function ReservationPage() {
     let isMounted = true;
     const fetchClosures = async () => {
       try {
-        const { doc, getDoc } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
         const snap = await getDoc(doc(db, "settings", "closures"));
         if (snap.exists() && isMounted) {
@@ -76,7 +75,6 @@ export default function ReservationPage() {
     setPromoError("");
     setIsVerifyingPromo(true);
     try {
-      const { doc, getDoc } = await import("firebase/firestore");
       const { db } = await import("@/lib/firebase");
       const snap = await getDoc(doc(db, "settings", "promotions"));
       if (snap.exists()) {

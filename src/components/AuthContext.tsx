@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -27,6 +27,7 @@ import {
   orderBy,
   increment,
   or,
+  limit,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { menuItems } from "@/data/menu";
@@ -225,7 +226,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         // Écouter le document profil en temps réel
         const userRef = doc(db, "users", firebaseUser.uid);
-        
+
+        if (unsubProfile) unsubProfile();
         unsubProfile = onSnapshot(
           userRef,
           async (snap) => {
@@ -297,7 +299,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       or(
         where("userId", "==", user.id),
         where("userEmail", "==", user.email.toLowerCase())
-      )
+      ),
+      orderBy("createdAt", "desc"),
+      limit(100)
     );
 
     const unsub = onSnapshot(
@@ -306,7 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const orders = snap.docs
           .map((d) => docToOrder(d.id, d.data()))
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        
+
         setUserOrders(orders);
       },
       (err) => {
@@ -318,7 +322,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsub();
       setUserOrders([]);
     };
-  }, [user]);
+  }, [user?.id, user?.role, user?.email]);
 
   // ── Écouter TOUTES les commandes (admin uniquement) ──
   useEffect(() => {
@@ -326,7 +330,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(500));
 
     const unsub = onSnapshot(
       q,
@@ -343,7 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsub();
       setAllOrders([]);
     };
-  }, [user]);
+  }, [user?.id, user?.role, user?.email]);
 
   // ── Charger tous les clients (admin uniquement) ──
   useEffect(() => {
@@ -351,7 +355,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const q = query(collection(db, "users"), where("role", "==", "customer"));
+    const q = query(collection(db, "users"), where("role", "==", "customer"), limit(500));
 
     const unsub = onSnapshot(
       q,
@@ -378,7 +382,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsub();
       setAllCustomers([]);
     };
-  }, [user]);
+  }, [user?.id, user?.role, user?.email]);
 
   // ── Charger les inscrits newsletter (admin uniquement) ──
   useEffect(() => {
@@ -386,7 +390,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const q = query(collection(db, "newsletter"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "newsletter"), orderBy("createdAt", "desc"), limit(500));
 
     const unsub = onSnapshot(
       q,
@@ -418,7 +422,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsub();
       setNewsletterSubscribers([]);
     };
-  }, [user]);
+  }, [user?.id, user?.role, user?.email]);
 
   // ── Charger le menu (pour tout le monde) ──
   useEffect(() => {
@@ -461,7 +465,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: "Lait caillé",
             description: "Dessert traditionnel doux et onctueux.",
             price: 4,
-            image: "/img/desserts/Lait caillé.png",
+            image: "/img/desserts/lait-caille.png",
             tags: [],
             available: true,
             preferences: ["halal", "nutfree", "glutenfree", "veg"],
@@ -779,42 +783,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
     return () => unsub();
-  }, [user]);
+  }, [user?.id, user?.role, user?.email]);
 
   const updateGlobalSettings = useCallback(async (settings: Record<string, boolean>) => {
     const settingsRef = doc(db, "settings", "global");
     await setDoc(settingsRef, settings, { merge: true });
   }, []);
 
+  const contextValue = useMemo(
+    () => ({
+      user,
+      loading,
+      loginWithEmail,
+      signUpWithEmail,
+      updateProfile,
+      loginWithGoogle,
+      logout: logoutFn,
+      deleteAccount,
+      userOrders,
+      allOrders,
+      allCustomers,
+      newsletterSubscribers,
+      dynamicMenu,
+      placeOrder,
+      isReviewRewardActive,
+      isWelcomeOfferActive,
+      addOrderReview,
+      updateGlobalSettings,
+      updateOrderStatus,
+      requestOrderDeletion,
+      confirmOrderDeletion,
+      addMenuItem,
+      updateMenuItem,
+      deleteMenuItem,
+    }),
+    [
+      user,
+      loading,
+      userOrders,
+      allOrders,
+      allCustomers,
+      newsletterSubscribers,
+      dynamicMenu,
+      isReviewRewardActive,
+      isWelcomeOfferActive,
+      loginWithEmail,
+      signUpWithEmail,
+      updateProfile,
+      loginWithGoogle,
+      logoutFn,
+      deleteAccount,
+      placeOrder,
+      updateOrderStatus,
+      requestOrderDeletion,
+      confirmOrderDeletion,
+      addMenuItem,
+      updateMenuItem,
+      deleteMenuItem,
+      addOrderReview,
+      updateGlobalSettings,
+    ]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        loginWithEmail,
-        signUpWithEmail,
-        updateProfile,
-        loginWithGoogle,
-        logout: logoutFn,
-        deleteAccount,
-        userOrders,
-        allOrders,
-        allCustomers,
-        newsletterSubscribers,
-        dynamicMenu,
-        placeOrder,
-        isReviewRewardActive,
-        isWelcomeOfferActive,
-        addOrderReview,
-        updateGlobalSettings,
-        updateOrderStatus,
-        requestOrderDeletion,
-        confirmOrderDeletion,
-        addMenuItem,
-        updateMenuItem,
-        deleteMenuItem,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
