@@ -215,10 +215,13 @@ select.field {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
 
 /* Animation de défilement infini pour les réalisations */
 @keyframes marquee-left {

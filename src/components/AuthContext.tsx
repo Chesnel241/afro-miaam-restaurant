@@ -28,6 +28,7 @@ import {
   or,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { menuItems } from "@/data/menu";
 
 // ─── Constants ──────────────────────────────────────────────
 const googleProvider = new GoogleAuthProvider();
@@ -202,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [allCustomers, setAllCustomers] = useState<UserProfile[]>([]);
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
-  const [dynamicMenu, setDynamicMenu] = useState<MenuItemDynamic[]>([]);
+  const [dynamicMenu, setDynamicMenu] = useState<MenuItemDynamic[]>(menuItems as any);
 
   // ── Écouter l'état d'authentification Firebase et le Profil ──
   useEffect(() => {
@@ -244,6 +245,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
           (err) => {
             console.error("PROFILE_SNAPSHOT_ERROR", err.message);
+            // Graceful fallback if profile document is unreadable (e.g. App Check blocking Firestore on mobile)
+            setUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Client",
+              email: firebaseUser.email || "",
+              phone: "",
+              role: "customer",
+              ordersCount: 0,
+              isFirstLogin: false,
+              referralCode: "",
+              referralCredits: 0,
+              hasUsedWelcomeOffer: false,
+            });
             setLoading(false);
           }
         );
@@ -453,6 +467,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       (err) => {
         console.warn("MENU_SNAPSHOT_ERROR", err.message);
+        // Fallback to static menu items on error so the site is never blank!
+        setDynamicMenu(menuItems as any);
       }
     );
     return () => unsub();
