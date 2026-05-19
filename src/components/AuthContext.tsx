@@ -7,6 +7,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   deleteUser,
@@ -204,6 +205,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [allCustomers, setAllCustomers] = useState<UserProfile[]>([]);
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [dynamicMenu, setDynamicMenu] = useState<MenuItemDynamic[]>(menuItems as any);
+
+  // ── Finaliser le retour de signInWithRedirect (mobile Google) ──
+  // Sans cet appel explicite, le SDK Firebase ne lit l'état pending dans
+  // IndexedDB qu'au cours de sa propre init différée, ce qui ajoute 1-3 s
+  // avant que onAuthStateChanged ne tire sur mobile.
+  useEffect(() => {
+    if (!auth) return;
+    getRedirectResult(auth).catch((err) => {
+      console.warn("REDIRECT_RESULT_ERROR", (err as { code?: string }).code ?? "unknown");
+    });
+  }, []);
 
   // ── Écouter l'état d'authentification Firebase et le Profil ──
   useEffect(() => {

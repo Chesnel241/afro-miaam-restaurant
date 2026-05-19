@@ -45,10 +45,10 @@ if (typeof window !== "undefined" && app) {
 
 export { appCheck };
 export const auth: Auth = app ? getAuth(app) : (undefined as unknown as Auth);
-export const db: Firestore = app 
+export const db: Firestore = app
   ? initializeFirestore(app, {
-      experimentalForceLongPolling: true,
-    }) 
+      experimentalAutoDetectLongPolling: true,
+    })
   : (undefined as unknown as Firestore);
 export const storage: FirebaseStorage = app
   ? getStorage(app)

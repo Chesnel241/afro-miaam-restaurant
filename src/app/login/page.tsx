@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -16,11 +16,15 @@ export default function LoginPage() {
   const { loginWithEmail, signUpWithEmail, loginWithGoogle, user } = useAuth();
   const router = useRouter();
 
-  // Si déjà connecté, rediriger
-  if (user) {
-    router.push(user.role === "admin" ? "/admin" : "/mon-compte");
-    return null;
-  }
+  // Si déjà connecté, rediriger (en effet, hors render, pour éviter le warning
+  // React "Cannot update a component while rendering" et la double navigation).
+  useEffect(() => {
+    if (user) {
+      router.replace(user.role === "admin" ? "/admin" : "/mon-compte");
+    }
+  }, [user, router]);
+
+  if (user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
