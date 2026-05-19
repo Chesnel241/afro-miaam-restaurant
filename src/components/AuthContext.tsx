@@ -213,33 +213,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Écouter le document profil en temps réel
         const userRef = doc(db, "users", firebaseUser.uid);
         
-        unsubProfile = onSnapshot(userRef, async (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            setUser({
-              id: firebaseUser.uid,
-              name: data.name || "",
-              email: data.email || firebaseUser.email || "",
-              phone: data.phone || "",
-              role: data.role || "customer",
-              ordersCount: data.ordersCount || 0,
-              isFirstLogin: data.isFirstLogin ?? false,
-              referralCode: data.referralCode || "",
-              referralCredits: data.referralCredits || 0,
-              hasUsedWelcomeOffer: data.hasUsedWelcomeOffer ?? false,
-              referredBy: data.referredBy || "",
-            });
-          } else {
-            // Créer le profil s'il n'existe pas
-            const newProfile = await createInitialProfile(
-              firebaseUser.uid,
-              firebaseUser.email || "",
-              firebaseUser.displayName
-            );
-            setUser(newProfile);
+        unsubProfile = onSnapshot(
+          userRef,
+          async (snap) => {
+            if (snap.exists()) {
+              const data = snap.data();
+              setUser({
+                id: firebaseUser.uid,
+                name: data.name || "",
+                email: data.email || firebaseUser.email || "",
+                phone: data.phone || "",
+                role: data.role || "customer",
+                ordersCount: data.ordersCount || 0,
+                isFirstLogin: data.isFirstLogin ?? false,
+                referralCode: data.referralCode || "",
+                referralCredits: data.referralCredits || 0,
+                hasUsedWelcomeOffer: data.hasUsedWelcomeOffer ?? false,
+                referredBy: data.referredBy || "",
+              });
+            } else {
+              // Créer le profil s'il n'existe pas
+              const newProfile = await createInitialProfile(
+                firebaseUser.uid,
+                firebaseUser.email || "",
+                firebaseUser.displayName
+              );
+              setUser(newProfile);
+            }
+            setLoading(false);
+          },
+          (err) => {
+            console.error("PROFILE_SNAPSHOT_ERROR", err.message);
+            setLoading(false);
           }
-          setLoading(false);
-        });
+        );
       } else {
         if (unsubProfile) unsubProfile();
         setUser(null);
@@ -267,13 +274,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       )
     );
 
-    const unsub = onSnapshot(q, (snap) => {
-      const orders = snap.docs
-        .map((d) => docToOrder(d.id, d.data()))
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setUserOrders(orders);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const orders = snap.docs
+          .map((d) => docToOrder(d.id, d.data()))
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
+        setUserOrders(orders);
+      },
+      (err) => {
+        console.warn("USER_ORDERS_SNAPSHOT_ERROR", err.message);
+      }
+    );
 
     return () => {
       unsub();
@@ -289,10 +302,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
-    const unsub = onSnapshot(q, (snap) => {
-      const orders = snap.docs.map((d) => docToOrder(d.id, d.data()));
-      setAllOrders(orders);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const orders = snap.docs.map((d) => docToOrder(d.id, d.data()));
+        setAllOrders(orders);
+      },
+      (err) => {
+        console.warn("ALL_ORDERS_SNAPSHOT_ERROR", err.message);
+      }
+    );
 
     return () => {
       unsub();
@@ -308,20 +327,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const q = query(collection(db, "users"), where("role", "==", "customer"));
 
-    const unsub = onSnapshot(q, (snap) => {
-      const customers = snap.docs.map((d) => {
-        const data = d.data();
-          return {
-            id: d.id,
-            name: (data.name as string) || "",
-            email: (data.email as string) || "",
-            phone: (data.phone as string) || "",
-            role: "customer" as UserRole,
-            ordersCount: (data.ordersCount as number) || 0,
-          };
-      });
-      setAllCustomers(customers);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const customers = snap.docs.map((d) => {
+          const data = d.data();
+            return {
+              id: d.id,
+              name: (data.name as string) || "",
+              email: (data.email as string) || "",
+              phone: (data.phone as string) || "",
+              role: "customer" as UserRole,
+              ordersCount: (data.ordersCount as number) || 0,
+            };
+        });
+        setAllCustomers(customers);
+      },
+      (err) => {
+        console.warn("ALL_CUSTOMERS_SNAPSHOT_ERROR", err.message);
+      }
+    );
 
     return () => {
       unsub();
@@ -337,25 +362,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const q = query(collection(db, "newsletter"), orderBy("createdAt", "desc"));
 
-    const unsub = onSnapshot(q, (snap) => {
-      const subs = snap.docs.map((d) => {
-        const data = d.data();
-        let dateStr = "";
-        const ts = data.createdAt as { toDate?: () => Date } | undefined;
-        if (ts && typeof ts.toDate === "function") {
-          dateStr = ts.toDate().toISOString().split("T")[0];
-        } else {
-          dateStr = new Date().toISOString().split("T")[0];
-        }
-        return {
-          id: d.id,
-          email: (data.email as string) || "",
-          createdAt: dateStr,
-          source: (data.source as string) || "inconnu",
-        };
-      });
-      setNewsletterSubscribers(subs);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const subs = snap.docs.map((d) => {
+          const data = d.data();
+          let dateStr = "";
+          const ts = data.createdAt as { toDate?: () => Date } | undefined;
+          if (ts && typeof ts.toDate === "function") {
+            dateStr = ts.toDate().toISOString().split("T")[0];
+          } else {
+            dateStr = new Date().toISOString().split("T")[0];
+          }
+          return {
+            id: d.id,
+            email: (data.email as string) || "",
+            createdAt: dateStr,
+            source: (data.source as string) || "inconnu",
+          };
+        });
+        setNewsletterSubscribers(subs);
+      },
+      (err) => {
+        console.warn("NEWSLETTER_SUBSCRIBERS_SNAPSHOT_ERROR", err.message);
+      }
+    );
 
     return () => {
       unsub();
@@ -366,58 +397,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Charger le menu (pour tout le monde) ──
   useEffect(() => {
     const q = query(collection(db, "menu"));
-    const unsub = onSnapshot(q, (snap) => {
-      const items = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<MenuItemDynamic, "id">),
-      }));
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const items = snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<MenuItemDynamic, "id">),
+        }));
 
-      // Injecter les formules par défaut si elles ne sont pas encore présentes dans Firestore
-      const formulas = [
-        {
-          id: "menu-decouverte",
-          category: "formule",
-          name: "Menu Découverte",
-          description: "1 Entrée + 1 Plat + 1 Accompagnement + 1 Boisson au choix.",
-          price: 15.99,
-          image: "/logo-afromiaam.png",
-          tags: ["Formule Populaire"],
-          available: true,
-          preferences: ["halal", "nutfree", "glutenfree"],
-        },
-        {
-          id: "menu-gourmand",
-          category: "formule",
-          name: "Menu Gourmand",
-          description: "1 Entrée + 1 Plat Premium + 1 Accompagnement Premium + 1 Dessert + 1 Boisson au choix.",
-          price: 24.99,
-          image: "/logo-afromiaam.png",
-          tags: ["Formule Gourmande"],
-          available: true,
-          preferences: ["halal", "nutfree", "glutenfree"],
-        },
-        {
-          id: "lait-caille",
-          category: "dessert",
-          name: "Lait caillé",
-          description: "Dessert traditionnel doux et onctueux.",
-          price: 4,
-          image: "/img/desserts/Lait caillé.png",
-          tags: [],
-          available: true,
-          preferences: ["halal", "nutfree", "glutenfree", "veg"],
-        }
-      ];
+        // Injecter les formules par défaut si elles ne sont pas encore présentes dans Firestore
+        const formulas = [
+          {
+            id: "menu-decouverte",
+            category: "formule",
+            name: "Menu Découverte",
+            description: "1 Entrée + 1 Plat + 1 Accompagnement + 1 Boisson au choix.",
+            price: 15.99,
+            image: "/logo-afromiaam.png",
+            tags: ["Formule Populaire"],
+            available: true,
+            preferences: ["halal", "nutfree", "glutenfree"],
+          },
+          {
+            id: "menu-gourmand",
+            category: "formule",
+            name: "Menu Gourmand",
+            description: "1 Entrée + 1 Plat Premium + 1 Accompagnement Premium + 1 Dessert + 1 Boisson au choix.",
+            price: 24.99,
+            image: "/logo-afromiaam.png",
+            tags: ["Formule Gourmande"],
+            available: true,
+            preferences: ["halal", "nutfree", "glutenfree"],
+          },
+          {
+            id: "lait-caille",
+            category: "dessert",
+            name: "Lait caillé",
+            description: "Dessert traditionnel doux et onctueux.",
+            price: 4,
+            image: "/img/desserts/Lait caillé.png",
+            tags: [],
+            available: true,
+            preferences: ["halal", "nutfree", "glutenfree", "veg"],
+          }
+        ];
 
-      const finalItems = [...items];
-      formulas.forEach(f => {
-        if (!items.some(it => it.id === f.id || it.name === f.name)) {
-          finalItems.push(f as any);
-        }
-      });
+        const finalItems = [...items];
+        formulas.forEach(f => {
+          if (!items.some(it => it.id === f.id || it.name === f.name)) {
+            finalItems.push(f as any);
+          }
+        });
 
-      setDynamicMenu(finalItems);
-    });
+        setDynamicMenu(finalItems);
+      },
+      (err) => {
+        console.warn("MENU_SNAPSHOT_ERROR", err.message);
+      }
+    );
     return () => unsub();
   }, []);
 
