@@ -14,6 +14,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { restaurantJsonLd, SITE_URL } from "@/lib/seo";
 import { BottomNavBar } from "@/components/BottomNavBar";
 import { FloatingCart } from "@/components/FloatingCart";
+import { Analytics } from "@vercel/analytics/next";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -135,6 +136,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </CartProvider>
         </AuthProvider>
         <JsonLd data={restaurantJsonLd()} />
+        <Analytics />
       </body>
     </html>
   );
