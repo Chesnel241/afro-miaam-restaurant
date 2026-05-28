@@ -39,6 +39,15 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/__/auth/:path*",
+        destination: "https://afro-miaam.firebaseapp.com/__/auth/:path*",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
+
