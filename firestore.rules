@@ -304,5 +304,12 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin() && request.resource.size < 50000;
     }
+
+    // -------------------------------------------------------------------------
+    // RATE LIMITS — server-only (Admin SDK). No client access.
+    // -------------------------------------------------------------------------
+    match /rateLimits/{docId} {
+      allow read, write: if false;
+    }
   }
 }

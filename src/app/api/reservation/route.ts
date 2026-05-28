@@ -55,23 +55,8 @@ const ALLOWED_SLOTS = new Set([
   "20h30 - 21h00",
 ]);
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_HITS = 10;
-const rateLimit = new Map<string, { hits: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimit.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimit.set(ip, { hits: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.hits >= RATE_LIMIT_MAX_HITS) return false;
-  entry.hits++;
-  return true;
-}
-
 import { clientIp } from "@/lib/utils";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const PRICE_CACHE_TTL_MS = 60_000;
 const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
@@ -129,7 +114,7 @@ export async function POST(request: Request) {
     return bad("Service temporairement indisponible (maintenance).", 503);
   }
 
-  if (!checkRateLimit(clientIp(request))) {
+  if (!(await checkRateLimit(`reservation:${clientIp(request)}`, 10, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
@@ -308,11 +293,18 @@ export async function POST(request: Request) {
           const codeData = codes[payload.promoCode.toUpperCase().trim()];
           if (codeData && codeData.isActive === true) {
             promoCodeUsed = codeData.code;
+            // L-3: discountValue is admin-controlled and unvalidated. Coerce to
+            // a finite number (else 0) and clamp before applying so a negative
+            // value can't inflate the total and a >100% can't over-discount.
+            const rawValue = Number(codeData.discountValue);
+            const discountValue = Number.isFinite(rawValue) ? rawValue : 0;
             if (codeData.discountType === "percentage") {
-              promoDiscount = round2((serverTotalBeforeDiscount - welcomeDiscount) * (codeData.discountValue / 100));
+              const pct = Math.min(100, Math.max(0, discountValue));
+              promoDiscount = round2((serverTotalBeforeDiscount - welcomeDiscount) * (pct / 100));
             } else if (codeData.discountType === "fixed") {
-              promoDiscount = codeData.discountValue;
+              promoDiscount = Math.min(serverTotalBeforeDiscount, Math.max(0, discountValue));
             }
+            promoDiscount = Math.max(0, promoDiscount);
           }
         }
       }

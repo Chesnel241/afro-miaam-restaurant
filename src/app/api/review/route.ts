@@ -2,29 +2,14 @@ import { NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { clientIp } from "@/lib/utils";
-
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_HITS = 15;
-const rateLimit = new Map<string, { hits: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimit.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimit.set(ip, { hits: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.hits >= RATE_LIMIT_MAX_HITS) return false;
-  entry.hits++;
-  return true;
-}
+import { checkRateLimit } from "@/lib/rate-limit";
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
 }
 
 export async function POST(request: Request) {
-  if (!checkRateLimit(clientIp(request))) {
+  if (!(await checkRateLimit(`review:${clientIp(request)}`, 15, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
