@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { clientIp } from "@/lib/utils";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -9,6 +9,24 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
+  const appCheckToken = request.headers.get("X-Firebase-AppCheck");
+  if (process.env.NODE_ENV === "production") {
+    if (!appCheckToken) {
+      return bad("Non autorisÃ©. App Check manquant.", 401);
+    }
+    try {
+      await verifyAppCheckToken(appCheckToken);
+    } catch {
+      return bad("Non autorisÃ©. App Check invalide ou expirÃ©.", 401);
+    }
+  } else if (appCheckToken) {
+    try {
+      await verifyAppCheckToken(appCheckToken);
+    } catch (e) {
+      console.warn("APP_CHECK_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
+    }
+  }
+
   // Coarse pre-auth IP guard (hardened clientIp) protecting verifyIdToken from
   // unauthenticated floods.
   if (!(await checkRateLimit(`review:ip:${clientIp(request)}`, 15, 60_000))) {
@@ -62,8 +80,11 @@ export async function POST(request: Request) {
       const orderData = orderSnap.data() || {};
       
       // Ownership check (uid or email)
+      // Vague2-D: email-fallback ownership now requires a verified email.
       const isOwnerByUid = orderData.userId === userId;
-      const isOwnerByEmail = typeof orderData.userEmail === 'string' &&
+      const isOwnerByEmail =
+        decodedToken.email_verified === true &&
+        typeof orderData.userEmail === 'string' &&
         orderData.userEmail.trim().toLowerCase() === userEmail;
 
       if (!isOwnerByUid && !isOwnerByEmail) {

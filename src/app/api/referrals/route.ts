@@ -1,9 +1,27 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/utils";
 
 export async function GET(request: Request) {
+  const appCheckToken = request.headers.get("X-Firebase-AppCheck");
+  if (process.env.NODE_ENV === "production") {
+    if (!appCheckToken) {
+      return NextResponse.json({ error: "Non autorisÃ©. App Check manquant." }, { status: 401 });
+    }
+    try {
+      await verifyAppCheckToken(appCheckToken);
+    } catch {
+      return NextResponse.json({ error: "Non autorisÃ©. App Check invalide ou expirÃ©." }, { status: 401 });
+    }
+  } else if (appCheckToken) {
+    try {
+      await verifyAppCheckToken(appCheckToken);
+    } catch (e) {
+      console.warn("APP_CHECK_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
+    }
+  }
+
   // Coarse pre-auth IP guard (hardened clientIp) protecting verifyIdToken from
   // unauthenticated floods.
   if (!(await checkRateLimit(`referrals:ip:${clientIp(request)}`, 30, 60_000))) {
