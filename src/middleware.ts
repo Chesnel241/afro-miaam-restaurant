@@ -22,7 +22,14 @@ function generateNonce(): string {
 function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://www.google.com/recaptcha/ https://www.gstatic.com https://apis.google.com`,
+    // Vague3-L: 'strict-dynamic' tells modern browsers to derive trust from
+    // the nonce-loaded scripts only, ignoring the host allowlist. This
+    // neutralizes well-known CSP-bypass gadgets on apis.google.com/gstatic
+    // (JSONP / loader scripts) — under 'strict-dynamic' an injected
+    // <script src=apis.google.com/...> without a valid nonce is blocked.
+    // The host allowlist is kept for older browsers that don't recognize
+    // 'strict-dynamic' (they fall back to host matching).
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.google.com/recaptcha/ https://www.gstatic.com https://apis.google.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://images.unsplash.com https://firebasestorage.googleapis.com https://lh3.googleusercontent.com",

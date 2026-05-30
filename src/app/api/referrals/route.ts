@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/utils";
 
 export async function GET(request: Request) {
+  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
+  const unavail = adminUnavailableResponse();
+  if (unavail) return unavail;
+
   const appCheckToken = request.headers.get("X-Firebase-AppCheck");
   if (process.env.NODE_ENV === "production") {
     if (!appCheckToken) {
@@ -73,26 +77,49 @@ export async function GET(request: Request) {
     snapId.docs.forEach(doc => mergedDocs.set(doc.id, doc.data()));
     snapCode.docs.forEach(doc => mergedDocs.set(doc.id, doc.data()));
 
-    const list = Array.from(mergedDocs.values()).map(data => {
-      const name = data.name || "Membre Afro";
-      const words = name.split(" ");
-      const maskedName = words[0] + (words[1] ? ` ${words[1][0]}.` : "");
-      
-      const ordersCount = typeof data.ordersCount === 'number' ? data.ordersCount : 0;
-      const joinedAt = data.createdAt 
-        ? (data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt) 
-        : new Date().toISOString();
+    // Vague3-J: minimize PII returned to the referrer.
+    //   - name: initials only ("M. D.") instead of "Marie D." — first names
+    //     plus exact join time + activity were a strong fingerprint for de-
+    //     anonymizing specific individuals.
+    //   - replace the exact ISO joinedAt with a coarse month-bucket string
+    //     ("Il y a 3 mois") to neutralize fine-grained timing inference,
+    //     while keeping enough signal for the referrer's UX.
+    const initialOnly = (raw: string | undefined) => {
+      if (!raw || typeof raw !== "string") return "";
+      const c = raw.trim().charAt(0).toUpperCase();
+      return c ? `${c}.` : "";
+    };
+    const joinedBucket = (createdAt: any): string => {
+      let d: Date | null = null;
+      try {
+        if (createdAt?.toDate) d = createdAt.toDate();
+        else if (typeof createdAt === "string") d = new Date(createdAt);
+      } catch { /* fall through */ }
+      if (!d || Number.isNaN(d.getTime())) return "Récemment";
+      const months = Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+      if (months <= 0) return "Récemment";
+      if (months === 1) return "Il y a 1 mois";
+      if (months < 12) return `Il y a ${months} mois`;
+      const years = Math.floor(months / 12);
+      return years === 1 ? "Il y a 1 an" : `Il y a ${years} ans`;
+    };
 
+    const list = Array.from(mergedDocs.values()).map(data => {
+      const name = typeof data.name === "string" ? data.name : "Membre Afro";
+      const words = name.trim().split(/\s+/);
+      const maskedName = `${initialOnly(words[0])}${words[1] ? ` ${initialOnly(words[1])}` : ""}`.trim() || "M.";
+      const ordersCount = typeof data.ordersCount === "number" ? data.ordersCount : 0;
       return {
         name: maskedName,
-        joinedAt,
+        joinedBucket: joinedBucket(data.createdAt),
         ordersCount,
-        hasContributed: ordersCount > 0 // Friend completed their first order
+        hasContributed: ordersCount > 0,
       };
     });
 
-    // Sort by joinedAt desc
-    list.sort((a: any, b: any) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
+    // Sort by recency proxy: contributed first, then by ordersCount desc — we
+    // intentionally no longer expose exact join timestamps client-side.
+    list.sort((a, b) => Number(b.hasContributed) - Number(a.hasContributed) || b.ordersCount - a.ordersCount);
 
     return NextResponse.json({ referrals: list });
   } catch (err: any) {

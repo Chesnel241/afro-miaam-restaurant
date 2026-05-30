@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { clientIp } from "@/lib/utils";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -8,6 +8,10 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
+  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
+  const unavail = adminUnavailableResponse();
+  if (unavail) return unavail;
+
   // Coarse pre-auth IP guard protecting verifyIdToken from unauthenticated floods.
   if (!(await checkRateLimit(`promo:ip:${clientIp(request)}`, 30, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);

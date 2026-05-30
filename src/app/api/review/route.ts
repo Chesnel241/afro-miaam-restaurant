@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { clientIp } from "@/lib/utils";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -9,6 +9,10 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
+  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
+  const unavail = adminUnavailableResponse();
+  if (unavail) return unavail;
+
   const appCheckToken = request.headers.get("X-Firebase-AppCheck");
   if (process.env.NODE_ENV === "production") {
     if (!appCheckToken) {

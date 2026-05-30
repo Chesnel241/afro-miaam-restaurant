@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { createHash, timingSafeEqual } from "crypto";
 
@@ -33,6 +33,10 @@ function hashesEqual(a: string, b: string): boolean {
 }
 
 export async function POST(request: Request) {
+  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
+  const unavail = adminUnavailableResponse();
+  if (unavail) return unavail;
+
   const authHeader = request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return bad("Non autorisé. Token manquant.", 401);
   const idToken = authHeader.split("Bearer ")[1];

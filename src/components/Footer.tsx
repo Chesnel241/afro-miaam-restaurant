@@ -81,7 +81,7 @@ export function Footer() {
         <div className="container-x flex flex-col items-start justify-between gap-3 py-6 text-xs text-cream/60 sm:flex-row sm:items-center">
           <p>&copy; {new Date().getFullYear()} Afro Miaam, Tous droits réservés.</p>
           <p>
-            Site created by <a href="https://logique-prod-agency.vercel.app" target="_blank" rel="noreferrer" className="text-cream underline-offset-4 hover:text-accent hover:underline">Logique Prod</a>
+            Site created by <a href="https://logique-prod-agency.vercel.app" target="_blank" rel="noopener noreferrer" className="text-cream underline-offset-4 hover:text-accent hover:underline">Logique Prod</a>
           </p>
           <ul className="flex flex-wrap gap-4">
             <li><Link href="/mentions-legales" className="hover:text-accent">Mentions légales</Link></li>

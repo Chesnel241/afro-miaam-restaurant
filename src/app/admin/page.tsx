@@ -911,10 +911,10 @@ export default function AdminPage() {
                 <button onClick={exportNewsletterCSV} className="btn btn-sm bg-primary text-white px-6">
                   Exporter CSV
                 </button>
-                <a 
-                  href="https://www.mailerlite.com/" 
-                  target="_blank" 
-                  rel="noreferrer" 
+                <a
+                  href="https://www.mailerlite.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="btn btn-sm bg-accent text-white px-6 shadow-glow"
                 >
                   MailerLite

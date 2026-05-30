@@ -435,12 +435,15 @@ function MonCompteContent() {
                         ) : referrals.length > 0 ? (
                           <div className="grid gap-3 sm:grid-cols-2">
                             {referrals.map((ref, idx) => {
-                              const date = ref.joinedAt ? new Date(ref.joinedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "";
+                              // Vague3-J: API now returns a coarse "joinedBucket"
+                              // ("Il y a 3 mois") instead of an exact timestamp,
+                              // to minimize PII surface to the referrer.
+                              const when = ref.joinedBucket || "";
                               return (
                                 <div key={idx} className="p-4 rounded-2xl bg-creamSoft/30 border border-cream/15 flex items-center justify-between">
                                   <div className="min-w-0">
                                     <p className="text-xs font-black text-primary truncate">{ref.name}</p>
-                                    <p className="text-[9px] text-primary/40 font-bold mt-0.5">Inscrit le {date}</p>
+                                    <p className="text-[9px] text-primary/40 font-bold mt-0.5">{when}</p>
                                   </div>
                                   <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
                                     ref.hasContributed 

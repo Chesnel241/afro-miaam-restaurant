@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { menuItems } from "@/data/menu";
 import { DELIVERY_FEE } from "@/lib/booking";
@@ -110,6 +110,11 @@ function round2(n: number): number {
 }
 
 export async function POST(request: Request) {
+  // Vague3-K: fail-CLOSED with a clear 503 if the Admin SDK has no credentials,
+  // instead of relying on verifyIdToken happening to throw a misleading 401.
+  const unavail = adminUnavailableResponse();
+  if (unavail) return unavail;
+
   if (MAINTENANCE_MODE) {
     return bad("Service temporairement indisponible (maintenance).", 503);
   }
@@ -420,7 +425,20 @@ export async function POST(request: Request) {
       depositAmount: finalDeposit,
     });
   } catch (error: any) {
+    // Vague3-I: only surface our own intentional, user-facing business-rule
+    // messages; anything else (Firestore/Firebase/SDK errors with internal
+    // detail like field paths, index names, project IDs) is replaced with a
+    // generic message and the real error is kept server-side in logs.
+    const SAFE_MESSAGES = new Set([
+      "Utilisateur introuvable.",
+      "Vos réductions couvrent intégralement la commande. Utilisez moins de crédits pour finaliser la réservation.",
+      "Erreur de calcul du total.",
+    ]);
+    const msg = typeof error?.message === "string" ? error.message : "";
+    const isFirebaseError = error && typeof error === "object" && "code" in error;
+    const safe = !isFirebaseError && SAFE_MESSAGES.has(msg);
     console.error("TRANSACTION_FAILED", error);
-    return bad(error.message || "Erreur lors de la validation et l'insertion de la commande.", 500);
+    if (safe) return bad(msg, 400);
+    return bad("Erreur lors de la validation et l'insertion de la commande.", 500);
   }
 }
