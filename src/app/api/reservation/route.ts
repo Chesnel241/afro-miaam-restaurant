@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { menuItems } from "@/data/menu";
 import { DELIVERY_FEE } from "@/lib/booking";
@@ -55,23 +55,8 @@ const ALLOWED_SLOTS = new Set([
   "20h30 - 21h00",
 ]);
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_HITS = 10;
-const rateLimit = new Map<string, { hits: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimit.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimit.set(ip, { hits: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.hits >= RATE_LIMIT_MAX_HITS) return false;
-  entry.hits++;
-  return true;
-}
-
 import { clientIp } from "@/lib/utils";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const PRICE_CACHE_TTL_MS = 60_000;
 const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
@@ -132,11 +117,20 @@ function round2(n: number): number {
 }
 
 export async function POST(request: Request) {
+  // Vague3-K: fail-CLOSED with a clear 503 if the Admin SDK has no credentials,
+  // instead of relying on verifyIdToken happening to throw a misleading 401.
+  const unavail = adminUnavailableResponse();
+  if (unavail) return unavail;
+
   if (MAINTENANCE_MODE) {
     return bad("Service temporairement indisponible (maintenance).", 503);
   }
 
-  if (!checkRateLimit(clientIp(request))) {
+  // Coarse pre-auth IP guard: protects the network-bound verifyIdToken call
+  // from unauthenticated floods. Uses the hardened clientIp (single shared
+  // "untrusted-proxy" bucket off-Vercel), so it can no longer be bypassed by
+  // forging IP headers.
+  if (!(await checkRateLimit(`reservation:ip:${clientIp(request)}`, 10, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
@@ -171,6 +165,11 @@ export async function POST(request: Request) {
     return bad("Non autorisé. Token invalide ou expiré.", 401);
   }
   const userId = decodedToken.uid;
+
+  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
+  if (!(await checkRateLimit(`reservation:uid:${userId}`, 10, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
+  }
 
   const lenHeader = request.headers.get("content-length");
   if (lenHeader && Number(lenHeader) > MAX_BODY_BYTES) {
@@ -320,13 +319,19 @@ export async function POST(request: Request) {
           const codeData = codes[payload.promoCode.toUpperCase().trim()];
           if (codeData && codeData.isActive === true) {
             promoCodeUsed = codeData.code;
+            // L-3: discountValue is admin-controlled and unvalidated. Coerce to
+            // a finite number (else 0) and clamp before applying so a negative
+            // value can't inflate the total and a >100% can't over-discount.
+            const rawValue = Number(codeData.discountValue);
+            const discountValue = Number.isFinite(rawValue) ? rawValue : 0;
             let calculatedPromo = 0;
             if (codeData.discountType === "percentage") {
-              calculatedPromo = round2(remainingTotal * (codeData.discountValue / 100));
+              const pct = Math.min(100, Math.max(0, discountValue));
+              calculatedPromo = round2(remainingTotal * (pct / 100));
             } else if (codeData.discountType === "fixed") {
-              calculatedPromo = codeData.discountValue;
+              calculatedPromo = Math.max(0, discountValue);
             }
-            promoDiscount = Math.min(calculatedPromo, remainingTotal);
+            promoDiscount = Math.min(Math.max(0, calculatedPromo), remainingTotal);
             remainingTotal -= promoDiscount;
           }
         }
@@ -352,15 +357,43 @@ export async function POST(request: Request) {
         throw new Error("Erreur de calcul du total.");
       }
 
+      const cleanedReferralCode =
+        payload.referralCode && payload.referralCode.length >= 5
+          ? clean(payload.referralCode, 20)
+          : null;
+
       const discounts = {
         referralCredits: creditsToUse,
         welcomeOffer: welcomeDiscount > 0,
-        referralCodeUsed: payload.referralCode && payload.referralCode.length >= 5 ? clean(payload.referralCode, 20) : null,
+        referralCodeUsed: cleanedReferralCode,
         promoCodeUsed: promoCodeUsed || null,
         promoDiscount: promoDiscount > 0 ? promoDiscount : null,
       };
 
-      const orderData = {
+      // ─── Vague2-E/H: resolve referral code to UID inside the order ──────
+      // transaction. Self-referral (matched user is the buyer) is rejected
+      // silently. Storing referrerId here is the ONLY trusted population path;
+      // clients cannot set it (the Firestore rule's keys().hasOnly([...])
+      // whitelist permits the field, but it can only originate from this
+      // server-side resolution).
+      // ────────────────────────────────────────────────────────────────────
+      let referrerId: string | undefined;
+      if (cleanedReferralCode) {
+        const referrerQuery = await tx.get(
+          adminDb
+            .collection("users")
+            .where("referralCode", "==", cleanedReferralCode)
+            .limit(1),
+        );
+        if (!referrerQuery.empty) {
+          const match = referrerQuery.docs[0];
+          if (match.id !== userId) {
+            referrerId = match.id;
+          }
+        }
+      }
+
+      const orderData: Record<string, unknown> = {
         userId: userId,
         userName: userData.name || `${customer.firstName} ${customer.lastName}`,
         userEmail: (userData.email || customer.email || "").trim().toLowerCase(),
@@ -375,6 +408,9 @@ export async function POST(request: Request) {
         createdAt: FieldValue.serverTimestamp(),
         customer: customer,
       };
+      if (referrerId) {
+        orderData.referrerId = referrerId;
+      }
 
       const updateData: any = {
         ordersCount: FieldValue.increment(1),
@@ -404,7 +440,20 @@ export async function POST(request: Request) {
       depositAmount: finalDeposit,
     });
   } catch (error: any) {
+    // Vague3-I: only surface our own intentional, user-facing business-rule
+    // messages; anything else (Firestore/Firebase/SDK errors with internal
+    // detail like field paths, index names, project IDs) is replaced with a
+    // generic message and the real error is kept server-side in logs.
+    const SAFE_MESSAGES = new Set([
+      "Utilisateur introuvable.",
+      "Vos réductions couvrent intégralement la commande. Utilisez moins de crédits pour finaliser la réservation.",
+      "Erreur de calcul du total.",
+    ]);
+    const msg = typeof error?.message === "string" ? error.message : "";
+    const isFirebaseError = error && typeof error === "object" && "code" in error;
+    const safe = !isFirebaseError && SAFE_MESSAGES.has(msg);
     console.error("TRANSACTION_FAILED", error);
-    return bad(error.message || "Erreur lors de la validation et l'insertion de la commande.", 500);
+    if (safe) return bad(msg, 400);
+    return bad("Erreur lors de la validation et l'insertion de la commande.", 500);
   }
 }

@@ -1,17 +1,15 @@
 "use client";
 
 import { useAuth } from "@/components/AuthContext";
-import { useOrders } from "@/components/OrderContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckIcon, ClockIcon } from "@/components/Icons";
 
 export default function ValiderCommandePage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading } = useAuth();
-  const { updateOrderStatus } = useOrders();
   const router = useRouter();
   const [orderId, setOrderId] = useState<string>("");
   const [order, setOrder] = useState<any>(null);
@@ -79,7 +77,25 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
   const handleValider = async () => {
     setIsUpdating(true);
     try {
-      await updateOrderStatus(orderId, "Livré");
+      // The single-use delivery token is carried in the QR URL (?t=...). The
+      // status transition is performed server-side by /api/delivery/confirm
+      // (Admin SDK) — clients can no longer write "Livré" directly (Vague1-B).
+      const token = new URLSearchParams(window.location.search).get("t") || "";
+      if (!token) {
+        setError("Lien de confirmation incomplet. Scannez le QR Code présenté par l'équipe Afro Miaam.");
+        return;
+      }
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : "";
+      const res = await fetch("/api/delivery/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ orderId, token }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Erreur lors de la validation de la livraison. Veuillez réessayer.");
+        return;
+      }
       setSuccess(true);
       // On attend un peu pour l'animation
       setTimeout(() => {

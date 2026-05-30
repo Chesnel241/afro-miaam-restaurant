@@ -1,30 +1,39 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { clientIp } from "@/lib/utils";
-
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_HITS = 15;
-const rateLimit = new Map<string, { hits: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimit.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimit.set(ip, { hits: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.hits >= RATE_LIMIT_MAX_HITS) return false;
-  entry.hits++;
-  return true;
-}
+import { checkRateLimit } from "@/lib/rate-limit";
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
 }
 
 export async function POST(request: Request) {
-  if (!checkRateLimit(clientIp(request))) {
+  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
+  const unavail = adminUnavailableResponse();
+  if (unavail) return unavail;
+
+  const appCheckToken = request.headers.get("X-Firebase-AppCheck");
+  if (process.env.NODE_ENV === "production") {
+    if (!appCheckToken) {
+      return bad("Non autorisÃ©. App Check manquant.", 401);
+    }
+    try {
+      await verifyAppCheckToken(appCheckToken);
+    } catch {
+      return bad("Non autorisÃ©. App Check invalide ou expirÃ©.", 401);
+    }
+  } else if (appCheckToken) {
+    try {
+      await verifyAppCheckToken(appCheckToken);
+    } catch (e) {
+      console.warn("APP_CHECK_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
+    }
+  }
+
+  // Coarse pre-auth IP guard (hardened clientIp) protecting verifyIdToken from
+  // unauthenticated floods.
+  if (!(await checkRateLimit(`review:ip:${clientIp(request)}`, 15, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
@@ -42,6 +51,11 @@ export async function POST(request: Request) {
   }
   const userId = decodedToken.uid;
   const userEmail = (decodedToken.email || "").trim().toLowerCase();
+
+  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
+  if (!(await checkRateLimit(`review:uid:${userId}`, 15, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
+  }
 
   let payload: { orderId?: string; reaction?: "bon" | "moyen" | "pas_bon" };
   try {
@@ -70,8 +84,11 @@ export async function POST(request: Request) {
       const orderData = orderSnap.data() || {};
       
       // Ownership check (uid or email)
+      // Vague2-D: email-fallback ownership now requires a verified email.
       const isOwnerByUid = orderData.userId === userId;
-      const isOwnerByEmail = typeof orderData.userEmail === 'string' &&
+      const isOwnerByEmail =
+        decodedToken.email_verified === true &&
+        typeof orderData.userEmail === 'string' &&
         orderData.userEmail.trim().toLowerCase() === userEmail;
 
       if (!isOwnerByUid && !isOwnerByEmail) {

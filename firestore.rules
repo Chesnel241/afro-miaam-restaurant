@@ -74,13 +74,15 @@ service cloud.firestore {
         && request.resource.data.email is string
         && request.resource.data.name is string;
 
-      // Owner: limited self-edits on identity fields + monotonic-only updates
-      // on the three economic counters (used after order creation by the
-      // reservation flow until an Admin SDK API moves them server-side).
-      //   - referralCredits: can only DECREASE (never increase from client)
-      //   - ordersCount: can stay the same or grow by exactly 1
-      //   - hasUsedWelcomeOffer: can only flip false -> true
-      // role, email, referralCode, createdAt, referredBy stay immutable.
+      // Owner: limited self-edits on IDENTITY fields only.
+      // PATCH (Vague1-A): the economic counters (referralCredits, ordersCount,
+      // hasUsedWelcomeOffer) were REMOVED from the owner-writable whitelist.
+      // The previous "monotonic +1" allowance let any logged-in user inflate
+      // their own ordersCount via direct client-SDK writes (fake loyalty
+      // tiers), bypassing the rate-limited API entirely. These fields are now
+      // maintained EXCLUSIVELY server-side (Admin SDK) inside the
+      // reservation/review transactions. role, email, referralCode,
+      // createdAt, referredBy remain immutable as before.
       allow update: if isAdmin();
       allow update: if isOwner(userId)
         && request.resource.data.diff(resource.data).affectedKeys()
@@ -94,11 +96,16 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
     match /orders/{orderId} {
 
+      // PATCH (Vague2-D): email-based ownership requires verified email (an
+      // attacker who signs up with an unverified address that lower-cases to a
+      // victim's order email would otherwise read/edit that order). The uid
+      // match path is unchanged — uid is strong identity on its own.
       allow read: if isAdmin()
         || (isAuthenticated() && (
           resource.data.userId == request.auth.uid
           || (
-            resource.data.userEmail is string
+            request.auth.token.email_verified == true
+            && resource.data.userEmail is string
             && request.auth.token.email is string
             && request.auth.token.email_verified == true
             && resource.data.userEmail.lower() == request.auth.token.email.lower()
@@ -174,24 +181,13 @@ service cloud.firestore {
         );
 
       // Admin can update freely.
-      // PATCH: The previous single-shot review path was insecure and allowed arbitrary fields 
-      // to be mutated since it didn't use `affectedKeys().hasOnly(...)`. Reviews are now 
-      // exclusively handled by `/api/review` via the Admin SDK, so the client-side rule is removed.
-      allow update: if isAdmin()
-        // PATCH (pentest BUG-1 / pass 6): owner-confirms-delivery path.
-        // The customer lands on /valider-commande/[id] and presses
-        // "Confirmer la Réception". This sets status=Livré + updatedAt
-        // ONLY when the order is in a delivery-eligible state and ONLY by
-        // the order owner.
-        || (
-          isAuthenticated()
-          && resource.data.userId == request.auth.uid
-          && resource.data.status in ['Acompte Reçu', 'En attente', 'En cours']
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['status', 'updatedAt'])
-          && request.resource.data.status == "Livré"
-          && request.resource.data.updatedAt is timestamp
-        );
+      // PATCH: Reviews are exclusively handled by `/api/review` via the Admin SDK.
+      // PATCH (Vague1-B): the customer self-confirm-delivery branch was
+      // REMOVED. Delivery confirmation now flows through the server route
+      // POST /api/delivery/confirm (Admin SDK), which validates a single-use,
+      // admin-issued QR token bound to the order. Clients can no longer write
+      // `status` at all — that transition is admin/server-only.
+      allow update: if isAdmin();
 
       allow delete: if false;
     }
@@ -255,15 +251,37 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // SETTINGS — closes C10
-    //   Read is now auth-only (client snapshots /settings/global at boot).
+    // SETTINGS — closes C10, H-4, Vague2-G
+    //   Read is auth-only for most settings docs (client snapshots
+    //   /settings/global at boot).
     // PATCH (pentest H-4): hard 50KB cap on settings docs to prevent a
     //   compromised admin account (or buggy admin UI) from writing a giant
     //   document that gets fanned out to every authenticated client at boot.
+    // PATCH (Vague2-G): settings/promotions holds admin-managed discount
+    //   codes. Reads must be admin-only to prevent any logged-in customer
+    //   from enumerating codes + their discount values. Validation for
+    //   end-users now flows through the server route
+    //   POST /api/promotions/validate (Admin SDK).
+    //   Firestore rules OR all matching match blocks, so we must ALSO
+    //   exclude docId == "promotions" from the wildcard /settings/{docId}
+    //   match — otherwise the wildcard's auth-only read would still grant
+    //   access to promotions.
     // -------------------------------------------------------------------------
-    match /settings/{docId} {
-      allow read: if isAuthenticated();
+    match /settings/promotions {
+      allow read: if isAdmin();
       allow write: if isAdmin() && request.resource.size < 50000;
+    }
+
+    match /settings/{docId} {
+      allow read: if isAuthenticated() && docId != "promotions";
+      allow write: if isAdmin() && request.resource.size < 50000 && docId != "promotions";
+    }
+
+    // -------------------------------------------------------------------------
+    // RATE LIMITS — server-only (Admin SDK). No client access.
+    // -------------------------------------------------------------------------
+    match /rateLimits/{docId} {
+      allow read, write: if false;
     }
   }
 }
