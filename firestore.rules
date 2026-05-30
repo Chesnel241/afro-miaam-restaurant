@@ -96,11 +96,16 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
     match /orders/{orderId} {
 
+      // PATCH (Vague2-D): email-based ownership requires verified email (an
+      // attacker who signs up with an unverified address that lower-cases to a
+      // victim's order email would otherwise read/edit that order). The uid
+      // match path is unchanged — uid is strong identity on its own.
       allow read: if isAdmin()
         || (isAuthenticated() && (
           resource.data.userId == request.auth.uid
           || (
-            resource.data.userEmail is string
+            request.auth.token.email_verified == true
+            && resource.data.userEmail is string
             && request.auth.token.email is string
             && resource.data.userEmail.lower() == request.auth.token.email.lower()
           )
@@ -180,13 +185,18 @@ service cloud.firestore {
       //   but allowed the inner `review` map to carry arbitrary keys (XSS /
       //   data-leak vector). We now constrain `review` to exactly
       //   {rating: int 1..5, comment: string <=500 chars, createdAt}.
+      // PATCH (Vague2-D): same email_verified guard on the owner-review
+      // update branch (an attacker who signs up with an unverified address
+      // that lower-cases to a victim's order email would otherwise read/edit
+      // that order). uid match path is unchanged.
       allow update: if isAdmin()
         || (
           isAuthenticated()
           && (
             resource.data.userId == request.auth.uid
             || (
-              resource.data.userEmail is string
+              request.auth.token.email_verified == true
+              && resource.data.userEmail is string
               && request.auth.token.email is string
               && resource.data.userEmail.lower() == request.auth.token.email.lower()
             )
@@ -275,15 +285,30 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // SETTINGS — closes C10
-    //   Read is now auth-only (client snapshots /settings/global at boot).
+    // SETTINGS — closes C10, H-4, Vague2-G
+    //   Read is auth-only for most settings docs (client snapshots
+    //   /settings/global at boot).
     // PATCH (pentest H-4): hard 50KB cap on settings docs to prevent a
     //   compromised admin account (or buggy admin UI) from writing a giant
     //   document that gets fanned out to every authenticated client at boot.
+    // PATCH (Vague2-G): settings/promotions holds admin-managed discount
+    //   codes. Reads must be admin-only to prevent any logged-in customer
+    //   from enumerating codes + their discount values. Validation for
+    //   end-users now flows through the server route
+    //   POST /api/promotions/validate (Admin SDK).
+    //   Firestore rules OR all matching match blocks, so we must ALSO
+    //   exclude docId == "promotions" from the wildcard /settings/{docId}
+    //   match — otherwise the wildcard's auth-only read would still grant
+    //   access to promotions.
     // -------------------------------------------------------------------------
-    match /settings/{docId} {
-      allow read: if isAuthenticated();
+    match /settings/promotions {
+      allow read: if isAdmin();
       allow write: if isAdmin() && request.resource.size < 50000;
+    }
+
+    match /settings/{docId} {
+      allow read: if isAuthenticated() && docId != "promotions";
+      allow write: if isAdmin() && request.resource.size < 50000 && docId != "promotions";
     }
 
     // -------------------------------------------------------------------------

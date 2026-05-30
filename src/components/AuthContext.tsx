@@ -28,6 +28,7 @@ import {
   increment,
   or,
   limit,
+  runTransaction,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { menuItems } from "@/data/menu";
@@ -614,7 +615,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (orderSnap.exists()) {
         const orderData = orderSnap.data();
         const userId = orderData.userId as string;
-        const referrerId = orderData.referrerId as string;
 
         if (userId) {
           await updateDoc(doc(db, "users", userId), {
@@ -622,11 +622,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        // Récompense du parrain (5€ de crédit)
-        if (referrerId) {
-          await updateDoc(doc(db, "users", referrerId), {
-            referralCredits: increment(5),
+        // ─── Vague2-E/H: idempotent + self-referral-safe referrer reward ──
+        // Defense in depth: even though the reservation API now refuses to
+        // populate referrerId when it matches the buyer, admin tools may have
+        // legacy rows where that guard was absent. Gate the +5€ credit on:
+        //   - referrerId !== buyerId  (self-referral block)
+        //   - !referralRewardPaid     (idempotency — no double payout if an
+        //     admin re-saves "Livré" or this code runs twice)
+        // Wrapped in a transaction so the credit + the "paid" flag flip
+        // atomically; if either fails neither sticks.
+        // ──────────────────────────────────────────────────────────────────
+        try {
+          await runTransaction(db, async (tx) => {
+            const fresh = await tx.get(orderRef);
+            if (!fresh.exists()) return;
+            const data = fresh.data() || {};
+            const referrerId =
+              typeof data.referrerId === "string" ? data.referrerId : "";
+            const buyerId = typeof data.userId === "string" ? data.userId : "";
+            if (
+              data.status === "Livré" &&
+              referrerId &&
+              referrerId !== buyerId &&
+              data.referralRewardPaid !== true
+            ) {
+              const referrerRef = doc(db, "users", referrerId);
+              tx.update(referrerRef, { referralCredits: increment(5) });
+              tx.update(orderRef, { referralRewardPaid: true });
+            }
           });
+        } catch (err) {
+          console.warn(
+            "REFERRAL_REWARD_TX_FAILED",
+            (err as { code?: string }).code ?? "unknown",
+          );
         }
       }
     }

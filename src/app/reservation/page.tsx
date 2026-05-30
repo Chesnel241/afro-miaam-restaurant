@@ -71,28 +71,39 @@ export default function ReservationPage() {
   }, []);
 
   const handleApplyPromo = async () => {
-    if (!promoCodeInput.trim()) return;
+    const enteredCode = promoCodeInput.trim().toUpperCase();
+    if (!enteredCode) return;
     setPromoError("");
     setIsVerifyingPromo(true);
     try {
-      const { db } = await import("@/lib/firebase");
-      const snap = await getDoc(doc(db, "settings", "promotions"));
-      if (snap.exists()) {
-        const promoData = snap.data() || {};
-        const codes = promoData.codes || {};
-        const codeData = codes[promoCodeInput.toUpperCase().trim()];
-        if (codeData && codeData.isActive === true) {
-          setAppliedPromo({
-            code: codeData.code,
-            discountType: codeData.discountType,
-            discountValue: codeData.discountValue
-          });
-          setPromoCodeInput("");
-        } else {
-          setPromoError("Code invalide ou expiré.");
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : "";
+      let appCheckToken = "";
+      if (appCheck) {
+        try {
+          appCheckToken = (await getToken(appCheck, false)).token;
+        } catch (e) {
+          console.warn("APP_CHECK_TOKEN_FAILED", (e as { code?: string }).code ?? "unknown");
         }
+      }
+      const res = await fetch("/api/promotions/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+          ...(appCheckToken ? { "X-Firebase-AppCheck": appCheckToken } : {}),
+        },
+        body: JSON.stringify({ code: enteredCode }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok === true) {
+        setAppliedPromo({
+          code: data.code,
+          discountType: data.discountType,
+          discountValue: data.discountValue,
+        });
+        setPromoCodeInput("");
       } else {
-        setPromoError("Code invalide.");
+        setPromoError("Code invalide ou inactif.");
       }
     } catch (err) {
       setPromoError("Impossible de vérifier le code.");
