@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { docToOrder } from "./OrderContext";
+import { docToOrder } from "./order-logic";
 import { Timestamp } from "firebase/firestore";
 
 describe("OrderContext - docToOrder", () => {

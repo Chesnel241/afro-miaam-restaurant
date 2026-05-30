@@ -1,41 +1,15 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { collection, doc, query, onSnapshot, addDoc, updateDoc, serverTimestamp, orderBy, limit, or, where, getDoc, getDocs, deleteDoc, increment } from "firebase/firestore";
+import { collection, doc, query, onSnapshot, addDoc, updateDoc, serverTimestamp, orderBy, limit, or, where, getDoc, getDocs, deleteDoc, increment, runTransaction } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useAuth, UserProfile } from "./AuthContext";
 import { Timestamp } from "firebase/firestore";
+import { docToOrder, type Order, type OrderItem, type OrderStatus } from "./order-logic";
 
-export type OrderStatus = "Attente Acompte" | "Acompte Reçu" | "En attente" | "En cours" | "Livré";
-
-export type OrderItem = {
-  name: string;
-  quantity: number;
-  price: number;
-  itemId?: string;
-  image?: string;
-  flavor?: string;
-};
-
-export type Order = {
-  id: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  items: OrderItem[];
-  total: number;
-  status: OrderStatus;
-  createdAt: string;
-  hasReviewed?: boolean;
-  referrerId?: string;
-  review?: any;
-  deletionRequested?: boolean;
-  customer?: {
-    phone?: string;
-    slot?: string;
-    deliveryMode?: string;
-  };
-};
+// Re-export types + the pure mapper so existing import sites keep working.
+export type { Order, OrderItem, OrderStatus } from "./order-logic";
+export { docToOrder } from "./order-logic";
 
 type OrderContextType = {
   userOrders: Order[];
@@ -48,36 +22,6 @@ type OrderContextType = {
 };
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
-
-export function docToOrder(id: string, data: Record<string, unknown>): Order {
-  let dateStr = "";
-  const createdAt = data.createdAt;
-
-  if (createdAt && typeof (createdAt as Timestamp).toDate === "function") {
-    dateStr = (createdAt as Timestamp).toDate().toISOString();
-  } else if (createdAt instanceof Date) {
-    dateStr = createdAt.toISOString();
-  } else if (typeof createdAt === "string") {
-    dateStr = createdAt;
-  } else {
-    dateStr = new Date().toISOString();
-  }
-
-  return {
-    id,
-    userId: (data.userId as string) || "",
-    userName: (data.userName as string) || "",
-    userEmail: (data.userEmail as string) || "",
-    items: (data.items as OrderItem[]) || [],
-    total: (data.total as number) || 0,
-    status: (data.status as OrderStatus) || "En attente",
-    createdAt: dateStr,
-    hasReviewed: (data.hasReviewed as boolean) || false,
-    review: data.review || null,
-    deletionRequested: (data.deletionRequested as boolean) || false,
-    customer: data.customer as { phone?: string; slot?: string; deliveryMode?: string; } | undefined,
-  };
-}
 
 export function OrderProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -204,14 +148,40 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        if (referrerId) {
-          await updateDoc(doc(db, "users", referrerId), {
-            referralCredits: increment(5),
-          });
+        // Vague2-E/H (restored): gate the +5€ referrer reward on
+        //   - referrerId !== userId  (defense-in-depth against self-referral
+        //     even if a future code path managed to mint referrerId === buyer)
+        //   - order.referralRewardPaid !== true  (idempotency — no double pay
+        //     on accidental status flips, retries, or two admins clicking)
+        // The credit + idempotency flag flip happen in the SAME transaction.
+        if (referrerId && referrerId !== userId) {
+          try {
+            await runTransaction(db, async (tx) => {
+              const fresh = await tx.get(orderRef);
+              if (!fresh.exists()) return;
+              const data = fresh.data();
+              if (
+                data.status === "Livré" &&
+                data.referrerId &&
+                data.referrerId !== data.userId &&
+                data.referralRewardPaid !== true
+              ) {
+                tx.update(doc(db, "users", referrerId), {
+                  referralCredits: increment(5),
+                });
+                tx.update(orderRef, { referralRewardPaid: true });
+              }
+            });
+          } catch (err) {
+            // Non-fatal: status transition already succeeded; reward is
+            // retry-safe via idempotency the next time the admin opens the
+            // order, so we don't block the UI.
+            console.warn("REFERRAL_REWARD_TX_FAILED", (err as { code?: string }).code ?? "unknown");
+          }
         }
       }
     }
-  }, []);
+  }, [user]);
 
   const requestOrderDeletion = useCallback(async (orderId: string) => {
     if (!user || user.role !== "admin") return;

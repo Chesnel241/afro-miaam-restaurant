@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeStoredLines } from "./CartContext";
+import { sanitizeStoredLines } from "./cart-logic";
 
 describe("CartContext - sanitizeStoredLines", () => {
   it("should return an empty array if input is not an array", () => {

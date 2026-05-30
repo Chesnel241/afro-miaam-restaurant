@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "./route";
 import { adminDb, adminAuth, verifyAppCheckToken } from "@/lib/firebase-admin";
 import { clientIp } from "@/lib/utils";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { MAINTENANCE_MODE } from "@/lib/maintenance";
 
 vi.mock("@/lib/firebase-admin", () => {
@@ -29,8 +30,15 @@ vi.mock("@/lib/firebase-admin", () => {
     adminDb,
     adminAuth,
     verifyAppCheckToken: vi.fn(),
+    adminUnavailableResponse: () => null,
   };
 });
+
+// Bypass the (fail-closed) rate limiter so its Firestore reads don't fight the
+// adminDb mock. Tests don't exercise rate-limit logic itself.
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}));
 
 vi.mock("@/lib/utils", async (importOriginal) => {
   const actual = await importOriginal();
@@ -165,59 +173,26 @@ describe("POST /api/reservation", () => {
     const data = await res.json();
     expect(data.ok).toBe(true);
     expect(data.reference).toMatch(/^AM-\d{8}-[A-Z0-9]{8}$/);
-    expect(data.total).toBe(26); // 13 * 2
+    // 13 * 2 = 26 subtotal, minus the 5€ first-order welcome offer the route
+    // auto-applies when the user has ordersCount==0 && !hasUsedWelcomeOffer
+    // (the mocked user doc is empty so both conditions hold).
+    expect(data.total).toBe(21);
+    expect(data.depositAmount).toBe(10.5); // 50% of 21
   });
 
-  it("should return 429 for rate limit exceeded", async () => {
-    (clientIp as any).mockReturnValue("same-ip");
-    let res;
-    // Send 11 requests
-    for (let i = 0; i < 11; i++) {
-      res = await POST(new Request("http://localhost/api/reservation", {
-        method: "POST",
-        headers: { "Authorization": "Bearer mock-token" },
-        body: "{}"
-      }));
-    }
-    expect(res?.status).toBe(429);
+  it("should return 429 when the rate limiter denies", async () => {
+    // Override the global mock (which always allows) to deny — simulates the
+    // budget being exhausted. The route returns 429 BEFORE auth/body parsing.
+    (checkRateLimit as any).mockResolvedValueOnce(false);
+    const res = await POST(new Request("http://localhost/api/reservation", {
+      method: "POST",
+      headers: { "Authorization": "Bearer mock-token" },
+      body: "{}",
+    }));
+    expect(res.status).toBe(429);
   });
 });
 
-describe("Rate Limiter IP Anti-Spoofing (Vague1-C hardened contract)", () => {
-  it("trusts x-vercel-forwarded-for (set by Vercel's edge, not client-spoofable)", () => {
-    const req = new Request("https://example.com", {
-      headers: new Headers({
-        "x-vercel-forwarded-for": "203.0.113.1",
-        // Even if the client also sends a forged x-forwarded-for, the Vercel
-        // edge header wins and the forged one is ignored.
-        "x-forwarded-for": "1.1.1.1, 2.2.2.2",
-      }),
-    });
-    expect(clientIp(req)).toBe("203.0.113.1");
-  });
-
-  it("does NOT trust client-supplied x-forwarded-for (would grant a fresh bucket per forged IP)", () => {
-    const req = new Request("https://example.com", {
-      headers: new Headers({
-        "x-forwarded-for": "10.0.0.1, 192.168.1.1, 203.0.113.5",
-      }),
-    });
-    // Hardened: without the trusted Vercel header, fall back to a single shared
-    // sentinel rather than any spoofable value.
-    expect(clientIp(req)).toBe("untrusted-proxy");
-  });
-
-  it("does NOT trust client-supplied x-real-ip", () => {
-    const req = new Request("https://example.com", {
-      headers: new Headers({
-        "x-real-ip": "198.51.100.1",
-      }),
-    });
-    expect(clientIp(req)).toBe("untrusted-proxy");
-  });
-
-  it("returns the shared sentinel when no trusted header is present", () => {
-    const req = new Request("https://example.com");
-    expect(clientIp(req)).toBe("untrusted-proxy");
-  });
-});
+// NB: the clientIp anti-spoofing suite was moved to
+// src/lib/utils.clientIp.test.ts so it can use the REAL clientIp
+// (this file mocks @/lib/utils for the route POST tests).

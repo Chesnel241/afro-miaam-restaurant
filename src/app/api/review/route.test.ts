@@ -2,13 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "./route";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
 import { clientIp } from "@/lib/utils";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 vi.mock("@/lib/firebase-admin", () => {
   const getMock = vi.fn();
   const runTransactionMock = vi.fn();
-  const docMock = vi.fn(() => ({
+  // Pass through the docId argument as ref.id so tx.get(ref) tests can
+  // discriminate between e.g. "order1" and "global" inside the same
+  // transaction (the route reads both the order doc and settings/global).
+  const docMock = vi.fn((id?: string) => ({
     get: getMock,
-    id: "mock-id",
+    id: id ?? "mock-id",
   }));
   const collectionMock = vi.fn(() => ({
     get: getMock,
@@ -27,8 +31,16 @@ vi.mock("@/lib/firebase-admin", () => {
   return {
     adminDb,
     adminAuth,
+    verifyAppCheckToken: vi.fn(),
+    adminUnavailableResponse: () => null,
   };
 });
+
+// Bypass the (fail-closed) rate limiter so its Firestore reads don't fight the
+// adminDb mock. Tests don't exercise rate-limit logic itself.
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}));
 
 vi.mock("@/lib/utils", async (importOriginal) => {
   const actual = await importOriginal();
@@ -198,17 +210,16 @@ describe("POST /api/review", () => {
     expect(data.creditsAdded).toBe(1);
   });
 
-  it("should return 429 for rate limit exceeded", async () => {
-    (clientIp as any).mockReturnValue("same-ip");
-    let res;
-    // Send 16 requests
-    for (let i = 0; i < 16; i++) {
-      res = await POST(new Request("http://localhost/api/review", {
-        method: "POST",
-        headers: { "Authorization": "Bearer mock-token" },
-        body: JSON.stringify({ orderId: "order1", reaction: "bon" })
-      }));
-    }
-    expect(res?.status).toBe(429);
+  it("should return 429 when the rate limiter denies", async () => {
+    // Override the global mock (which always allows) so the pre-auth IP
+    // guard rejects immediately — mirrors the production fail-closed path
+    // when the per-IP budget is exhausted.
+    (checkRateLimit as any).mockResolvedValueOnce(false);
+    const res = await POST(new Request("http://localhost/api/review", {
+      method: "POST",
+      headers: { "Authorization": "Bearer mock-token" },
+      body: JSON.stringify({ orderId: "order1", reaction: "bon" }),
+    }));
+    expect(res.status).toBe(429);
   });
 });

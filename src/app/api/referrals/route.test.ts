@@ -33,8 +33,16 @@ vi.mock("@/lib/firebase-admin", () => {
     adminAuth: {
       verifyIdToken: vi.fn(),
     },
+    verifyAppCheckToken: vi.fn(),
+    adminUnavailableResponse: () => null,
   };
 });
+
+// Bypass the (fail-closed) rate limiter so its Firestore reads don't fight the
+// adminDb mock. Tests don't exercise rate-limit logic itself.
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(true),
+}));
 
 describe("GET /api/referrals", () => {
   beforeEach(() => {
@@ -121,11 +129,15 @@ describe("GET /api/referrals", () => {
     const data = await res.json();
     
     expect(data.referrals.length).toBe(2);
-    // Should be sorted by joinedAt desc, so Bob (25th) first, then Alice (20th)
-    expect(data.referrals[0].name).toBe("Bob M.");
-    expect(data.referrals[0].hasContributed).toBe(false);
-    
-    expect(data.referrals[1].name).toBe("Alice D.");
-    expect(data.referrals[1].hasContributed).toBe(true);
+    // Vague3-J: names are masked to initials only ("A. D.") and the list is
+    // sorted by hasContributed desc, then ordersCount desc — exact join
+    // timestamps are no longer exposed client-side.
+    expect(data.referrals[0].name).toBe("A. D.");
+    expect(data.referrals[0].hasContributed).toBe(true);
+    expect(data.referrals[0].joinedBucket).toBeTypeOf("string");
+
+    expect(data.referrals[1].name).toBe("B. M.");
+    expect(data.referrals[1].hasContributed).toBe(false);
+    expect(data.referrals[1].joinedBucket).toBeTypeOf("string");
   });
 });

@@ -6,9 +6,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    // Exclude Claude Code agent worktrees (copies of the repo under .claude/).
-    // Without this, vitest globs their *.test.ts files and resolves the "@"
-    // alias to THIS repo's src, producing spurious cross-tree failures.
-    exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/**"],
+    // Exclude:
+    //  - Claude Code agent worktrees (copies of the repo under .claude/) — globbing them
+    //    would resolve the "@" alias to THIS repo's src and produce spurious failures.
+    //  - e2e/ — Playwright specs (different runner; vitest can't parse the playwright "test" import).
+    exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/**", "**/e2e/**"],
   },
 });
