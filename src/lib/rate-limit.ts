@@ -51,16 +51,15 @@ export async function checkRateLimit(
     });
     return allowed;
   } catch (e) {
-    // Fail-open on Firestore errors so a transient outage never blocks
-    // legitimate orders; the L1 cache still provides per-instance throttling.
+    // FAIL CLOSED on Firestore errors (pentest finding H-3). Previously this
+    // failed OPEN, which let an attacker disable throttling entirely by
+    // inducing Firestore errors (e.g. exhausting quota / triggering contention)
+    // and then flooding freely. Denying here loses no legitimately-completable
+    // request: every endpoint that calls this limiter also performs a Firestore
+    // write moments later (the order/review/referral transaction), so if
+    // Firestore is erroring that downstream write would fail anyway. Returning
+    // false (HTTP 429) removes the attacker's ability to bypass the limiter.
     console.warn("RATE_LIMIT_FIRESTORE_ERROR", (e as { code?: string }).code ?? "unknown");
-    const entry = localCache.get(key);
-    if (!entry || entry.resetAt < now) {
-      localCache.set(key, { hits: 1, resetAt: now + windowMs });
-      return true;
-    }
-    if (entry.hits >= maxHits) return false;
-    entry.hits++;
-    return true;
+    return false;
   }
 }

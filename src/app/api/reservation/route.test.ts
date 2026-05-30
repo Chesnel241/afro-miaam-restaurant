@@ -1,39 +1,41 @@
 import { describe, expect, it } from "vitest";
 import { clientIp } from "@/lib/utils";
 
-describe("Rate Limiter IP Anti-Spoofing", () => {
-  it("extracts x-vercel-forwarded-for securely", () => {
+describe("Rate Limiter IP Anti-Spoofing (Vague1-C hardened contract)", () => {
+  it("trusts x-vercel-forwarded-for (set by Vercel's edge, not client-spoofable)", () => {
     const req = new Request("https://example.com", {
       headers: new Headers({
         "x-vercel-forwarded-for": "203.0.113.1",
+        // Even if the client also sends a forged x-forwarded-for, the Vercel
+        // edge header wins and the forged one is ignored.
         "x-forwarded-for": "1.1.1.1, 2.2.2.2",
       }),
     });
-    // x-vercel-forwarded-for has priority and cannot be spoofed easily from outside Vercel's edge
     expect(clientIp(req)).toBe("203.0.113.1");
   });
 
-  it("extracts the last IP from x-forwarded-for when vercel header is missing", () => {
-    // When an attacker spoofs the header with "10.0.0.1", the load balancer appends the real IP "203.0.113.5" at the end.
+  it("does NOT trust client-supplied x-forwarded-for (would grant a fresh bucket per forged IP)", () => {
     const req = new Request("https://example.com", {
       headers: new Headers({
         "x-forwarded-for": "10.0.0.1, 192.168.1.1, 203.0.113.5",
       }),
     });
-    expect(clientIp(req)).toBe("203.0.113.5");
+    // Hardened: without the trusted Vercel header, fall back to a single shared
+    // sentinel rather than any spoofable value.
+    expect(clientIp(req)).toBe("untrusted-proxy");
   });
 
-  it("falls back to x-real-ip if present", () => {
+  it("does NOT trust client-supplied x-real-ip", () => {
     const req = new Request("https://example.com", {
       headers: new Headers({
         "x-real-ip": "198.51.100.1",
       }),
     });
-    expect(clientIp(req)).toBe("198.51.100.1");
+    expect(clientIp(req)).toBe("untrusted-proxy");
   });
 
-  it("returns unknown if no headers are present", () => {
+  it("returns the shared sentinel when no trusted header is present", () => {
     const req = new Request("https://example.com");
-    expect(clientIp(req)).toBe("unknown");
+    expect(clientIp(req)).toBe("untrusted-proxy");
   });
 });

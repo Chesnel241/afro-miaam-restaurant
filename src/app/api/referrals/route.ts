@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/utils";
 
 export async function GET(request: Request) {
+  // Coarse pre-auth IP guard (hardened clientIp) protecting verifyIdToken from
+  // unauthenticated floods.
+  if (!(await checkRateLimit(`referrals:ip:${clientIp(request)}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
+  }
+
   // Authentication validation via Admin SDK
   const authHeader = request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -15,6 +23,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Token invalide." }, { status: 401 });
   }
   const userId = decodedToken.uid;
+
+  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
+  if (!(await checkRateLimit(`referrals:uid:${userId}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
+  }
 
   try {
     // 1. Get the user's own profile to retrieve their referralCode

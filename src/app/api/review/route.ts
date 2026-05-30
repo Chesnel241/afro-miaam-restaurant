@@ -9,7 +9,9 @@ function bad(error: string, status = 400) {
 }
 
 export async function POST(request: Request) {
-  if (!(await checkRateLimit(`review:${clientIp(request)}`, 15, 60_000))) {
+  // Coarse pre-auth IP guard (hardened clientIp) protecting verifyIdToken from
+  // unauthenticated floods.
+  if (!(await checkRateLimit(`review:ip:${clientIp(request)}`, 15, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
@@ -27,6 +29,11 @@ export async function POST(request: Request) {
   }
   const userId = decodedToken.uid;
   const userEmail = (decodedToken.email || "").trim().toLowerCase();
+
+  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
+  if (!(await checkRateLimit(`review:uid:${userId}`, 15, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
+  }
 
   let payload: { orderId?: string; reaction?: "bon" | "moyen" | "pas_bon" };
   try {
