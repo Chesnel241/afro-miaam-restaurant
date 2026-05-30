@@ -102,11 +102,18 @@ export async function POST(request: Request) {
           ordersCount: FieldValue.increment(1),
         });
       }
+      // ─── Vague2-E/H: gate the +5€ referrer reward on idempotency in addition
+      // to the existing self-referral block. referralRewardPaid flips to true
+      // in the same transaction as the credit, so even concurrent calls (or a
+      // retry after a transient error) cannot double-pay.
+      // ────────────────────────────────────────────────────────────────────
       const referrerId = typeof order.referrerId === "string" ? order.referrerId : "";
-      if (referrerId && referrerId !== ownerId) {
+      const alreadyPaid = order.referralRewardPaid === true;
+      if (referrerId && referrerId !== ownerId && !alreadyPaid) {
         tx.update(adminDb.collection("users").doc(referrerId), {
           referralCredits: FieldValue.increment(5),
         });
+        tx.update(orderRef, { referralRewardPaid: true });
       }
     });
 

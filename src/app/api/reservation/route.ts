@@ -337,15 +337,43 @@ export async function POST(request: Request) {
         throw new Error("Erreur de calcul du total.");
       }
 
+      const cleanedReferralCode =
+        payload.referralCode && payload.referralCode.length >= 5
+          ? clean(payload.referralCode, 20)
+          : null;
+
       const discounts = {
         referralCredits: creditsToUse,
         welcomeOffer: welcomeDiscount > 0,
-        referralCodeUsed: payload.referralCode && payload.referralCode.length >= 5 ? clean(payload.referralCode, 20) : null,
+        referralCodeUsed: cleanedReferralCode,
         promoCodeUsed: promoCodeUsed || null,
         promoDiscount: promoDiscount > 0 ? promoDiscount : null,
       };
 
-      const orderData = {
+      // ─── Vague2-E/H: resolve referral code to UID inside the order ──────
+      // transaction. Self-referral (matched user is the buyer) is rejected
+      // silently. Storing referrerId here is the ONLY trusted population path;
+      // clients cannot set it (the Firestore rule's keys().hasOnly([...])
+      // whitelist permits the field, but it can only originate from this
+      // server-side resolution).
+      // ────────────────────────────────────────────────────────────────────
+      let referrerId: string | undefined;
+      if (cleanedReferralCode) {
+        const referrerQuery = await tx.get(
+          adminDb
+            .collection("users")
+            .where("referralCode", "==", cleanedReferralCode)
+            .limit(1),
+        );
+        if (!referrerQuery.empty) {
+          const match = referrerQuery.docs[0];
+          if (match.id !== userId) {
+            referrerId = match.id;
+          }
+        }
+      }
+
+      const orderData: Record<string, unknown> = {
         userId: userId,
         userName: userData.name || `${customer.firstName} ${customer.lastName}`,
         userEmail: (userData.email || customer.email || "").trim().toLowerCase(),
@@ -360,6 +388,9 @@ export async function POST(request: Request) {
         createdAt: FieldValue.serverTimestamp(),
         customer: customer,
       };
+      if (referrerId) {
+        orderData.referrerId = referrerId;
+      }
 
       const updateData: any = {
         ordersCount: FieldValue.increment(1),
