@@ -1,6 +1,9 @@
 "use client";
 
-import { useAuth, type Order, type OrderStatus } from "@/components/AuthContext";
+import { useAuth } from "@/components/AuthContext";
+import { useOrders, type Order, type OrderStatus } from "@/components/OrderContext";
+import { useMenu } from "@/components/MenuContext";
+import { useSettings } from "@/components/SettingsContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon, TrashIcon } from "@/components/Icons";
@@ -36,20 +39,10 @@ function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void })
 }
 
 export default function AdminPage() {
-  const { 
-    user, 
-    loading, 
-    logout, 
-    allOrders, 
-    allCustomers, 
-    newsletterSubscribers,
-    updateOrderStatus,
-    isReviewRewardActive,
-    isWelcomeOfferActive,
-    updateGlobalSettings,
-    dynamicMenu,
-    updateMenuItem,
-  } = useAuth();
+  const { user, loading, logout, allCustomers, newsletterSubscribers } = useAuth();
+  const { allOrders, updateOrderStatus } = useOrders();
+  const { dynamicMenu, updateMenuItem } = useMenu();
+  const { isReviewRewardActive, isWelcomeOfferActive, updateGlobalSettings } = useSettings();
 
   // Séparation des commandes (scope declared early for KDS and BI charts)
   const depositPendingOrders = allOrders.filter(o => o.status === "Attente Acompte");
@@ -343,18 +336,18 @@ export default function AdminPage() {
 
   // Slots popularity aggregation for BI charts
   const slotCounts = allOrders.reduce((acc, o) => {
-    const slot = (o as any).customer?.slot || "Autre";
+    const slot = o.customer?.slot || "Autre";
     acc[slot] = (acc[slot] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
   const maxSlotCount = Math.max(...Object.values(slotCounts), 1);
 
   // Delivery mode aggregation for BI charts
-  const deliveryCounts = allOrders.reduce((acc: any, o) => {
-    const mode = (o as any).customer?.deliveryMode || "retrait";
+  const deliveryCounts = allOrders.reduce((acc: Record<string, number>, o) => {
+    const mode = o.customer?.deliveryMode || "retrait";
     acc[mode] = (acc[mode] || 0) + 1;
     return acc;
-  }, { retrait: 0, livraison: 0 } as any);
+  }, { retrait: 0, livraison: 0 });
   const totalDeliveryCount = deliveryCounts.retrait + deliveryCounts.livraison || 1;
   const deliveryPct = Math.round((deliveryCounts.livraison / totalDeliveryCount) * 100);
 
@@ -725,7 +718,7 @@ export default function AdminPage() {
               <h3 className="heading-display mb-6 text-xl text-primary">Rupture de Stock d'Urgence (1-Clic)</h3>
               <p className="text-xs text-primary/50 mb-6 italic">Activez ou désactivez instantanément la disponibilité des plats phares en cuisine en plein rush.</p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {dynamicMenu.slice(0, 6).map(item => (
+                {dynamicMenu.map(item => (
                   <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-creamSoft/50 border border-cream/20">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-cream">
@@ -800,9 +793,9 @@ export default function AdminPage() {
               const currentInCycle = customer.ordersCount % maxOrders;
               const percentage = Math.min((currentInCycle / maxOrders) * 100, 100);
               const isEligible = customer.ordersCount > 0 && currentInCycle === 0;
-              const isNew = (customer as any).isFirstLogin === true;
-              const hasUsedWelcome = (customer as any).hasUsedWelcomeOffer === true;
-              const createdAt = (customer as any).createdAt;
+              const isNew = customer.isFirstLogin === true;
+              const hasUsedWelcome = customer.hasUsedWelcomeOffer === true;
+              const createdAt = customer.createdAt;
               const createdDate = createdAt?.toDate ? createdAt.toDate().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : createdAt ? new Date(createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
               return (
                 <div key={customer.id} className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 flex flex-col justify-between hover:scale-[1.02] transition-transform">
@@ -1227,7 +1220,7 @@ function KPI({ title, value, sub, variant = "white", progress, trend }: { title:
 }
 
 function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusChange: (id: string, s: OrderStatus) => void, onShowQR: (id: string) => void }) {
-  const { requestOrderDeletion } = useAuth();
+  const { requestOrderDeletion } = useOrders();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -1256,6 +1249,26 @@ function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusC
             </span>
           </div>
           <p className="mt-1 text-sm font-bold text-primary/70">{order.userName}</p>
+          {order.customer?.phone && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <a
+                href={`tel:${order.customer.phone}`}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:text-accent/80 transition-colors"
+                title="Appeler le client"
+              >
+                📞 {order.customer.phone}
+              </a>
+              <a
+                href={`https://wa.me/${order.customer.phone.replace(/[\s\-().]/g, '').replace(/^0/, '33')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-500 hover:bg-green-600 text-white text-[10px] font-black transition-colors shadow-sm"
+                title="Contacter sur WhatsApp"
+              >
+                💬
+              </a>
+            </div>
+          )}
           <p className="mt-1 text-xs text-primary/40 font-medium">
             {order.items.map((i: any) => `${i.quantity}x ${i.name}`).join(", ")}
           </p>
@@ -1285,8 +1298,8 @@ function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusC
           )}
           <button 
             onClick={handleDelete} 
-            disabled={isDeleting || (order as any).deletionRequested}
-            className={`btn btn-sm px-3 ${ (order as any).deletionRequested ? 'bg-gray-100 text-gray-400' : 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100'}`}
+            disabled={isDeleting || order.deletionRequested}
+            className={`btn btn-sm px-3 ${ order.deletionRequested ? 'bg-gray-100 text-gray-400' : 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100'}`}
           >
             <TrashIcon className="h-4 w-4" />
           </button>

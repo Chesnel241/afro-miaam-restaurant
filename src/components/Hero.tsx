@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon, HeartIcon, LeafIcon, PotIcon } from "./Icons";
 import { useAuth } from "./AuthContext";
@@ -20,9 +21,12 @@ export function Hero() {
       <div className={`container-x relative ${isCustomer ? "py-10" : "pb-12 pt-8 sm:pb-16 sm:pt-10 md:pb-20 md:pt-12"}`}>
         {!isCustomer && (
           <div className="relative overflow-hidden rounded-2xl shadow-soft mb-10">
-            <img
+            <Image
               src="/banniere-site.png"
               alt="Afro Miaam, le goût du pays, l'amour dans chaque assiette"
+              width={1200}
+              height={600}
+              priority
               className="h-auto w-full"
             />
             <div className="absolute right-[2.5%] top-[69%] h-14 w-14 -translate-y-1/2 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-28 lg:w-28 xl:h-32 xl:w-32">

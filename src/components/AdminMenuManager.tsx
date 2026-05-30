@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useAuth, type MenuItemDynamic, type Flavor } from "@/components/AuthContext";
+import { useMenu, type MenuItemDynamic, type Flavor } from "@/components/MenuContext";
 import { TrashIcon, PlusIcon } from "@/components/Icons";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/data/menu";
 import { seedMenu } from "@/lib/seed";
@@ -58,7 +58,7 @@ const PRESET_ALLERGENS = [
 ];
 
 export function AdminMenuManager() {
-  const { dynamicMenu, addMenuItem, updateMenuItem, deleteMenuItem } = useAuth();
+  const { dynamicMenu, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);

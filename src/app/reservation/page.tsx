@@ -128,7 +128,7 @@ export default function ReservationPage() {
   const totalBeforeDiscount = subtotal + (form.deliveryMode === "livraison" ? DELIVERY_FEE : 0);
   
   // Calcul des remises
-  const welcomeDiscount = (user && !user.hasUsedWelcomeOffer && (user as any).ordersCount === 0) ? 5 : 0; // 5€ de bienvenue
+  const welcomeDiscount = (user && !user.hasUsedWelcomeOffer && user.ordersCount === 0) ? 5 : 0; // 5€ de bienvenue
   
   // Promo code calculation
   let promoDiscount = 0;
@@ -140,7 +140,7 @@ export default function ReservationPage() {
     }
   }
 
-  const creditsToUse = useCredits ? Math.min((user as any).referralCredits || 0, totalBeforeDiscount - welcomeDiscount - promoDiscount) : 0;
+  const creditsToUse = useCredits ? Math.min(user?.referralCredits || 0, totalBeforeDiscount - welcomeDiscount - promoDiscount) : 0;
   
   const total = Math.max(0, totalBeforeDiscount - welcomeDiscount - promoDiscount - creditsToUse);
   const depositAmount = total * 0.5;
@@ -484,7 +484,7 @@ export default function ReservationPage() {
                 <GiftIcon className="h-5 w-5 text-accent" /> Avantages & Réductions
               </h3>
               
-              {user && (user as any).referralCredits > 0 && (
+              {user && (user.referralCredits ?? 0) > 0 && (
                 <label className="flex items-center gap-3 p-4 rounded-2xl bg-accent/5 border border-accent/10 cursor-pointer group hover:bg-accent/10 transition-colors">
                   <input 
                     type="checkbox" 
@@ -494,12 +494,12 @@ export default function ReservationPage() {
                   />
                   <div className="flex-1">
                     <p className="text-sm font-bold text-primary">Utiliser mes crédits Afro Family</p>
-                    <p className="text-xs text-primary/60">Vous avez <span className="text-accent font-bold">{(user as any).referralCredits}€</span> disponibles.</p>
+                    <p className="text-xs text-primary/60">Vous avez <span className="text-accent font-bold">{user.referralCredits}€</span> disponibles.</p>
                   </div>
                 </label>
               )}
 
-              {(!user || (user as any).ordersCount === 0) && (
+              {(!user || user.ordersCount === 0) && (
                 <div className="space-y-2">
                   <label className="label">Code Parrain (Optionnel)</label>
                   <div className="flex gap-2">

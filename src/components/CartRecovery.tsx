@@ -78,7 +78,7 @@ export function CartRecovery() {
             </div>
             <div className="flex-1">
               <h3 className="font-display text-lg font-black text-primary leading-tight">On garde votre Tiep au chaud ?</h3>
-              <p className="mt-1 text-xs font-medium text-primary/50 leading-relaxed">
+              <p className="mt-1 text-xs font-medium text-primary/70 leading-relaxed">
                 Vous avez <span className="text-accent font-bold">{cartCount} article(s)</span> qui attendent dans votre panier.
               </p>
             </div>
@@ -95,7 +95,7 @@ export function CartRecovery() {
             </Link>
             <button 
               onClick={() => setShow(false)}
-              className="h-12 px-4 rounded-xl text-xs font-bold uppercase tracking-widest text-primary/30 hover:text-primary transition-colors"
+              className="h-12 px-4 rounded-xl text-xs font-bold uppercase tracking-widest text-primary/70 hover:text-primary transition-colors"
             >
               Plus tard
             </button>

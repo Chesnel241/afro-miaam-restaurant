@@ -4,16 +4,22 @@ import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Chatbot } from "@/components/Chatbot";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { AppOverlay } from "@/components/AppOverlay";
-import { CartRecovery } from "@/components/CartRecovery";
 import { AuthProvider } from "@/components/AuthContext";
+import { OrderProvider } from "@/components/OrderContext";
+import { MenuProvider } from "@/components/MenuContext";
+import { SettingsProvider } from "@/components/SettingsContext";
 import { JsonLd } from "@/components/JsonLd";
 import { restaurantJsonLd, SITE_URL } from "@/lib/seo";
 import { BottomNavBar } from "@/components/BottomNavBar";
 import { FloatingCart } from "@/components/FloatingCart";
+import { AppOverlay } from "@/components/AppOverlay";
+import { Chatbot } from "@/components/Chatbot";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { CartRecovery } from "@/components/CartRecovery";
+import { CacheBuster } from "@/components/CacheBuster";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -121,20 +127,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Aller au contenu principal
         </a>
         <LoadingScreen />
+        <CacheBuster />
         <AuthProvider>
-          <AppOverlay />
-          <CartProvider>
-            <Header />
-            <main id="main-content" role="main" className="flex-1 pb-28 lg:pb-0 animate-fade-in">{children}</main>
-            <Footer />
-            <BottomNavBar />
-            <FloatingCart />
-            <Chatbot />
-            <WhatsAppButton />
-            <CartRecovery />
-          </CartProvider>
+          <SettingsProvider>
+            <MenuProvider>
+              <OrderProvider>
+                <AppOverlay />
+                <CartProvider>
+                  <Header />
+                  <main id="main-content" role="main" className="flex-1 pb-28 lg:pb-0 animate-fade-in">{children}</main>
+                  <Footer />
+                  <BottomNavBar />
+                  <FloatingCart />
+                  <Chatbot />
+                  <WhatsAppButton />
+                  <CartRecovery />
+                </CartProvider>
+              </OrderProvider>
+            </MenuProvider>
+          </SettingsProvider>
         </AuthProvider>
         <JsonLd data={restaurantJsonLd()} />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

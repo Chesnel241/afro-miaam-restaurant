@@ -361,22 +361,29 @@ export const CHAT_TOPICS: ChatTopic[] = [
 const DEFAULT_ANSWER =
   "Bonne question ! Je n'ai pas la réponse exacte ici. Le plus simple : laissez-nous votre numéro dans le chat, on vous rappelle. Ou écrivez-nous via la page contact, on revient vers vous très vite.";
 
-const PHONE_REGEX = /(?:\+?\d[\s.\-]?){9,}/;
-
 function extractPhone(input: string): string | null {
-  const match = input.match(PHONE_REGEX);
-  if (!match) return null;
-  const digits = match[0].replace(/[^\d+]/g, "");
-  const digitCount = digits.replace(/\D/g, "").length;
-  if (digitCount < 9 || digitCount > 15) return null;
-  return digits;
+  // Secure phone regex: looks for sequences of 9 to 15 digits, optionally starting with + or 00
+  // separated by common separators (space, dot, dash).
+  // Using bounded quantifiers and non-overlapping classes avoids ReDoS (Catastrophic Backtracking).
+  const PHONE_REGEX = /(?:\+|00)?(?:[0-9][\s.-]?){8,14}[0-9]/g;
+  const matches = input.match(PHONE_REGEX);
+  if (!matches) return null;
+
+  for (const match of matches) {
+    const digits = match.replace(/[^\d+]/g, "");
+    const digitCount = digits.replace(/\D/g, "").length;
+    if (digitCount >= 9 && digitCount <= 15) {
+      return digits;
+    }
+  }
+  return null;
 }
 
 export function findTopic(input: string): ChatTopic | null {
   const normalized = input
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+    .replace(/[\u0300-\u036f]/g, "");
 
   let best: { topic: ChatTopic; score: number } | null = null;
 
@@ -386,9 +393,17 @@ export function findTopic(input: string): ChatTopic | null {
       const k = kw
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "");
-      if (normalized.includes(k)) {
-        score += k.length;
+        .replace(/[\u0300-\u036f]/g, "");
+      
+      const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      // Use word boundaries if keyword starts/ends with alphanumeric characters
+      const prefix = /^[\w]/.test(k) ? '\\b' : '';
+      const suffix = /[\w]$/.test(k) ? '\\b' : '';
+      const regex = new RegExp(`${prefix}${escapedK}${suffix}`, 'i');
+      
+      if (regex.test(normalized)) {
+        score += k.length; // Longer matching keywords give a higher score
       }
     }
     if (score > 0 && (!best || score > best.score)) {
@@ -408,7 +423,22 @@ export function answerFor(input: string): { answer: string; cta?: ChatCta } {
     };
   }
 
+  const normalizedInput = input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  if (/^(bonjour|salut|coucou|hello|hi|bonsoir|hey)(?:[\s!.,?]+)?$/i.test(normalizedInput)) {
+    return { answer: "Bonjour ! Comment puis-je vous aider aujourd'hui ?" };
+  }
+
+  if (/^(merci(?: beaucoup)?|thanks|super|top|parfait|genial)(?:[\s!.,?]+)?$/i.test(normalizedInput)) {
+    return { answer: "Avec plaisir ! N'hésitez pas si vous avez d'autres questions." };
+  }
+
   const topic = findTopic(input);
   if (!topic) return { answer: DEFAULT_ANSWER };
+  
   return { answer: topic.answer, cta: topic.cta };
 }

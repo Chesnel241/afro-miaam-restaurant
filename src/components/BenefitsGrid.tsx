@@ -19,7 +19,7 @@ const BENEFITS = [
     color: "bg-accent"
   },
   {
-    icon: <span className="text-3xl">📸</span>,
+    icon: <span role="img" aria-label="Caméra" className="text-3xl">📸</span>,
     title: "Scan & Collect",
     desc: "Une validation ultra-rapide et sécurisée via QR Code lors de votre réception.",
     color: "bg-primary"

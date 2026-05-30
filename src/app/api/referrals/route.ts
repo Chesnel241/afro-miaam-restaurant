@@ -26,21 +26,16 @@ export async function GET(request: Request) {
     const referralCode = userData.referralCode || "";
 
     // 2. Query other users who were referred by this userId OR by their referralCode
-    const referredQueryById = adminDb.collection("users").where("referredBy", "==", userId).get();
-    let referredQueryByCode = null;
-    if (referralCode) {
-      referredQueryByCode = adminDb.collection("users").where("referredBy", "==", referralCode).get();
-    }
+    // Combine into a single 'in' query to reduce billing and improve performance
+    const searchValues = Array.from(new Set([userId, referralCode].filter(Boolean)));
+    const referredQuery = await adminDb.collection("users")
+      .where("referredBy", "in", searchValues)
+      .limit(100)
+      .get();
 
-    const [snapId, snapCode] = await Promise.all([
-      referredQueryById,
-      referredQueryByCode ? referredQueryByCode : Promise.resolve({ docs: [] })
-    ]);
-
-    // Merge unique matches by document ID
+    // Map matches by document ID
     const mergedDocs = new Map();
-    snapId.docs.forEach(doc => mergedDocs.set(doc.id, doc.data()));
-    snapCode.docs.forEach(doc => mergedDocs.set(doc.id, doc.data()));
+    referredQuery.docs.forEach(doc => mergedDocs.set(doc.id, doc.data()));
 
     const list = Array.from(mergedDocs.values()).map(data => {
       const name = data.name || "Membre Afro";
@@ -63,7 +58,15 @@ export async function GET(request: Request) {
     // Sort by joinedAt desc
     list.sort((a: any, b: any) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime());
 
-    return NextResponse.json({ referrals: list });
+    return NextResponse.json(
+      { referrals: list },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+          "Vary": "Authorization"
+        }
+      }
+    );
   } catch (err: any) {
     console.error("REFERRALS_FETCH_FAILED", err.message);
     return NextResponse.json({ error: "Erreur lors de la récupération des parrainages." }, { status: 500 });

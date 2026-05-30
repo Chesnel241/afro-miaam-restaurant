@@ -84,19 +84,7 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow update: if isOwner(userId)
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['name', 'phone', 'isFirstLogin', 'image',
-                      'referralCredits', 'ordersCount', 'hasUsedWelcomeOffer'])
-        && request.resource.data.get('referralCredits', 0) is number
-        && request.resource.data.get('referralCredits', 0) >= 0
-        && request.resource.data.get('referralCredits', 0)
-            <= resource.data.get('referralCredits', 0)
-        && request.resource.data.get('ordersCount', 0) is int
-        && request.resource.data.get('ordersCount', 0)
-            >= resource.data.get('ordersCount', 0)
-        && request.resource.data.get('ordersCount', 0)
-            <= resource.data.get('ordersCount', 0) + 1
-        && (resource.data.get('hasUsedWelcomeOffer', false) == false
-            || request.resource.data.get('hasUsedWelcomeOffer', true) == true);
+            .hasOnly(['name', 'phone', 'isFirstLogin', 'image']);
 
       allow delete: if false;
     }
@@ -112,6 +100,7 @@ service cloud.firestore {
           || (
             resource.data.userEmail is string
             && request.auth.token.email is string
+            && request.auth.token.email_verified == true
             && resource.data.userEmail.lower() == request.auth.token.email.lower()
           )
         ));
@@ -184,52 +173,24 @@ service cloud.firestore {
           )
         );
 
-      // Admin can update freely. Owner has a single-shot review path: can only
-      // flip hasReviewed/review when hasReviewed is not already true.
-      // PATCH (pentest CRIT-6): the previous rule whitelisted the OUTER keys
-      //   but allowed the inner `review` map to carry arbitrary keys (XSS /
-      //   data-leak vector). We now constrain `review` to exactly
-      //   {rating: int 1..5, comment: string <=500 chars, createdAt}.
+      // Admin can update freely.
+      // PATCH: The previous single-shot review path was insecure and allowed arbitrary fields 
+      // to be mutated since it didn't use `affectedKeys().hasOnly(...)`. Reviews are now 
+      // exclusively handled by `/api/review` via the Admin SDK, so the client-side rule is removed.
       allow update: if isAdmin()
-        || (
-          isAuthenticated()
-          && (
-            resource.data.userId == request.auth.uid
-            || (
-              resource.data.userEmail is string
-              && request.auth.token.email is string
-              && resource.data.userEmail.lower() == request.auth.token.email.lower()
-            )
-          )
-          && (
-            resource.data.get('hasReviewed', false) == false
-            || resource.data.get('hasReviewed', null) == null
-          )
-          && request.resource.data.status == resource.data.status
-          && request.resource.data.total == resource.data.total
-          && request.resource.data.userId == resource.data.userId
-          && request.resource.data.items == resource.data.items
-          && request.resource.data.createdAt == resource.data.createdAt
-          && request.resource.data.review is map
-          && request.resource.data.review.reaction is string
-          && request.resource.data.review.reaction in ['bon', 'moyen', 'pas_bon']
-        )
         // PATCH (pentest BUG-1 / pass 6): owner-confirms-delivery path.
-        // The admin shows a QR to the customer; the customer scans it on
-        // their phone, lands on /valider-commande/[id], and presses
-        // "Confirmer la Réception". This sets status=Livré + deliveredAt
+        // The customer lands on /valider-commande/[id] and presses
+        // "Confirmer la Réception". This sets status=Livré + updatedAt
         // ONLY when the order is in a delivery-eligible state and ONLY by
-        // the order owner. Without this branch, the customer-side update
-        // was rejected by the rule and the delivery confirmation UI was
-        // dead.
+        // the order owner.
         || (
           isAuthenticated()
           && resource.data.userId == request.auth.uid
           && resource.data.status in ['Acompte Reçu', 'En attente', 'En cours']
           && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['status', 'deliveredAt'])
+              .hasOnly(['status', 'updatedAt'])
           && request.resource.data.status == "Livré"
-          && request.resource.data.deliveredAt is string
+          && request.resource.data.updatedAt is timestamp
         );
 
       allow delete: if false;

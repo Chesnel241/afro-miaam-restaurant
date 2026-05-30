@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/AuthContext";
+import { useOrders } from "@/components/OrderContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -10,6 +11,7 @@ import { CheckIcon, ClockIcon } from "@/components/Icons";
 
 export default function ValiderCommandePage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading } = useAuth();
+  const { updateOrderStatus } = useOrders();
   const router = useRouter();
   const [orderId, setOrderId] = useState<string>("");
   const [order, setOrder] = useState<any>(null);
@@ -77,16 +79,12 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
   const handleValider = async () => {
     setIsUpdating(true);
     try {
-      const docRef = doc(db, "orders", orderId);
-      await updateDoc(docRef, {
-        status: "Livré",
-        deliveredAt: new Date().toISOString()
-      });
+      await updateOrderStatus(orderId, "Livré");
       setSuccess(true);
       // On attend un peu pour l'animation
       setTimeout(() => {
         router.push("/mon-compte?tab=orders");
-      }, 3000);
+      }, 1500);
     } catch (err) {
       console.error(err);
       setError("Erreur lors de la validation de la livraison. Veuillez réessayer.");

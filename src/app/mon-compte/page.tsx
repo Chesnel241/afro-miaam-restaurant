@@ -1,6 +1,9 @@
 "use client";
 
-import { useAuth, type Order, type MenuItemDynamic } from "@/components/AuthContext";
+import { useAuth } from "@/components/AuthContext";
+import { useOrders, type Order } from "@/components/OrderContext";
+import { useMenu, type MenuItemDynamic } from "@/components/MenuContext";
+import { useSettings } from "@/components/SettingsContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,7 +23,9 @@ const QRScannerModal = dynamic(
 type Tab = "menu" | "orders" | "dashboard" | "profile";
 
 function MonCompteContent() {
-  const { user, loading, logout, deleteAccount, userOrders, dynamicMenu, updateProfile, confirmOrderDeletion } = useAuth();
+  const { user, loading, logout, deleteAccount, updateProfile } = useAuth();
+  const { userOrders, confirmOrderDeletion } = useOrders();
+  const { dynamicMenu } = useMenu();
   const { addItem, clearCart } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -154,7 +159,7 @@ function MonCompteContent() {
     }
   };
 
-  const pendingDeletions = userOrders.filter(o => (o as any).deletionRequested);
+  const pendingDeletions = userOrders.filter((o: any) => o.deletionRequested);
 
   return (
     <div className="container-x py-8 sm:py-16 overflow-hidden max-w-full">
@@ -166,7 +171,7 @@ function MonCompteContent() {
           <MemberCard 
             userName={user.name} 
             ordersCount={user.ordersCount} 
-            referralCredits={(user as any).referralCredits || 0} 
+            referralCredits={user.referralCredits || 0} 
           />
 
           <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-cream/20">
@@ -705,7 +710,8 @@ function MiniProductCard({ item, label }: { item: MenuItemDynamic, label: string
 
 function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const { addItem } = useCart();
-  const { addOrderReview, isReviewRewardActive } = useAuth();
+  const { addOrderReview } = useOrders();
+  const { isReviewRewardActive } = useSettings();
   const router = useRouter();
   const [showReview, setShowReview] = useState(false);
   const [reaction, setReaction] = useState<'bon' | 'moyen' | 'pas_bon'>('bon');
@@ -728,11 +734,11 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
   const handleReorder = () => {
     order.items.forEach(item => {
       addItem({
-        id: (item as any).itemId || item.name,
+        id: item.itemId || item.name,
         name: item.name,
         price: item.price,
-        image: (item as any).image || "",
-        flavor: (item as any).flavor
+        image: item.image || "",
+        flavor: item.flavor
       }, item.quantity);
     });
     router.push("/panier");
@@ -956,17 +962,19 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
                   Qu&apos;avez-vous pensé de votre repas ?
                 </p>
                 <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { id: 'bon', label: 'Bon 😋', activeStyle: 'bg-emerald-500 text-white border-emerald-500 shadow-emerald-200' },
-                    { id: 'moyen', label: 'Moyen 😐', activeStyle: 'bg-amber-500 text-white border-amber-500 shadow-amber-200' },
-                    { id: 'pas_bon', label: 'Pas bon 😞', activeStyle: 'bg-red-500 text-white border-red-500 shadow-red-200' }
-                  ].map((r) => {
+                  {(
+                    [
+                      { id: 'bon' as const, label: 'Bon 😋', activeStyle: 'bg-emerald-500 text-white border-emerald-500 shadow-emerald-200' },
+                      { id: 'moyen' as const, label: 'Moyen 😐', activeStyle: 'bg-amber-500 text-white border-amber-500 shadow-amber-200' },
+                      { id: 'pas_bon' as const, label: 'Pas bon 😞', activeStyle: 'bg-red-500 text-white border-red-500 shadow-red-200' }
+                    ]
+                  ).map((r) => {
                     const isActive = reaction === r.id;
                     return (
                       <button
                         key={r.id}
                         type="button"
-                        onClick={() => setReaction(r.id as any)}
+                        onClick={() => setReaction(r.id)}
                         className={`py-4 rounded-2xl text-xs sm:text-sm font-black transition-all border shadow-sm flex flex-col items-center justify-center gap-1 active:scale-95 ${
                           isActive
                             ? r.activeStyle + ' shadow-lg scale-105'

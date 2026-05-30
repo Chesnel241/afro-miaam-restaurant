@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { initializeFirestore, type Firestore } from "firebase/firestore";
+import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import {
   initializeAppCheck,
@@ -46,9 +46,7 @@ if (typeof window !== "undefined" && app) {
 export { appCheck };
 export const auth: Auth = app ? getAuth(app) : (undefined as unknown as Auth);
 export const db: Firestore = app
-  ? initializeFirestore(app, {
-      experimentalAutoDetectLongPolling: true,
-    })
+  ? getFirestore(app)
   : (undefined as unknown as Firestore);
 export const storage: FirebaseStorage = app
   ? getStorage(app)

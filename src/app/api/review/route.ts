@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   const { orderId, reaction } = payload;
-  if (!orderId || !reaction || !["bon", "moyen", "pas_bon"].includes(reaction)) {
+  if (!orderId || typeof orderId !== "string" || orderId.includes("/") || !reaction || !["bon", "moyen", "pas_bon"].includes(reaction)) {
     return bad("Paramètres manquants ou invalides.");
   }
 
