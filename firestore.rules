@@ -107,6 +107,7 @@ service cloud.firestore {
             request.auth.token.email_verified == true
             && resource.data.userEmail is string
             && request.auth.token.email is string
+            && request.auth.token.email_verified == true
             && resource.data.userEmail.lower() == request.auth.token.email.lower()
           )
         ));
@@ -179,49 +180,14 @@ service cloud.firestore {
           )
         );
 
-      // Admin can update freely. Owner has a single-shot review path: can only
-      // flip hasReviewed/review when hasReviewed is not already true.
-      // PATCH (pentest CRIT-6): the previous rule whitelisted the OUTER keys
-      //   but allowed the inner `review` map to carry arbitrary keys (XSS /
-      //   data-leak vector). We now constrain `review` to exactly
-      //   {rating: int 1..5, comment: string <=500 chars, createdAt}.
-      // PATCH (Vague2-D): same email_verified guard on the owner-review
-      // update branch (an attacker who signs up with an unverified address
-      // that lower-cases to a victim's order email would otherwise read/edit
-      // that order). uid match path is unchanged.
-      allow update: if isAdmin()
-        || (
-          isAuthenticated()
-          && (
-            resource.data.userId == request.auth.uid
-            || (
-              request.auth.token.email_verified == true
-              && resource.data.userEmail is string
-              && request.auth.token.email is string
-              && resource.data.userEmail.lower() == request.auth.token.email.lower()
-            )
-          )
-          && (
-            resource.data.get('hasReviewed', false) == false
-            || resource.data.get('hasReviewed', null) == null
-          )
-          && request.resource.data.status == resource.data.status
-          && request.resource.data.total == resource.data.total
-          && request.resource.data.userId == resource.data.userId
-          && request.resource.data.items == resource.data.items
-          && request.resource.data.createdAt == resource.data.createdAt
-          && request.resource.data.review is map
-          && request.resource.data.review.reaction is string
-          && request.resource.data.review.reaction in ['bon', 'moyen', 'pas_bon']
-        );
-        // PATCH (Vague1-B): the customer self-confirm-delivery branch was
-        // REMOVED. It let a customer flip THEIR OWN order to "Livré" (which
-        // unlocks the +1€ review reward and corrupts the delivery-liability
-        // signal) without genuine receipt and without any admin-issued proof.
-        // Delivery confirmation now flows through the server route
-        // POST /api/delivery/confirm (Admin SDK), which validates a single-use,
-        // admin-issued QR token bound to the order. Clients can no longer write
-        // `status` at all — that transition is admin/server-only.
+      // Admin can update freely.
+      // PATCH: Reviews are exclusively handled by `/api/review` via the Admin SDK.
+      // PATCH (Vague1-B): the customer self-confirm-delivery branch was
+      // REMOVED. Delivery confirmation now flows through the server route
+      // POST /api/delivery/confirm (Admin SDK), which validates a single-use,
+      // admin-issued QR token bound to the order. Clients can no longer write
+      // `status` at all — that transition is admin/server-only.
+      allow update: if isAdmin();
 
       allow delete: if false;
     }

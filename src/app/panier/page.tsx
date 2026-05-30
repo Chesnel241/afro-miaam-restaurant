@@ -68,6 +68,11 @@ export default function CartPage() {
                     <h3 className="font-display text-lg font-bold text-primary">
                       {line.name}
                     </h3>
+                    {line.flavor && (
+                      <p className="text-sm text-primary/60">
+                        {line.flavor}
+                      </p>
+                    )}
                     <p className="text-sm text-primary/60">
                       {formatPrice(line.price)} l&apos;unité
                     </p>
@@ -143,9 +148,14 @@ export default function CartPage() {
                     }
                     value={deliveryFee === 0 ? "Gratuit" : formatPrice(deliveryFee)}
                   />
-                  <div className="flex items-center justify-between text-accentSoft font-bold pt-1">
-                    <span>Acompte à prévoir (50%)</span>
-                    <span>{formatPrice(total * 0.5)}</span>
+                  <div className="flex flex-col gap-1 pt-1">
+                    <div className="flex items-center justify-between text-accentSoft font-bold">
+                      <span>Acompte de 50%</span>
+                      <span>{formatPrice(total * 0.5)}</span>
+                    </div>
+                    <p className="text-[11px] text-cream/65 leading-snug">
+                      À régler en ligne. Le reste sera à payer à la réception de votre commande.
+                    </p>
                   </div>
                 </dl>
                 <div className="mt-4 flex items-center justify-between border-t border-cream/15 pt-4">

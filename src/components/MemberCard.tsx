@@ -63,10 +63,11 @@ export function MemberCard({ userName, ordersCount, referralCredits }: MemberCar
           
           <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden mb-2 relative">
             <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: progressPercent / 100 }}
               transition={{ duration: 1, ease: "easeOut" }}
-              className={`h-full bg-gradient-to-r from-accent to-accentSoft rounded-full ${isRewardReady ? 'animate-pulse' : ''}`}
+              style={{ originX: 0 }}
+              className={`h-full w-full bg-gradient-to-r from-accent to-accentSoft rounded-full ${isRewardReady ? 'animate-pulse' : ''}`}
             />
           </div>
 

@@ -57,53 +57,65 @@ function assertProjectId(source: string, actualProjectId: string): string {
   return actualProjectId;
 }
 
+const globalAny = global as any;
+
 let adminCredentialsConfigured = false;
 
-if (!getApps().length) {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    const serviceAccount = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT);
-    const serviceAccountProjectId =
-      (serviceAccount as admin.ServiceAccount & { project_id?: string }).project_id ??
-      serviceAccount.projectId ??
-      "";
-    const projectId = assertProjectId("FIREBASE_SERVICE_ACCOUNT", serviceAccountProjectId);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId,
-    });
-    adminCredentialsConfigured = true;
-  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.K_SERVICE) {
-    // Application Default Credentials (Cloud Run / GCP).
-    const projectId = getExpectedProjectId();
-    admin.initializeApp(projectId ? { projectId } : undefined);
-    adminCredentialsConfigured = true;
-  } else {
-    // Pas de credentials configurés.
-    // - En build (next build) ou en dev local, on init vide pour permettre
-    //   la compilation des routes. Les appels Admin SDK runtime échoueront
-    //   proprement avec un 503 explicite côté API (Vague3-K).
-    // - Si on est en runtime production sur Vercel sans creds, ce warning
-    //   apparaît dans les logs et chaque request /api/* renvoie 503 —
-    //   l'opérateur peut diagnostiquer sans confusion avec un vrai 401.
-    const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-    if (process.env.NODE_ENV === "production" && !isBuildPhase) {
-      console.error(
-        "[firebase-admin] CONFIG ERROR: ni FIREBASE_SERVICE_ACCOUNT ni GOOGLE_APPLICATION_CREDENTIALS défini en production. Les appels API échoueront.",
-      );
+if (!globalAny.__FIREBASE_ADMIN_INITIALIZED__) {
+  if (!getApps().length) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const serviceAccount = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT);
+      const serviceAccountProjectId =
+        (serviceAccount as admin.ServiceAccount & { project_id?: string }).project_id ??
+        serviceAccount.projectId ??
+        "";
+      const projectId = assertProjectId("FIREBASE_SERVICE_ACCOUNT", serviceAccountProjectId);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId,
+      });
+      adminCredentialsConfigured = true;
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.K_SERVICE) {
+      // Application Default Credentials (Cloud Run / GCP).
+      const projectId = getExpectedProjectId();
+      admin.initializeApp(projectId ? { projectId } : undefined);
+      adminCredentialsConfigured = true;
     } else {
-      console.warn(
-        "[firebase-admin] Aucun credential configuré (build / dev). Les appels Admin SDK échoueront.",
-      );
+      // Pas de credentials configurés.
+      // - En build (next build) ou en dev local, on init vide pour permettre
+      //   la compilation des routes. Les appels Admin SDK runtime échoueront
+      //   proprement avec un 503 explicite côté API (Vague3-K).
+      // - Si on est en runtime production sur Vercel sans creds, ce warning
+      //   apparaît dans les logs et chaque request /api/* renvoie 503 —
+      //   l'opérateur peut diagnostiquer sans confusion avec un vrai 401.
+      const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+      if (process.env.NODE_ENV === "production" && !isBuildPhase) {
+        console.error(
+          "[firebase-admin] CONFIG ERROR: ni FIREBASE_SERVICE_ACCOUNT ni GOOGLE_APPLICATION_CREDENTIALS défini en production. Les appels API échoueront.",
+        );
+      } else {
+        console.warn(
+          "[firebase-admin] Aucun credential configuré (build / dev). Les appels Admin SDK échoueront.",
+        );
+      }
+      admin.initializeApp();
+      adminCredentialsConfigured = false;
     }
-    admin.initializeApp();
-    adminCredentialsConfigured = false;
   }
+
+  const db = admin.firestore();
+  db.settings({ ignoreUndefinedProperties: true, preferRest: true });
+  
+  globalAny.__FIREBASE_ADMIN_DB__ = db;
+  globalAny.__FIREBASE_ADMIN_AUTH__ = admin.auth();
+  globalAny.__FIREBASE_ADMIN_INITIALIZED__ = true;
+  globalAny.__FIREBASE_ADMIN_CREDS_CONFIGURED__ = adminCredentialsConfigured;
+} else {
+  adminCredentialsConfigured = globalAny.__FIREBASE_ADMIN_CREDS_CONFIGURED__ ?? false;
 }
 
-const db = admin.firestore();
-db.settings({ ignoreUndefinedProperties: true });
-export const adminDb = db;
-export const adminAuth = admin.auth();
+export const adminDb = globalAny.__FIREBASE_ADMIN_DB__ as admin.firestore.Firestore;
+export const adminAuth = globalAny.__FIREBASE_ADMIN_AUTH__ as admin.auth.Auth;
 
 /**
  * True iff a real service-account or ADC credential was loaded at module init.

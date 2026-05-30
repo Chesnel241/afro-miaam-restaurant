@@ -1,10 +1,12 @@
 export const TIME_SLOTS = [
-  "11:30 – 12:30",
-  "12:30 – 13:30",
-  "13:30 – 14:30",
-  "18:30 – 19:30",
-  "19:30 – 20:30",
-  "20:30 – 21:30",
+  "12h00 - 12h30",
+  "12h30 - 13h00",
+  "13h00 - 13h30",
+  "13h30 - 14h00",
+  "19h00 - 19h30",
+  "19h30 - 20h00",
+  "20h00 - 20h30",
+  "20h30 - 21h00",
 ];
 
 export function isValidOrderDate(selected: Date, now: Date = new Date()): boolean {

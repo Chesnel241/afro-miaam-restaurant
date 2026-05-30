@@ -7,11 +7,15 @@ import { BenefitsGrid } from "@/components/BenefitsGrid";
 import { HowItWorks } from "@/components/HowItWorks";
 import { ProductCard } from "@/components/ProductCard";
 import { useAuth } from "@/components/AuthContext";
-import { CheckIcon, HeartIcon, LeafIcon, PotIcon, GiftIcon } from "@/components/Icons";
+import { useMenu } from "@/components/MenuContext";
+import { useOrders } from "@/components/OrderContext";
+import { HeartIcon, LeafIcon, PotIcon, GiftIcon } from "@/components/Icons";
 import { useMemo } from "react";
 
 export default function HomePage() {
-  const { user, dynamicMenu, userOrders } = useAuth();
+  const { user } = useAuth();
+  const { dynamicMenu } = useMenu();
+  const { userOrders } = useOrders();
   
   const signatures = useMemo(() => {
     return dynamicMenu.filter((i) => i.category === "signature" && i.available).slice(0, 3);
@@ -75,8 +79,8 @@ export default function HomePage() {
             <div>
               <p className="eyebrow">Notre promesse</p>
               <h2 className="heading-display mt-3 text-3xl text-primary sm:text-4xl lg:text-5xl">
-                Une cuisine généreuse, authentique
-                <span className="text-accent"> et raffinée.</span>
+                L&apos;excellence afro-gastronomique pour vos repas
+                <span className="text-accent"> et événements.</span>
               </h2>
               <p className="mt-4 max-w-xl xl:max-w-2xl text-primary/75">
                 Afro Miaam, c&apos;est la rencontre entre les saveurs
@@ -101,9 +105,9 @@ export default function HomePage() {
                   text="Chaque plat est cuisiné pour vous, à la commande."
                 />
                 <Value
-                  icon={<CheckIcon className="h-6 w-6" />}
-                  title="Zéro compromis"
-                  text="Pas de batch cooking, pas de tiédeur. Juste une cuisine vivante."
+                  icon={<GiftIcon className="h-6 w-6" />}
+                  title="Service Traiteur & Événements"
+                  text="Menus sur mesure, dégustation préalable et flexibilité (halal, végétarien, épices à part) pour sublimer vos événements."
                 />
               </ul>
             </div>
@@ -128,11 +132,11 @@ export default function HomePage() {
               <div>
                 <p className="eyebrow text-accentSoft">Prêt à commander ?</p>
                 <h2 className="heading-display mt-3 text-2xl sm:text-3xl lg:text-4xl xl:text-5xl">
-                  Commande aujourd&apos;hui, savoure demain.
+                  De la commande solo au repas d&apos;événement.
                 </h2>
                 <p className="mt-3 text-sm text-cream/80 sm:text-base xl:text-lg">
-                  Paiement après validation par téléphone. Vous réservez, on
-                  vous rappelle.
+                  Réservez vos plats ou demandez un devis traiteur. Nous vous
+                  rappelons pour valider les détails.
                 </p>
               </div>
               <Link href="/menu" className="btn btn-md btn-primary px-10 xl:btn-lg">

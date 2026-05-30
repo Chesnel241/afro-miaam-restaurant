@@ -139,14 +139,17 @@ export function Chatbot() {
 
   function respondTo(text: string) {
     setTyping(true);
+    const { answer, cta } = answerFor(text);
+    // Dynamic delay based on answer length to simulate natural typing speed
+    const delay = Math.min(Math.max(answer.length * 15, 600), 2000);
+
     window.setTimeout(() => {
-      const { answer, cta } = answerFor(text);
       setMessages((m) => [
         ...m,
         { id: uid(), sender: "bot", text: answer, cta },
       ]);
       setTyping(false);
-    }, 600);
+    }, delay);
   }
 
   function handlePickTopic(topicId: string) {
@@ -279,7 +282,7 @@ export function Chatbot() {
 
           {/* Suggestions rapides */}
           <div className="border-t border-primary/10 bg-white px-3 pt-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary/60">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary/70">
               Sujets fréquents
             </p>
             <div className="-mx-1 flex gap-2 overflow-x-auto pb-2">
@@ -303,7 +306,7 @@ export function Chatbot() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Posez votre question…"
               aria-label="Message"
-              className="min-h-11 flex-1 rounded-full border border-primary/15 bg-creamSoft px-4 text-sm text-primary placeholder:text-primary/45 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+              className="min-h-11 flex-1 rounded-full border border-primary/15 bg-creamSoft px-4 text-sm text-primary placeholder:text-primary/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
             <button
               type="submit"

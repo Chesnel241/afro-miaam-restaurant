@@ -30,7 +30,7 @@ export function WelcomeNotification({ onClose }: { onClose: () => void }) {
       desc: "Retrouvez vos classiques et suivez l'avancée de vos commandes en cours depuis votre tableau de bord."
     },
     {
-      icon: <span className="text-xl">📸</span>,
+      icon: <span role="img" aria-label="Caméra" className="text-xl">📸</span>,
       title: "Scan Livraison",
       desc: "Le jour J, validez votre réception en scannant le QR Code du restaurant directement depuis votre espace."
     }

@@ -24,6 +24,8 @@ export type MenuItem = {
   tags?: string[];
   available?: boolean;
   flavors?: Flavor[];
+  allergensList?: { id: string; name: string; emoji: string; value?: string }[];
+  preferences?: string[];
 };
 
 export type CartLine = {

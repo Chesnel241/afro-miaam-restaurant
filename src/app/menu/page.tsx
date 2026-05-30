@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CategoryTabs, type CategoryFilter } from "@/components/CategoryTabs";
 import { ProductCard } from "@/components/ProductCard";
 import { useCart } from "@/components/CartContext";
-import { useAuth } from "@/components/AuthContext";
+import { useMenu } from "@/components/MenuContext";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/data/menu";
 import { formatPrice } from "@/lib/utils";
 import { CartIcon, GiftIcon } from "@/components/Icons";
@@ -62,7 +62,7 @@ export default function MenuPage() {
     if (prefFilter.includes("glutenfree") && !isGlutenFree(item)) return false;
     return true;
   };
-  const { dynamicMenu } = useAuth();
+  const { dynamicMenu } = useMenu();
 
   // Remonter en haut du menu lors du changement de catégorie
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function MenuPage() {
           
           {/* Preference Filter Bar — horizontal scroll on mobile */}
           <div className="mt-2 flex gap-2 items-center overflow-x-auto pt-2 border-t border-primary/5 pb-1 scrollbar-hide lg:mt-4 lg:flex-wrap lg:gap-2.5 lg:justify-start lg:pt-3 lg:overflow-visible">
-            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary/40 mr-1 flex items-center gap-1.5 shrink-0">
+            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary/70 mr-1 flex items-center gap-1.5 shrink-0">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
               Filtres :
             </span>

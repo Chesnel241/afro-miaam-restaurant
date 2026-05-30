@@ -64,27 +64,34 @@ const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
 );
 
 let priceCache: { byId: Record<string, number>; expires: number } | null = null;
+let priceCachePromise: Promise<Record<string, number>> | null = null;
 
 async function getPriceById(): Promise<Record<string, number>> {
   const now = Date.now();
   if (priceCache && now < priceCache.expires) return priceCache.byId;
+  if (priceCachePromise) return priceCachePromise;
 
-  const byId: Record<string, number> = { ...STATIC_PRICE_BY_ID };
-  try {
-    const snap = await adminDb.collection("menu").get();
-    snap.forEach((d) => {
-      const data = d.data() as { price?: unknown; available?: unknown };
-      const price = typeof data.price === "number" && data.price > 0 ? data.price : null;
-      if (price !== null && data.available !== false) {
-        byId[d.id] = price;
-      }
-    });
-  } catch (e) {
-    console.warn("MENU_FIRESTORE_READ_FAILED", (e as { code?: string }).code ?? "unknown");
-  }
+  priceCachePromise = (async () => {
+    const byId: Record<string, number> = { ...STATIC_PRICE_BY_ID };
+    try {
+      const snap = await adminDb.collection("menu").get();
+      snap.forEach((d) => {
+        const data = d.data() as { price?: unknown; available?: unknown };
+        const price = typeof data.price === "number" && data.price > 0 ? data.price : null;
+        if (price !== null && data.available !== false) {
+          byId[d.id] = price;
+        }
+      });
+      priceCache = { byId, expires: Date.now() + PRICE_CACHE_TTL_MS };
+    } catch (e) {
+      console.warn("MENU_FIRESTORE_READ_FAILED", (e as { code?: string }).code ?? "unknown");
+    } finally {
+      priceCachePromise = null;
+    }
+    return byId;
+  })();
 
-  priceCache = { byId, expires: now + PRICE_CACHE_TTL_MS };
-  return byId;
+  return priceCachePromise;
 }
 
 function bad(error: string, status = 400) {
@@ -130,12 +137,12 @@ export async function POST(request: Request) {
   const appCheckToken = request.headers.get("X-Firebase-AppCheck");
   if (process.env.NODE_ENV === "production") {
     if (!appCheckToken) {
-      return bad("Non autorisÃ©. App Check manquant.", 401);
+      return bad("Non autorisé. App Check manquant.", 401);
     }
     try {
       await verifyAppCheckToken(appCheckToken);
     } catch {
-      return bad("Non autorisÃ©. App Check invalide ou expirÃ©.", 401);
+      return bad("Non autorisé. App Check invalide ou expiré.", 401);
     }
   } else if (appCheckToken) {
     try {
@@ -289,7 +296,7 @@ export async function POST(request: Request) {
       }
       
       const userData = userSnap.data() || {};
-      const currentCredits = typeof userData.referralCredits === 'number' ? userData.referralCredits : 0;
+      const currentCredits = typeof userData.referralCredits === 'number' ? Math.max(0, userData.referralCredits) : 0;
       const ordersCount = typeof userData.ordersCount === 'number' ? userData.ordersCount : 0;
       const hasUsedWelcomeOffer = userData.hasUsedWelcomeOffer === true;
 
@@ -299,7 +306,12 @@ export async function POST(request: Request) {
       let promoDiscount = 0;
       let promoCodeUsed = "";
 
-      if (payload.promoCode) {
+      let remainingTotal = serverTotalBeforeDiscount;
+
+      const actualWelcomeDiscount = Math.min(welcomeDiscount, remainingTotal);
+      remainingTotal -= actualWelcomeDiscount;
+
+      if (typeof payload.promoCode === "string" && remainingTotal > 0) {
         const promoSnap = await tx.get(adminDb.collection("settings").doc("promotions"));
         if (promoSnap.exists) {
           const promoData = promoSnap.data() || {};
@@ -312,22 +324,25 @@ export async function POST(request: Request) {
             // value can't inflate the total and a >100% can't over-discount.
             const rawValue = Number(codeData.discountValue);
             const discountValue = Number.isFinite(rawValue) ? rawValue : 0;
+            let calculatedPromo = 0;
             if (codeData.discountType === "percentage") {
               const pct = Math.min(100, Math.max(0, discountValue));
-              promoDiscount = round2((serverTotalBeforeDiscount - welcomeDiscount) * (pct / 100));
+              calculatedPromo = round2(remainingTotal * (pct / 100));
             } else if (codeData.discountType === "fixed") {
-              promoDiscount = Math.min(serverTotalBeforeDiscount, Math.max(0, discountValue));
+              calculatedPromo = Math.max(0, discountValue);
             }
-            promoDiscount = Math.max(0, promoDiscount);
+            promoDiscount = Math.min(Math.max(0, calculatedPromo), remainingTotal);
+            remainingTotal -= promoDiscount;
           }
         }
       }
       
-      if (payload.useCredits) {
-        creditsToUse = Math.min(currentCredits, serverTotalBeforeDiscount - welcomeDiscount - promoDiscount);
+      if (payload.useCredits && remainingTotal > 0) {
+        creditsToUse = Math.min(currentCredits, remainingTotal);
+        remainingTotal -= creditsToUse;
       }
 
-      finalTotal = round2(Math.max(0, serverTotalBeforeDiscount - welcomeDiscount - promoDiscount - creditsToUse));
+      finalTotal = round2(Math.max(0, remainingTotal));
       finalDeposit = round2(finalTotal * 0.5);
 
       // MED-1 (pass 6): explicit reject. Firestore rule requires total > 0;

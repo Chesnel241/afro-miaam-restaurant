@@ -6,5 +6,6 @@
     "deploymentEnabled": {
       "main": true
     }
-  }
+  },
+  "regions": ["cdg1"]
 }

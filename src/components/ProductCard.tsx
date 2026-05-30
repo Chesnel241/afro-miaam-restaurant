@@ -123,9 +123,9 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
           <p className="text-sm text-primary/65 line-clamp-2">{item.description}</p>
           
           {/* Preference indicators on client card */}
-          {(item as any).allergensList && (item as any).allergensList.length > 0 ? (
+          {item.allergensList && item.allergensList.length > 0 ? (
             <div className="flex flex-wrap gap-1 mt-1">
-              {(item as any).allergensList.map((a: any) => {
+              {item.allergensList.map((a: any) => {
                 let style = "bg-creamSoft text-primary border-cream/20";
                 if (a.id === "veg") style = "bg-emerald-50 text-emerald-700 border-emerald-200";
                 else if (a.id === "spicy") style = "bg-red-50 text-red-700 border-red-200";
@@ -141,9 +141,9 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
                 );
               })}
             </div>
-          ) : (item as any).preferences && (item as any).preferences.length > 0 ? (
+          ) : item.preferences && item.preferences.length > 0 ? (
             <div className="flex flex-wrap gap-1 mt-1">
-              {(item as any).preferences.map((p: string) => {
+              {item.preferences.map((p: string) => {
                 let label = "";
                 let style = "";
                 if (p === "veg") { label = "🥬 Veg"; style = "bg-emerald-50 text-emerald-700 border-emerald-200"; }
@@ -177,7 +177,7 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
           {/* Formule inline composer (Desktop only — keeps original layout) */}
           {isFormule && isAvailable && (
             <div className="mt-3 hidden lg:block space-y-2 animate-fade-in">
-              <label className="text-[10px] font-black uppercase tracking-widest text-primary/40">
+              <label className="text-[10px] font-black uppercase tracking-widest text-primary/70">
                 Composez votre formule :
               </label>
               {[
@@ -215,7 +215,7 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
           {/* Sélecteur de saveurs */}
           {hasFlavors && isAvailable && (
             <div className="mt-2 space-y-2 animate-fade-in">
-              <label className="text-[10px] font-black uppercase tracking-widest text-primary/40">Choisir une saveur :</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-primary/70">Choisir une saveur :</label>
               <select 
                 value={selectedFlavor}
                 onChange={(e) => setSelectedFlavor(e.target.value)}

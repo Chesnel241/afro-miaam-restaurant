@@ -44,7 +44,7 @@ type CartContextValue = CartState & {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function sanitizeStoredLines(raw: unknown): CartLine[] {
+export function sanitizeStoredLines(raw: unknown): CartLine[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
   const safe: CartLine[] = [];

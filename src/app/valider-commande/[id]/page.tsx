@@ -100,7 +100,7 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
       // On attend un peu pour l'animation
       setTimeout(() => {
         router.push("/mon-compte?tab=orders");
-      }, 3000);
+      }, 1500);
     } catch (err) {
       console.error(err);
       setError("Erreur lors de la validation de la livraison. Veuillez réessayer.");

@@ -20,6 +20,7 @@ const securityHeaders = [
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  compress: true,
   // typescript.ignoreBuildErrors removed in pass 3: was masking real runtime
   // errors (ReferenceError on missing imports). Build now fails fast on type
   // errors. ESLint kept in ignoreDuringBuilds (mostly stylistic).
