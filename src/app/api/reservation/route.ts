@@ -114,7 +114,11 @@ export async function POST(request: Request) {
     return bad("Service temporairement indisponible (maintenance).", 503);
   }
 
-  if (!(await checkRateLimit(`reservation:${clientIp(request)}`, 10, 60_000))) {
+  // Coarse pre-auth IP guard: protects the network-bound verifyIdToken call
+  // from unauthenticated floods. Uses the hardened clientIp (single shared
+  // "untrusted-proxy" bucket off-Vercel), so it can no longer be bypassed by
+  // forging IP headers.
+  if (!(await checkRateLimit(`reservation:ip:${clientIp(request)}`, 10, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
@@ -149,6 +153,11 @@ export async function POST(request: Request) {
     return bad("Non autorisé. Token invalide ou expiré.", 401);
   }
   const userId = decodedToken.uid;
+
+  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
+  if (!(await checkRateLimit(`reservation:uid:${userId}`, 10, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
+  }
 
   const lenHeader = request.headers.get("content-length");
   if (lenHeader && Number(lenHeader) > MAX_BODY_BYTES) {

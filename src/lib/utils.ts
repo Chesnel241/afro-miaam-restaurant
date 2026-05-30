@@ -30,15 +30,20 @@ export function getProductImage(item: { name: string, image: string }): string {
 }
 
 export function clientIp(request: Request): string {
-  // Anti-spoofing: on Vercel, x-vercel-forwarded-for is reliable and injected by the edge
+  // Anti-spoofing: this app deploys on Vercel (see vercel.json), where
+  // `x-vercel-forwarded-for` is injected by the trusted edge and reflects the
+  // real client IP. It cannot be forged by the client.
+  //
+  // We deliberately do NOT fall back to `x-forwarded-for` or `x-real-ip`:
+  // both are fully client-supplied when a request does not pass through the
+  // Vercel edge, so trusting them would let an attacker mint a brand-new
+  // rate-limit bucket on every request by rotating a forged IP, completely
+  // defeating the limiter (pentest finding H-1). When the trusted header is
+  // absent we collapse every such request into one shared bucket
+  // ("untrusted-proxy") so they all throttle against the same counter rather
+  // than each getting unlimited per-spoofed-IP budgets.
   const vercelIp = request.headers.get("x-vercel-forwarded-for");
   if (vercelIp) return vercelIp.split(",")[0].trim();
-  
-  // For standard proxies, if a user sends X-Forwarded-For, the proxy appends the true IP at the end
-  const fwd = request.headers.get("x-forwarded-for");
-  if (fwd) {
-      const ips = fwd.split(",");
-      return ips[ips.length - 1].trim(); 
-  }
-  return request.headers.get("x-real-ip") ?? "unknown";
+
+  return "untrusted-proxy";
 }
