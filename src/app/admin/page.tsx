@@ -7,7 +7,7 @@ import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon,
 import { AdminMenuManager } from "@/components/AdminMenuManager";
 import { QRCodeSVG } from "qrcode.react";
 
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions" | "reviews" | "closures";
 
@@ -16,18 +16,57 @@ function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void })
   // Hardcoded canonical origin: window.location.origin would let a host-header
   // injection / cache poisoning poison the QR target.
   const CANONICAL_ORIGIN = "https://afromiaam.com";
-  const validationUrl = `${CANONICAL_ORIGIN}/valider-commande/${orderId}`;
-  
+  // The QR now carries a single-use, server-issued delivery token (Vague1-B).
+  // We fetch it from /api/delivery/token (admin-gated) on open; the customer's
+  // confirmation is validated server-side, so a client can no longer self-mark
+  // an order "Livré".
+  const [validationUrl, setValidationUrl] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : "";
+        const res = await fetch("/api/delivery/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+          body: JSON.stringify({ orderId }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Erreur lors de la génération du QR.");
+        if (!cancelled) {
+          setValidationUrl(`${CANONICAL_ORIGIN}/valider-commande/${orderId}?t=${encodeURIComponent(data.token)}`);
+        }
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message || "Impossible de générer le QR.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
       <div className="absolute inset-0 bg-primary/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl animate-fade-in">
         <h3 className="heading-display mb-6 text-2xl text-primary">QR de Livraison</h3>
         <div className="mx-auto flex aspect-square w-full max-w-[200px] items-center justify-center rounded-2xl bg-creamSoft p-4 mb-6 ring-1 ring-black/5">
-          <QRCodeSVG value={validationUrl} size={180} />
+          {loading ? (
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-accent" />
+          ) : err ? (
+            <p className="text-xs font-bold text-red-600 px-2">{err}</p>
+          ) : (
+            <QRCodeSVG value={validationUrl} size={180} />
+          )}
         </div>
         <p className="text-xs text-primary/60 font-medium mb-8">
           Présentez ce QR Code au client pour qu&apos;il valide la réception sur son téléphone.
+          Le lien expire dans 30&nbsp;minutes.
         </p>
         <button onClick={onClose} className="btn btn-primary w-full">Fermer</button>
       </div>

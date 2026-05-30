@@ -74,29 +74,19 @@ service cloud.firestore {
         && request.resource.data.email is string
         && request.resource.data.name is string;
 
-      // Owner: limited self-edits on identity fields + monotonic-only updates
-      // on the three economic counters (used after order creation by the
-      // reservation flow until an Admin SDK API moves them server-side).
-      //   - referralCredits: can only DECREASE (never increase from client)
-      //   - ordersCount: can stay the same or grow by exactly 1
-      //   - hasUsedWelcomeOffer: can only flip false -> true
-      // role, email, referralCode, createdAt, referredBy stay immutable.
+      // Owner: limited self-edits on IDENTITY fields only.
+      // PATCH (Vague1-A): the economic counters (referralCredits, ordersCount,
+      // hasUsedWelcomeOffer) were REMOVED from the owner-writable whitelist.
+      // The previous "monotonic +1" allowance let any logged-in user inflate
+      // their own ordersCount via direct client-SDK writes (fake loyalty
+      // tiers), bypassing the rate-limited API entirely. These fields are now
+      // maintained EXCLUSIVELY server-side (Admin SDK) inside the
+      // reservation/review transactions. role, email, referralCode,
+      // createdAt, referredBy remain immutable as before.
       allow update: if isAdmin();
       allow update: if isOwner(userId)
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['name', 'phone', 'isFirstLogin', 'image',
-                      'referralCredits', 'ordersCount', 'hasUsedWelcomeOffer'])
-        && request.resource.data.get('referralCredits', 0) is number
-        && request.resource.data.get('referralCredits', 0) >= 0
-        && request.resource.data.get('referralCredits', 0)
-            <= resource.data.get('referralCredits', 0)
-        && request.resource.data.get('ordersCount', 0) is int
-        && request.resource.data.get('ordersCount', 0)
-            >= resource.data.get('ordersCount', 0)
-        && request.resource.data.get('ordersCount', 0)
-            <= resource.data.get('ordersCount', 0) + 1
-        && (resource.data.get('hasUsedWelcomeOffer', false) == false
-            || request.resource.data.get('hasUsedWelcomeOffer', true) == true);
+            .hasOnly(['name', 'phone', 'isFirstLogin', 'image']);
 
       allow delete: if false;
     }
@@ -213,24 +203,15 @@ service cloud.firestore {
           && request.resource.data.review is map
           && request.resource.data.review.reaction is string
           && request.resource.data.review.reaction in ['bon', 'moyen', 'pas_bon']
-        )
-        // PATCH (pentest BUG-1 / pass 6): owner-confirms-delivery path.
-        // The admin shows a QR to the customer; the customer scans it on
-        // their phone, lands on /valider-commande/[id], and presses
-        // "Confirmer la Réception". This sets status=Livré + deliveredAt
-        // ONLY when the order is in a delivery-eligible state and ONLY by
-        // the order owner. Without this branch, the customer-side update
-        // was rejected by the rule and the delivery confirmation UI was
-        // dead.
-        || (
-          isAuthenticated()
-          && resource.data.userId == request.auth.uid
-          && resource.data.status in ['Acompte Reçu', 'En attente', 'En cours']
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['status', 'deliveredAt'])
-          && request.resource.data.status == "Livré"
-          && request.resource.data.deliveredAt is string
         );
+        // PATCH (Vague1-B): the customer self-confirm-delivery branch was
+        // REMOVED. It let a customer flip THEIR OWN order to "Livré" (which
+        // unlocks the +1€ review reward and corrupts the delivery-liability
+        // signal) without genuine receipt and without any admin-issued proof.
+        // Delivery confirmation now flows through the server route
+        // POST /api/delivery/confirm (Admin SDK), which validates a single-use,
+        // admin-issued QR token bound to the order. Clients can no longer write
+        // `status` at all — that transition is admin/server-only.
 
       allow delete: if false;
     }
