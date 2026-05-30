@@ -1,0 +1,14 @@
+Contact: mailto:contact@afromiaam.com
+Expires: 2027-06-01T00:00:00.000Z
+Preferred-Languages: fr, en
+Canonical: https://afromiaam.com/.well-known/security.txt
+Policy: https://afromiaam.com/mentions-legales
+
+# Afro Miaam — Politique de divulgation responsable
+# Si vous découvrez une vulnérabilité, merci de nous écrire à l'adresse
+# ci-dessus avant toute divulgation publique. Nous accusons réception
+# sous 5 jours ouvrés et corrigeons selon la sévérité.
+#
+# Merci de ne pas: exécuter de tests destructifs, exfiltrer des données
+# clients, effectuer du déni de service, ni d'exploiter une faille
+# au-delà de la preuve minimale nécessaire à son rapport.
