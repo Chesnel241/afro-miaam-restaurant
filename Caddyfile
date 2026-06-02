@@ -1,0 +1,53 @@
+# =============================================================================
+# Afro Miaam — Caddy edge configuration
+# =============================================================================
+# - Terminates TLS (auto Let's Encrypt) for the apex + www.
+# - Serves uploaded menu images directly from the shared volume for speed.
+# - Reverse-proxies everything else to the internal Next.js app.
+# =============================================================================
+
+# Global options. ACME registration email for Let's Encrypt notices/recovery.
+{
+	email bonjour@afro-miaam.fr
+}
+
+afro-miaam.fr, www.afro-miaam.fr {
+	# -------------------------------------------------------------------------
+	# Serve uploaded menu images directly from disk (mounted at /srv/uploads,
+	# read-only). The `uploads` volume is exposed under /srv, so a request for
+	# /uploads/foo.jpg resolves to /srv/uploads/foo.jpg. Long cache: filenames
+	# are content-addressed/immutable once written.
+	# -------------------------------------------------------------------------
+	handle /uploads/* {
+		root * /srv
+		file_server
+		header Cache-Control "public, max-age=2592000"
+	}
+
+	# Everything else goes to the Next.js app over the internal network.
+	handle {
+		reverse_proxy app:3000
+	}
+
+	# Response compression. zstd preferred, gzip fallback.
+	encode zstd gzip
+
+	# Security headers applied to all responses.
+	header {
+		# Remove the server-identifying header.
+		-Server
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	# Structured access logs, rolled to keep disk usage bounded.
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 5
+		}
+		format json
+	}
+}
