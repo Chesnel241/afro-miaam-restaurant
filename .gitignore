@@ -7,6 +7,9 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.production
+docker-compose.override.yml
+*.pem
 
 .DS_Store
 *.log
