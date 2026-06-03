@@ -1,0 +1,54 @@
+# =============================================================================
+# Build context exclusions — keep the image small and builds reproducible.
+# Anything not needed by `npm ci` + `npm run build` should be excluded.
+# =============================================================================
+
+# Dependencies & build output (regenerated inside the image).
+node_modules
+.next
+out
+build
+dist
+
+# Local env / secrets — NEVER ship these into an image layer.
+.env
+.env.local
+.env.*.local
+.env.example
+
+# VCS & CI metadata.
+.git
+.gitignore
+.github
+
+# Editor / OS cruft.
+.DS_Store
+*.log
+npm-debug.log*
+.vscode
+.idea
+
+# Tests & local tooling (not needed for the production build).
+e2e
+**/*.test.ts
+**/*.test.tsx
+vitest.config.ts
+.eslintrc.json
+eslint.config.mjs
+
+# Docker / deploy artifacts (not part of the app build context).
+Dockerfile
+docker-compose.yml
+Caddyfile
+DEPLOYMENT.md
+
+# Firebase / Vercel legacy config (self-hosted now).
+firebase.json
+firestore.rules
+firestore.indexes.json
+storage.rules
+.vercel
+vercel.json
+
+# Local agent worktrees.
+.claude

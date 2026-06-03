@@ -1,0 +1,130 @@
+# =============================================================================
+# Afro Miaam — Build & Deploy (production)
+# =============================================================================
+# Trigger: push to `main`. Builds the app image, pushes it to GHCR, then SSHes
+# into the Hetzner VPS and rolls the `app` service forward with a health gate.
+#
+# Required repository secrets:
+#   HETZNER_HOST      VPS IP / hostname
+#   HETZNER_USER      deploy user (non-root)
+#   HETZNER_SSH_KEY   private key for that user (PEM)
+#   HETZNER_SSH_PORT  SSH port (e.g. 22)
+# GITHUB_TOKEN is provided automatically and is used to push to GHCR.
+# =============================================================================
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Allow manual re-deploys from the Actions tab.
+  workflow_dispatch:
+
+# Lower-case image name for GHCR (github.repository may contain uppercase).
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# Prevent overlapping production deploys.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1) Build the image and push it to GitHub Container Registry.
+  # ---------------------------------------------------------------------------
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image tags & labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Image is ghcr.io/<owner>/<repo>, lower-cased by the action.
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Use the GitHub Actions cache backend to speed up rebuilds.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # 2) Deploy: SSH into the VPS, pull the new image, roll the app forward.
+  # ---------------------------------------------------------------------------
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: ${{ secrets.HETZNER_SSH_PORT }}
+          script: |
+            set -euo pipefail
+            cd /opt/afro-miaam
+
+            # Pull the latest compose file / migrations etc.
+            git pull --ff-only
+
+            # Authenticate to GHCR to pull the freshly-built private image.
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+              -u "${{ github.actor }}" --password-stdin
+
+            # Pull the new app image and roll it forward without touching
+            # postgres/caddy. --no-deps avoids recreating dependencies.
+            docker compose pull app
+            docker compose up -d --no-deps app
+
+            # ----------------------------------------------------------------
+            # Health gate: wait up to ~60s for the app container to report
+            # healthy. On failure, dump logs and fail the deploy (the previous
+            # container has already been replaced, so logs aid debugging).
+            # ----------------------------------------------------------------
+            echo "Waiting for app to become healthy..."
+            for i in $(seq 1 30); do
+              status=$(docker inspect --format '{{.State.Health.Status}}' \
+                "$(docker compose ps -q app)" 2>/dev/null || echo "starting")
+              echo "  attempt $i: $status"
+              if [ "$status" = "healthy" ]; then
+                echo "App is healthy."
+                docker image prune -f
+                exit 0
+              fi
+              sleep 2
+            done
+
+            echo "App did not become healthy in time. Dumping logs:" >&2
+            docker compose logs --tail 100 app >&2
+            exit 1

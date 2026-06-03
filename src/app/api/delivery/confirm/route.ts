@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, adminUnavailableResponse } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
 import { createHash, timingSafeEqual } from "crypto";
+import { requireAuth, authErrorResponse } from "@/lib/auth";
+import { verifyRecaptcha } from "@/lib/recaptcha";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { withTransaction } from "@/lib/db";
+import { clientIp } from "@/lib/utils";
 
 // =============================================================================
 // POST /api/delivery/confirm — customer confirms receipt via admin-issued token
 // =============================================================================
-// Replaces the removed client-side self-confirm path (Vague1-B). The customer
-// scans the admin's hand-off QR (which carries a single-use token) and lands on
-// /valider-commande/[id]?t=<token>. This route validates, server-side:
+// The customer scans the admin's hand-off QR (which carries a single-use token)
+// and lands on /valider-commande/[id]?t=<token>. This route validates,
+// server-side:
 //   1. the caller owns the order (uid; verified-email fallback),
 //   2. the order is in a delivery-eligible state,
 //   3. the submitted token matches the stored hash, is unexpired, unused.
@@ -33,30 +36,41 @@ function hashesEqual(a: string, b: string): boolean {
 }
 
 export async function POST(request: Request) {
-  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
-  const unavail = adminUnavailableResponse();
-  if (unavail) return unavail;
-
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return bad("Non autorisé. Token manquant.", 401);
-  const idToken = authHeader.split("Bearer ")[1];
-
-  let decoded;
-  try {
-    decoded = await adminAuth.verifyIdToken(idToken);
-  } catch {
-    return bad("Non autorisé. Token invalide ou expiré.", 401);
+  // Coarse pre-auth IP guard protecting the JWT verify path from floods.
+  if (!(await checkRateLimit(`delivery-confirm:ip:${clientIp(request)}`, 15, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
-  const uid = decoded.uid;
-  const email = (decoded.email || "").trim().toLowerCase();
-  const emailVerified = decoded.email_verified === true;
 
-  let body: { orderId?: string; token?: string };
+  let claims;
+  try {
+    claims = await requireAuth(request);
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+
+  const uid = claims.sub;
+  const email = (claims.email || "").trim().toLowerCase();
+  const emailVerified = claims.email_verified === true;
+
+  // Per-uid rate limit keyed on the verified JWT subject.
+  if (!(await checkRateLimit(`delivery-confirm:uid:${uid}`, 15, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
+  }
+
+  let body: { orderId?: string; token?: string; recaptchaToken?: string };
   try {
     body = await request.json();
   } catch {
     return bad("Format JSON invalide.");
   }
+
+  if (process.env.NODE_ENV === "production") {
+    const ok = await verifyRecaptcha(body.recaptchaToken ?? null, {
+      remoteIp: clientIp(request),
+    });
+    if (!ok) return bad("Vérification reCAPTCHA échouée.", 401);
+  }
+
   const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
   const token = typeof body.token === "string" ? body.token.trim() : "";
   if (!orderId || orderId.length > 200) return bad("orderId invalide.");
@@ -65,65 +79,93 @@ export async function POST(request: Request) {
   const submittedHash = createHash("sha256").update(token).digest("hex");
 
   try {
-    const orderRef = adminDb.collection("orders").doc(orderId);
+    await withTransaction(async (tx) => {
+      // SELECT ... FOR UPDATE: lock the row for the duration of the
+      // transaction so concurrent confirms cannot double-deliver / double-pay.
+      const orderRows = await tx<{
+        id: string;
+        user_id: string | null;
+        user_email: string | null;
+        status: string;
+        delivery_token_hash: string | null;
+        delivery_token_exp: string | number | null;
+        referrer_id: string | null;
+        referral_reward_paid: boolean;
+      }[]>`
+        select id, user_id, user_email, status,
+               delivery_token_hash, delivery_token_exp,
+               referrer_id, referral_reward_paid
+        from orders
+        where id = ${orderId}
+        for update
+      `;
 
-    await adminDb.runTransaction(async (tx) => {
-      const snap = await tx.get(orderRef);
-      if (!snap.exists) throw new Error("ORDER_NOT_FOUND");
-      const order = snap.data() || {};
+      if (orderRows.length === 0) throw new Error("ORDER_NOT_FOUND");
+      const order = orderRows[0];
 
       // Ownership: uid match, or verified-email match as a fallback.
-      const ownByUid = order.userId === uid;
+      const ownByUid = order.user_id != null && order.user_id === uid;
       const ownByEmail =
         emailVerified &&
-        typeof order.userEmail === "string" &&
-        order.userEmail.trim().toLowerCase() === email;
+        typeof order.user_email === "string" &&
+        order.user_email.trim().toLowerCase() === email;
       if (!ownByUid && !ownByEmail) throw new Error("FORBIDDEN");
 
       if (order.status === "Livré") throw new Error("ALREADY_DELIVERED");
       if (!DELIVERABLE.includes(order.status)) throw new Error("NOT_DELIVERABLE");
 
-      const storedHash = typeof order.deliveryTokenHash === "string" ? order.deliveryTokenHash : "";
-      const exp = typeof order.deliveryTokenExp === "number" ? order.deliveryTokenExp : 0;
+      const storedHash = typeof order.delivery_token_hash === "string" ? order.delivery_token_hash : "";
+      const expRaw = order.delivery_token_exp;
+      const exp = typeof expRaw === "number" ? expRaw : typeof expRaw === "string" ? Number(expRaw) : 0;
       if (!storedHash) throw new Error("NO_TOKEN");
-      if (Date.now() > exp) throw new Error("TOKEN_EXPIRED");
+      if (!Number.isFinite(exp) || Date.now() > exp) throw new Error("TOKEN_EXPIRED");
       if (!hashesEqual(submittedHash, storedHash)) throw new Error("TOKEN_MISMATCH");
 
-      // Transition + single-use consumption.
-      tx.update(orderRef, {
-        status: "Livré",
-        deliveredAt: new Date().toISOString(),
-        deliveryTokenHash: FieldValue.delete(),
-        deliveryTokenExp: FieldValue.delete(),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+      // Transition + single-use consumption (NULLing the hash makes the token
+      // unusable for any future request, even the same one within the TTL).
+      await tx`
+        update orders
+        set status = 'Livré',
+            delivered_at = now(),
+            delivery_token_hash = null,
+            delivery_token_exp = null
+        where id = ${orderId}
+      `;
 
       // Loyalty + referral side-effects (server-authoritative, applied once on
       // the non-Livré -> Livré transition, mirroring the admin dashboard path).
-      const ownerId = typeof order.userId === "string" ? order.userId : "";
+      const ownerId = order.user_id ?? "";
       if (ownerId) {
-        tx.update(adminDb.collection("users").doc(ownerId), {
-          ordersCount: FieldValue.increment(1),
-        });
+        await tx`
+          update users
+          set orders_count = orders_count + 1
+          where id = ${ownerId}
+        `;
       }
-      // ─── Vague2-E/H: gate the +5€ referrer reward on idempotency in addition
-      // to the existing self-referral block. referralRewardPaid flips to true
-      // in the same transaction as the credit, so even concurrent calls (or a
-      // retry after a transient error) cannot double-pay.
-      // ────────────────────────────────────────────────────────────────────
-      const referrerId = typeof order.referrerId === "string" ? order.referrerId : "";
-      const alreadyPaid = order.referralRewardPaid === true;
+
+      // Gate the +5€ referrer reward on idempotency in addition to the
+      // self-referral block. referral_reward_paid flips to true in the same
+      // transaction as the credit, so concurrent calls (or retries) cannot
+      // double-pay.
+      const referrerId = order.referrer_id ?? "";
+      const alreadyPaid = order.referral_reward_paid === true;
       if (referrerId && referrerId !== ownerId && !alreadyPaid) {
-        tx.update(adminDb.collection("users").doc(referrerId), {
-          referralCredits: FieldValue.increment(5),
-        });
-        tx.update(orderRef, { referralRewardPaid: true });
+        await tx`
+          update users
+          set referral_credits = referral_credits + 5
+          where id = ${referrerId}
+        `;
+        await tx`
+          update orders
+          set referral_reward_paid = true
+          where id = ${orderId}
+        `;
       }
     });
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    const code = e?.message;
+  } catch (e: unknown) {
+    const code = e instanceof Error ? e.message : "";
     const map: Record<string, [string, number]> = {
       ORDER_NOT_FOUND: ["Commande introuvable.", 404],
       FORBIDDEN: ["Vous n'êtes pas autorisé à confirmer cette commande.", 403],
@@ -137,7 +179,7 @@ export async function POST(request: Request) {
       const [msg, status] = map[code];
       return bad(msg, status);
     }
-    console.error("DELIVERY_CONFIRM_FAILED", (e as { code?: string }).code ?? "unknown");
+    console.error("DELIVERY_CONFIRM_FAILED", (e as { code?: string })?.code ?? "unknown");
     return bad("Erreur lors de la confirmation de la livraison.", 500);
   }
 }

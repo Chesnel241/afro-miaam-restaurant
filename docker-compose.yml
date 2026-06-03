@@ -1,0 +1,111 @@
+# =============================================================================
+# Afro Miaam — self-hosted stack (Hetzner VPS)
+# =============================================================================
+# Three services on a single host:
+#   postgres : data store, internal-only, runs migrations on first boot.
+#   app      : Next.js standalone server, internal-only, writes uploads volume.
+#   caddy    : public edge — TLS termination, reverse proxy, static file_server
+#              for uploaded images.
+#
+# Secrets/config come from .env (see .env.example). On the VPS the image is
+# pulled from GHCR by the CD pipeline; locally `docker compose build` works too.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 — internal only (no published ports). Runs the schema
+  # migration on first boot via /docker-entrypoint-initdb.d.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # First-boot schema. The entrypoint only runs *.sql here when the data
+      # directory is empty (i.e. a brand-new volume).
+      - ./migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - internal
+
+  # ---------------------------------------------------------------------------
+  # Next.js app — built from the Dockerfile (standalone, non-root). Internal
+  # only; Caddy is the sole public entry point. Writes uploaded menu images to
+  # the shared `uploads` volume, which Caddy also reads (read-only) to serve.
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # The CD pipeline pulls this image from GHCR and runs `up -d --no-deps app`.
+    # The repository slug is lower-cased to satisfy GHCR naming rules.
+    image: ghcr.io/chesnel241/afro-miaam-restaurant:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    # NOTE: intentionally NO `ports:` — the app is never exposed to the host.
+    networks:
+      - internal
+
+  # ---------------------------------------------------------------------------
+  # Caddy — public edge. Auto-provisions Let's Encrypt TLS, reverse-proxies to
+  # the app, and serves /uploads/* straight from disk for performance.
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3 (QUIC)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Uploaded images, mounted read-only — Caddy file_servers /uploads/*.
+      - uploads:/srv/uploads:ro
+      - caddy_data:/data       # ACME certs & account keys (must persist!)
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    networks:
+      - internal
+
+# -----------------------------------------------------------------------------
+# Networks — single private bridge. Only Caddy publishes ports to the host.
+# -----------------------------------------------------------------------------
+networks:
+  internal:
+    driver: bridge
+
+# -----------------------------------------------------------------------------
+# Named volumes — survive container recreation / redeploys.
+# -----------------------------------------------------------------------------
+volumes:
+  pg_data:        # PostgreSQL data directory
+  uploads:        # Uploaded menu images (shared app <-> caddy)
+  caddy_data:     # Let's Encrypt certificates & ACME state
+  caddy_config:   # Caddy autosave config
+  caddy_logs:     # Access logs (rolled by Caddy)

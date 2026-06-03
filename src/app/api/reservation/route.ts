@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
 import { menuItems } from "@/data/menu";
 import { DELIVERY_FEE } from "@/lib/booking";
 import { MAINTENANCE_MODE } from "@/lib/maintenance";
+import { clientIp } from "@/lib/utils";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { requireAuth, AuthError, authErrorResponse } from "@/lib/auth";
+import { verifyRecaptcha } from "@/lib/recaptcha";
+import { getSql, withTransaction } from "@/lib/db";
 
 type ClientItem = {
   id?: unknown;
@@ -21,6 +24,7 @@ type Payload = {
   useCredits?: boolean;
   referralCode?: string;
   promoCode?: string;
+  recaptchaToken?: string;
   customer?: {
     firstName?: string;
     lastName?: string;
@@ -55,9 +59,6 @@ const ALLOWED_SLOTS = new Set([
   "20h30 - 21h00",
 ]);
 
-import { clientIp } from "@/lib/utils";
-import { checkRateLimit } from "@/lib/rate-limit";
-
 const PRICE_CACHE_TTL_MS = 60_000;
 const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
   menuItems.map((i) => [i.id, i.price]),
@@ -74,17 +75,19 @@ async function getPriceById(): Promise<Record<string, number>> {
   priceCachePromise = (async () => {
     const byId: Record<string, number> = { ...STATIC_PRICE_BY_ID };
     try {
-      const snap = await adminDb.collection("menu").get();
-      snap.forEach((d) => {
-        const data = d.data() as { price?: unknown; available?: unknown };
-        const price = typeof data.price === "number" && data.price > 0 ? data.price : null;
-        if (price !== null && data.available !== false) {
-          byId[d.id] = price;
+      const sql = getSql();
+      const rows = await sql<{ id: string; price: string | number }[]>`
+        SELECT id, price FROM menu_items WHERE available = true
+      `;
+      for (const row of rows) {
+        const price = typeof row.price === "number" ? row.price : Number(row.price);
+        if (Number.isFinite(price) && price > 0) {
+          byId[row.id] = price;
         }
-      });
+      }
       priceCache = { byId, expires: Date.now() + PRICE_CACHE_TTL_MS };
     } catch (e) {
-      console.warn("MENU_FIRESTORE_READ_FAILED", (e as { code?: string }).code ?? "unknown");
+      console.warn("MENU_PG_READ_FAILED", (e as { code?: string }).code ?? "unknown");
     } finally {
       priceCachePromise = null;
     }
@@ -117,16 +120,11 @@ function round2(n: number): number {
 }
 
 export async function POST(request: Request) {
-  // Vague3-K: fail-CLOSED with a clear 503 if the Admin SDK has no credentials,
-  // instead of relying on verifyIdToken happening to throw a misleading 401.
-  const unavail = adminUnavailableResponse();
-  if (unavail) return unavail;
-
   if (MAINTENANCE_MODE) {
     return bad("Service temporairement indisponible (maintenance).", 503);
   }
 
-  // Coarse pre-auth IP guard: protects the network-bound verifyIdToken call
+  // Coarse pre-auth IP guard: protects the network-bound verify calls
   // from unauthenticated floods. Uses the hardened clientIp (single shared
   // "untrusted-proxy" bucket off-Vercel), so it can no longer be bypassed by
   // forging IP headers.
@@ -134,43 +132,7 @@ export async function POST(request: Request) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
-  const appCheckToken = request.headers.get("X-Firebase-AppCheck");
-  if (process.env.NODE_ENV === "production") {
-    if (!appCheckToken) {
-      return bad("Non autorisé. App Check manquant.", 401);
-    }
-    try {
-      await verifyAppCheckToken(appCheckToken);
-    } catch {
-      return bad("Non autorisé. App Check invalide ou expiré.", 401);
-    }
-  } else if (appCheckToken) {
-    try {
-      await verifyAppCheckToken(appCheckToken);
-    } catch (e) {
-      console.warn("APP_CHECK_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
-    }
-  }
-
-  // Authentication validation via Admin SDK
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return bad("Non autorisé. Token manquant.", 401);
-  }
-  const token = authHeader.split("Bearer ")[1];
-  let decodedToken;
-  try {
-    decodedToken = await adminAuth.verifyIdToken(token);
-  } catch (e) {
-    return bad("Non autorisé. Token invalide ou expiré.", 401);
-  }
-  const userId = decodedToken.uid;
-
-  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
-  if (!(await checkRateLimit(`reservation:uid:${userId}`, 10, 60_000))) {
-    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
-  }
-
+  // Read body once; recaptcha token now lives in the JSON body.
   const lenHeader = request.headers.get("content-length");
   if (lenHeader && Number(lenHeader) > MAX_BODY_BYTES) {
     return bad("Requête trop volumineuse.", 413);
@@ -193,6 +155,43 @@ export async function POST(request: Request) {
     return bad("Format JSON invalide.");
   }
 
+  // reCAPTCHA: enforced in production; in dev verifyRecaptcha returns true
+  // when no secret is configured so local development still proceeds.
+  if (process.env.NODE_ENV === "production") {
+    const recaptchaToken =
+      typeof payload.recaptchaToken === "string" ? payload.recaptchaToken : null;
+    if (!recaptchaToken) {
+      return bad("Non autorisé. reCAPTCHA manquant.", 401);
+    }
+    const ok = await verifyRecaptcha(recaptchaToken, { remoteIp: clientIp(request) });
+    if (!ok) {
+      return bad("Non autorisé. reCAPTCHA invalide ou expiré.", 401);
+    }
+  } else if (typeof payload.recaptchaToken === "string" && payload.recaptchaToken) {
+    try {
+      await verifyRecaptcha(payload.recaptchaToken, { remoteIp: clientIp(request) });
+    } catch (e) {
+      console.warn("RECAPTCHA_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
+    }
+  }
+
+  // Authentication via self-hosted JWT
+  let claims;
+  try {
+    claims = await requireAuth(request);
+  } catch (e) {
+    if (e instanceof AuthError) {
+      return authErrorResponse(e);
+    }
+    return bad("Non autorisé. Token invalide ou expiré.", 401);
+  }
+  const userId = claims.sub;
+
+  // Per-uid rate limit keyed on the verified subject.
+  if (!(await checkRateLimit(`reservation:uid:${userId}`, 10, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
+  }
+
   const items = Array.isArray(payload.items) ? (payload.items as ClientItem[]) : [];
   if (items.length === 0) return bad("Le panier est vide.");
   if (items.length > MAX_ITEMS) return bad("Trop d'articles dans le panier.");
@@ -203,10 +202,13 @@ export async function POST(request: Request) {
 
   // Check exception closures/holidays (blocked dates)
   try {
-    const closureSnap = await adminDb.collection("settings").doc("closures").get();
-    if (closureSnap.exists) {
-      const blockedDates = closureSnap.data()?.blockedDates || [];
-      if (blockedDates.includes(date)) {
+    const sql = getSql();
+    const closureRows = await sql<{ value: { blockedDates?: string[] } }[]>`
+      SELECT value FROM settings WHERE key = 'closures' LIMIT 1
+    `;
+    if (closureRows.length > 0) {
+      const blockedDates = closureRows[0].value?.blockedDates || [];
+      if (Array.isArray(blockedDates) && blockedDates.includes(date)) {
         return bad("Désolé, le restaurant est fermé exceptionnellement à cette date.");
       }
     }
@@ -229,7 +231,7 @@ export async function POST(request: Request) {
   const PRICE_BY_ID = await getPriceById();
   let serverSubtotal = 0;
   const sanitizedItems: any[] = [];
-  
+
   for (const item of items) {
     const id = clean(item.id, 60);
     const qty = item.quantity;
@@ -241,7 +243,7 @@ export async function POST(request: Request) {
     }
     const price = PRICE_BY_ID[id];
     serverSubtotal += price * qty;
-    
+
     sanitizedItems.push({
       id: id,
       name: clean(item.name, 100) || "Plat",
@@ -286,19 +288,39 @@ export async function POST(request: Request) {
   try {
     let finalTotal = serverTotalBeforeDiscount;
     let finalDeposit = 0;
-    const orderId = adminDb.collection("orders").doc().id;
-    const userRef = adminDb.collection("users").doc(userId);
+    let orderId = "";
 
-    await adminDb.runTransaction(async (tx) => {
-      const userSnap = await tx.get(userRef);
-      if (!userSnap.exists) {
+    await withTransaction(async (tx) => {
+      const userRows = await tx<
+        {
+          id: string;
+          name: string | null;
+          email: string | null;
+          referral_credits: string | number | null;
+          orders_count: number | null;
+          has_used_welcome_offer: boolean | null;
+          referred_by: string | null;
+        }[]
+      >`
+        SELECT id, name, email, referral_credits, orders_count,
+               has_used_welcome_offer, referred_by
+        FROM users
+        WHERE id = ${userId}
+        FOR UPDATE
+      `;
+      if (userRows.length === 0) {
         throw new Error("Utilisateur introuvable.");
       }
-      
-      const userData = userSnap.data() || {};
-      const currentCredits = typeof userData.referralCredits === 'number' ? Math.max(0, userData.referralCredits) : 0;
-      const ordersCount = typeof userData.ordersCount === 'number' ? userData.ordersCount : 0;
-      const hasUsedWelcomeOffer = userData.hasUsedWelcomeOffer === true;
+      const userData = userRows[0];
+
+      const rawCredits =
+        typeof userData.referral_credits === "number"
+          ? userData.referral_credits
+          : Number(userData.referral_credits ?? 0);
+      const currentCredits = Number.isFinite(rawCredits) ? Math.max(0, rawCredits) : 0;
+      const ordersCount =
+        typeof userData.orders_count === "number" ? userData.orders_count : 0;
+      const hasUsedWelcomeOffer = userData.has_used_welcome_offer === true;
 
       // Logic des réductions
       const welcomeDiscount = (!hasUsedWelcomeOffer && ordersCount === 0) ? 5 : 0;
@@ -312,13 +334,16 @@ export async function POST(request: Request) {
       remainingTotal -= actualWelcomeDiscount;
 
       if (typeof payload.promoCode === "string" && remainingTotal > 0) {
-        const promoSnap = await tx.get(adminDb.collection("settings").doc("promotions"));
-        if (promoSnap.exists) {
-          const promoData = promoSnap.data() || {};
-          const codes = promoData.codes || {};
+        const promoRows = await tx<
+          { value: { codes?: Record<string, { code?: string; isActive?: boolean; discountType?: string; discountValue?: unknown }> } }[]
+        >`
+          SELECT value FROM settings WHERE key = 'promotions' LIMIT 1
+        `;
+        if (promoRows.length > 0) {
+          const codes = promoRows[0].value?.codes || {};
           const codeData = codes[payload.promoCode.toUpperCase().trim()];
           if (codeData && codeData.isActive === true) {
-            promoCodeUsed = codeData.code;
+            promoCodeUsed = codeData.code ?? "";
             // L-3: discountValue is admin-controlled and unvalidated. Coerce to
             // a finite number (else 0) and clamp before applying so a negative
             // value can't inflate the total and a >100% can't over-discount.
@@ -336,7 +361,7 @@ export async function POST(request: Request) {
           }
         }
       }
-      
+
       if (payload.useCredits && remainingTotal > 0) {
         creditsToUse = Math.min(currentCredits, remainingTotal);
         remainingTotal -= creditsToUse;
@@ -345,9 +370,9 @@ export async function POST(request: Request) {
       finalTotal = round2(Math.max(0, remainingTotal));
       finalDeposit = round2(finalTotal * 0.5);
 
-      // MED-1 (pass 6): explicit reject. Firestore rule requires total > 0;
-      // a finalTotal === 0 would fail at the rules layer with a cryptic error.
-      // Surface a clear message instead so the user knows to use fewer credits.
+      // MED-1: explicit reject. A total of 0 would violate downstream
+      // invariants (deposit-required flow); surface a clear French message
+      // so the user knows to use fewer credits.
       if (finalTotal <= 0) {
         if (serverTotalBeforeDiscount > 0) {
           throw new Error(
@@ -370,62 +395,74 @@ export async function POST(request: Request) {
         promoDiscount: promoDiscount > 0 ? promoDiscount : null,
       };
 
-      // ─── Vague2-E/H: resolve referral code to UID inside the order ──────
-      // transaction. Self-referral (matched user is the buyer) is rejected
-      // silently. Storing referrerId here is the ONLY trusted population path;
-      // clients cannot set it (the Firestore rule's keys().hasOnly([...])
-      // whitelist permits the field, but it can only originate from this
-      // server-side resolution).
-      // ────────────────────────────────────────────────────────────────────
-      let referrerId: string | undefined;
-      if (cleanedReferralCode) {
-        const referrerQuery = await tx.get(
-          adminDb
-            .collection("users")
-            .where("referralCode", "==", cleanedReferralCode)
-            .limit(1),
-        );
-        if (!referrerQuery.empty) {
-          const match = referrerQuery.docs[0];
-          if (match.id !== userId) {
-            referrerId = match.id;
+      // Vague2-E/H: resolve referral code to UID inside the order transaction.
+      // First-order-only (referred_by IS NULL). Self-referral rejected silently.
+      // Storing referrer_id here is the ONLY trusted population path; clients
+      // cannot set it.
+      let referrerId: string | null = null;
+      if (cleanedReferralCode && userData.referred_by === null) {
+        const referrerRows = await tx<{ id: string }[]>`
+          SELECT id FROM users WHERE referral_code = ${cleanedReferralCode} LIMIT 1
+        `;
+        if (referrerRows.length > 0) {
+          const matchId = referrerRows[0].id;
+          if (matchId !== userId) {
+            referrerId = matchId;
           }
         }
       }
 
-      const orderData: Record<string, unknown> = {
-        userId: userId,
-        userName: userData.name || `${customer.firstName} ${customer.lastName}`,
-        userEmail: (userData.email || customer.email || "").trim().toLowerCase(),
-        items: sanitizedItems,
-        subtotal: round2(serverSubtotal),
-        deliveryFee: serverDeliveryFee,
-        total: finalTotal,
-        depositAmount: finalDeposit,
-        discounts,
-        status: "Attente Acompte",
-        reference,
-        createdAt: FieldValue.serverTimestamp(),
-        customer: customer,
-      };
-      if (referrerId) {
-        orderData.referrerId = referrerId;
-      }
+      const userName = userData.name || `${customer.firstName} ${customer.lastName}`;
+      const userEmail = (userData.email || customer.email || "").trim().toLowerCase();
 
-      const updateData: any = {
-        ordersCount: FieldValue.increment(1),
-      };
-      
-      if (welcomeDiscount > 0) {
-        updateData.hasUsedWelcomeOffer = true;
-      }
-      if (creditsToUse > 0) {
-        updateData.referralCredits = FieldValue.increment(-creditsToUse);
-      }
+      // Insert order. status defaults to 'Attente Acompte' at the column level
+      // but we set it explicitly to mirror the previous Firestore write.
+      const orderRows = await tx<{ id: string }[]>`
+        INSERT INTO orders (
+          reference,
+          user_id,
+          user_name,
+          user_email,
+          items,
+          subtotal,
+          delivery_fee,
+          total,
+          deposit_amount,
+          discounts,
+          status,
+          customer,
+          referrer_id
+        ) VALUES (
+          ${reference},
+          ${userId},
+          ${userName},
+          ${userEmail},
+          ${tx.json(sanitizedItems)},
+          ${round2(serverSubtotal)},
+          ${serverDeliveryFee},
+          ${finalTotal},
+          ${finalDeposit},
+          ${tx.json(discounts)},
+          ${"Attente Acompte"},
+          ${tx.json(customer)},
+          ${referrerId}
+        )
+        RETURNING id
+      `;
+      orderId = orderRows[0].id;
 
-      // Write order and update user atomically
-      tx.set(adminDb.collection("orders").doc(orderId), orderData);
-      tx.update(userRef, updateData);
+      // Update user: increment orders_count, optionally flip welcome offer,
+      // decrement referral credits, and set referred_by only if not already set.
+      await tx`
+        UPDATE users
+        SET
+          orders_count = orders_count + 1,
+          has_used_welcome_offer = (${welcomeDiscount > 0} OR has_used_welcome_offer),
+          referral_credits = referral_credits - ${creditsToUse},
+          referred_by = COALESCE(referred_by, ${referrerId}),
+          updated_at = now()
+        WHERE id = ${userId}
+      `;
     });
 
     console.log("[Afro Miaam] Réservation confirmée et stockée", { orderId, reference, finalTotal });
@@ -441,17 +478,18 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     // Vague3-I: only surface our own intentional, user-facing business-rule
-    // messages; anything else (Firestore/Firebase/SDK errors with internal
-    // detail like field paths, index names, project IDs) is replaced with a
-    // generic message and the real error is kept server-side in logs.
+    // messages; anything else (DB / driver errors with internal detail like
+    // column names, schema info) is replaced with a generic message and the
+    // real error is kept server-side in logs.
     const SAFE_MESSAGES = new Set([
       "Utilisateur introuvable.",
       "Vos réductions couvrent intégralement la commande. Utilisez moins de crédits pour finaliser la réservation.",
       "Erreur de calcul du total.",
     ]);
     const msg = typeof error?.message === "string" ? error.message : "";
-    const isFirebaseError = error && typeof error === "object" && "code" in error;
-    const safe = !isFirebaseError && SAFE_MESSAGES.has(msg);
+    const isDbError =
+      error && typeof error === "object" && ("code" in error || "severity_local" in error);
+    const safe = !isDbError && SAFE_MESSAGES.has(msg);
     console.error("TRANSACTION_FAILED", error);
     if (safe) return bad(msg, 400);
     return bad("Erreur lors de la validation et l'insertion de la commande.", 500);

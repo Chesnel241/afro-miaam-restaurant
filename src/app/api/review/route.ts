@@ -1,149 +1,150 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { requireAuth, authErrorResponse } from "@/lib/auth";
+import { verifyRecaptcha } from "@/lib/recaptcha";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { withTransaction } from "@/lib/db";
 import { clientIp } from "@/lib/utils";
-import { checkRateLimit } from "@/lib/rate-limit";
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
 }
 
 export async function POST(request: Request) {
-  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
-  const unavail = adminUnavailableResponse();
-  if (unavail) return unavail;
-
-  const appCheckToken = request.headers.get("X-Firebase-AppCheck");
-  if (process.env.NODE_ENV === "production") {
-    if (!appCheckToken) {
-      return bad("Non autorisÃ©. App Check manquant.", 401);
-    }
-    try {
-      await verifyAppCheckToken(appCheckToken);
-    } catch {
-      return bad("Non autorisÃ©. App Check invalide ou expirÃ©.", 401);
-    }
-  } else if (appCheckToken) {
-    try {
-      await verifyAppCheckToken(appCheckToken);
-    } catch (e) {
-      console.warn("APP_CHECK_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
-    }
-  }
-
-  // Coarse pre-auth IP guard (hardened clientIp) protecting verifyIdToken from
-  // unauthenticated floods.
+  // Coarse pre-auth IP guard (hardened clientIp) protecting the JWT verify
+  // path from unauthenticated floods.
   if (!(await checkRateLimit(`review:ip:${clientIp(request)}`, 15, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
-  // Authentication validation via Admin SDK
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return bad("Non autorisé. Token manquant.", 401);
-  }
-  const token = authHeader.split("Bearer ")[1];
-  let decodedToken;
+  let claims;
   try {
-    decodedToken = await adminAuth.verifyIdToken(token);
+    claims = await requireAuth(request);
   } catch (e) {
-    return bad("Non autorisé. Token invalide ou expiré.", 401);
+    return authErrorResponse(e);
   }
-  const userId = decodedToken.uid;
-  const userEmail = (decodedToken.email || "").trim().toLowerCase();
 
-  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
+  const userId = claims.sub;
+  const userEmail = (claims.email || "").trim().toLowerCase();
+
+  // Per-uid rate limit keyed on the unspoofable, verified JWT subject.
   if (!(await checkRateLimit(`review:uid:${userId}`, 15, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
-  let payload: { orderId?: string; reaction?: "bon" | "moyen" | "pas_bon" };
+  let payload: {
+    orderId?: string;
+    reaction?: "bon" | "moyen" | "pas_bon";
+    recaptchaToken?: string;
+  };
   try {
     payload = await request.json();
   } catch {
     return bad("Format JSON invalide.");
   }
 
+  if (process.env.NODE_ENV === "production") {
+    const ok = await verifyRecaptcha(payload.recaptchaToken ?? null, {
+      remoteIp: clientIp(request),
+    });
+    if (!ok) return bad("Vérification reCAPTCHA échouée.", 401);
+  }
+
   const { orderId, reaction } = payload;
-  if (!orderId || typeof orderId !== "string" || orderId.includes("/") || !reaction || !["bon", "moyen", "pas_bon"].includes(reaction)) {
+  if (
+    !orderId ||
+    typeof orderId !== "string" ||
+    orderId.includes("/") ||
+    !reaction ||
+    !["bon", "moyen", "pas_bon"].includes(reaction)
+  ) {
     return bad("Paramètres manquants ou invalides.");
   }
 
   try {
-    const orderRef = adminDb.collection("orders").doc(orderId);
-    const userRef = adminDb.collection("users").doc(userId);
-
     let creditsAdded = 0;
 
-    await adminDb.runTransaction(async (tx) => {
-      const orderSnap = await tx.get(orderRef);
-      if (!orderSnap.exists) {
+    await withTransaction(async (tx) => {
+      // SELECT ... FOR UPDATE: lock the row for the transaction so concurrent
+      // submissions can't double-credit the same review.
+      const orderRows = await tx<{
+        id: string;
+        user_id: string | null;
+        user_email: string | null;
+        status: string;
+        has_reviewed: boolean;
+      }[]>`
+        select id, user_id, user_email, status, has_reviewed
+        from orders
+        where id = ${orderId}
+        for update
+      `;
+
+      if (orderRows.length === 0) {
         throw new Error("ORDER_NOT_FOUND");
       }
+      const order = orderRows[0];
 
-      const orderData = orderSnap.data() || {};
-      
-      // Ownership check (uid or email)
-      // Vague2-D: email-fallback ownership now requires a verified email.
-      const isOwnerByUid = orderData.userId === userId;
+      // Ownership check (uid or verified email).
+      const isOwnerByUid = order.user_id != null && order.user_id === userId;
       const isOwnerByEmail =
-        decodedToken.email_verified === true &&
-        typeof orderData.userEmail === 'string' &&
-        orderData.userEmail.trim().toLowerCase() === userEmail;
+        claims.email_verified === true &&
+        typeof order.user_email === "string" &&
+        order.user_email.trim().toLowerCase() === userEmail;
 
       if (!isOwnerByUid && !isOwnerByEmail) {
         throw new Error("FORBIDDEN");
       }
 
-      // Check order status
-      if (orderData.status !== "Livré") {
+      if (order.status !== "Livré") {
         throw new Error("ORDER_NOT_DELIVERED");
       }
 
-      // Check duplicate review
-      if (orderData.hasReviewed === true) {
+      if (order.has_reviewed === true) {
         throw new Error("ALREADY_REVIEWED");
       }
 
-      // Fetch global settings to verify if reward is active
-      const settingsSnap = await tx.get(adminDb.collection("settings").doc("global"));
-      const settingsData = settingsSnap.data();
-      let isRewardActive = true;
-      if (settingsSnap.exists && settingsData) {
-        isRewardActive = settingsData.isReviewRewardActive !== false;
-      }
+      // Fetch global settings to verify the reward is active (defaults true
+      // when the row or the flag is missing — same fallback as Firestore).
+      const settingsRows = await tx<{ value: { isReviewRewardActive?: boolean } | null }[]>`
+        select value from settings where key = 'global' limit 1
+      `;
+      const settings = settingsRows[0]?.value ?? null;
+      const isRewardActive = settings ? settings.isReviewRewardActive !== false : true;
 
-      // Update Order document
-      tx.update(orderRef, {
-        hasReviewed: true,
-        review: {
-          reaction,
-          createdAt: FieldValue.serverTimestamp()
-        }
-      });
+      const review = { reaction, createdAt: new Date().toISOString() };
+      await tx`
+        update orders
+        set has_reviewed = true,
+            review = ${tx.json(review)}
+        where id = ${orderId}
+      `;
 
-      // Reward credits if active
       if (isRewardActive) {
-        tx.update(userRef, {
-          referralCredits: FieldValue.increment(1)
-        });
+        // Credit the order owner — same id we used for the ownership check.
+        const ownerId = order.user_id ?? userId;
+        await tx`
+          update users
+          set referral_credits = referral_credits + 1
+          where id = ${ownerId}
+        `;
         creditsAdded = 1;
       }
     });
 
     return NextResponse.json({ ok: true, creditsAdded });
-  } catch (error: any) {
-    console.error("REVIEW_TRANSACTION_FAILED", error.message);
-    if (error.message === "ORDER_NOT_FOUND") {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "";
+    console.error("REVIEW_TRANSACTION_FAILED", msg);
+    if (msg === "ORDER_NOT_FOUND") {
       return bad("Commande introuvable.", 404);
     }
-    if (error.message === "FORBIDDEN") {
+    if (msg === "FORBIDDEN") {
       return bad("Vous n'êtes pas autorisé à évaluer cette commande.", 403);
     }
-    if (error.message === "ORDER_NOT_DELIVERED") {
+    if (msg === "ORDER_NOT_DELIVERED") {
       return bad("Vous ne pouvez évaluer qu'une commande livrée.", 400);
     }
-    if (error.message === "ALREADY_REVIEWED") {
+    if (msg === "ALREADY_REVIEWED") {
       return bad("Vous avez déjà soumis un avis pour cette commande.", 400);
     }
     return bad("Erreur interne lors de l'enregistrement de l'avis.", 500);
