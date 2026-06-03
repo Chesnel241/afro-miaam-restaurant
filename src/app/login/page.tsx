@@ -74,14 +74,12 @@ export default function LoginPage() {
     setError("");
     setBusy(true);
     try {
+      // Full-page redirect to /api/auth/oauth/google/start — control leaves
+      // the page, so the code below only runs if the redirect itself fails.
       await loginWithGoogle();
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code || "";
-      if (code !== "auth/popup-closed-by-user") {
-        setError(`Erreur Google (${code}). Vérifiez que l'option est activée dans Firebase.`);
-        console.error("ORDER_VALIDATION_FAILED", code || "unknown");
-      }
-    } finally {
+      setError("Connexion Google indisponible pour le moment. Réessayez.");
+      console.error("GOOGLE_OAUTH_START_FAILED", (err as { message?: string })?.message || "unknown");
       setBusy(false);
     }
   };

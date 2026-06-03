@@ -21,6 +21,13 @@ export type Order = {
   hasReviewed?: boolean;
   referrerId?: string;
   review?: unknown;
+  discounts?: {
+    welcomeOffer?: boolean;
+    referralCredits?: number;
+    referralCodeUsed?: string;
+    promoCodeUsed?: string;
+    promoDiscount?: number;
+  } | null;
   deletionRequested?: boolean;
   customer?: {
     phone?: string;
@@ -56,6 +63,7 @@ export function docToOrder(id: string, data: Record<string, unknown>): Order {
     hasReviewed: (data.hasReviewed as boolean) || false,
     referrerId: (data.referrerId as string) || undefined,
     review: data.review ?? null,
+    discounts: (data.discounts as Order["discounts"]) ?? null,
     deletionRequested: (data.deletionRequested as boolean) || false,
     customer: data.customer as
       | { phone?: string; slot?: string; deliveryMode?: string }
