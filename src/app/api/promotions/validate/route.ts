@@ -1,65 +1,61 @@
 import { NextResponse } from "next/server";
-import { adminDb, adminAuth, verifyAppCheckToken, adminUnavailableResponse } from "@/lib/firebase-admin";
 import { clientIp } from "@/lib/utils";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { requireAuth, AuthError, authErrorResponse } from "@/lib/auth";
+import { verifyRecaptcha } from "@/lib/recaptcha";
+import { getSql } from "@/lib/db";
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
 }
 
 export async function POST(request: Request) {
-  // Vague3-K: fail-CLOSED with 503 if Admin SDK has no credentials.
-  const unavail = adminUnavailableResponse();
-  if (unavail) return unavail;
-
-  // Coarse pre-auth IP guard protecting verifyIdToken from unauthenticated floods.
+  // Coarse pre-auth IP guard protecting verifyRecaptcha + DB from floods.
   if (!(await checkRateLimit(`promo:ip:${clientIp(request)}`, 30, 60_000))) {
     return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
-  // App Check: enforced in production; in dev, verify-if-present but never block.
-  const appCheckToken = request.headers.get("X-Firebase-AppCheck");
-  if (process.env.NODE_ENV === "production") {
-    if (!appCheckToken) {
-      return bad("Non autorisé. App Check manquant.", 401);
-    }
-    try {
-      await verifyAppCheckToken(appCheckToken);
-    } catch {
-      return bad("Non autorisé. App Check invalide ou expiré.", 401);
-    }
-  } else if (appCheckToken) {
-    try {
-      await verifyAppCheckToken(appCheckToken);
-    } catch (e) {
-      console.warn("APP_CHECK_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
-    }
-  }
-
-  // Authentication validation via Admin SDK.
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return bad("Non autorisé. Token manquant.", 401);
-  }
-  const token = authHeader.split("Bearer ")[1];
-  let decodedToken;
-  try {
-    decodedToken = await adminAuth.verifyIdToken(token);
-  } catch (e) {
-    return bad("Non autorisé. Token invalide ou expiré.", 401);
-  }
-  const uid = decodedToken.uid;
-
-  // Per-uid rate limit keyed on the unspoofable, verified Firebase uid.
-  if (!(await checkRateLimit(`promo:uid:${uid}`, 30, 60_000))) {
-    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
-  }
-
-  let payload: { code?: unknown };
+  let payload: { code?: unknown; recaptchaToken?: unknown };
   try {
     payload = await request.json();
   } catch {
     return bad("Format JSON invalide.");
+  }
+
+  // reCAPTCHA: enforced in production; in dev, verify-if-present but never block.
+  if (process.env.NODE_ENV === "production") {
+    const recaptchaToken =
+      typeof payload?.recaptchaToken === "string" ? payload.recaptchaToken : null;
+    if (!recaptchaToken) {
+      return bad("Non autorisé. reCAPTCHA manquant.", 401);
+    }
+    const ok = await verifyRecaptcha(recaptchaToken, { remoteIp: clientIp(request) });
+    if (!ok) {
+      return bad("Non autorisé. reCAPTCHA invalide ou expiré.", 401);
+    }
+  } else if (typeof payload?.recaptchaToken === "string" && payload.recaptchaToken) {
+    try {
+      await verifyRecaptcha(payload.recaptchaToken, { remoteIp: clientIp(request) });
+    } catch (e) {
+      console.warn("RECAPTCHA_VERIFY_FAILED", (e as { code?: string }).code ?? "unknown");
+    }
+  }
+
+  // Authentication via self-hosted JWT — must be logged in.
+  let claims;
+  try {
+    claims = await requireAuth(request);
+  } catch (e) {
+    if (e instanceof AuthError) {
+      return authErrorResponse(e);
+    }
+    return bad("Non autorisé. Token invalide ou expiré.", 401);
+  }
+  const uid = claims.sub;
+
+  // Per-uid rate limit keyed on the verified subject.
+  if (!(await checkRateLimit(`promo:uid:${uid}`, 30, 60_000))) {
+    return bad("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
   const rawCode = payload?.code;
@@ -72,12 +68,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const snap = await adminDb.collection("settings").doc("promotions").get();
-    if (!snap.exists) {
+    const sql = getSql();
+    const rows = await sql<
+      { value: { codes?: Record<string, { code?: string; isActive?: boolean; discountType?: string; discountValue?: unknown }> } }[]
+    >`
+      SELECT value FROM settings WHERE key = 'promotions' LIMIT 1
+    `;
+    if (rows.length === 0) {
       return NextResponse.json({ ok: false, reason: "unknown" });
     }
-    const data = snap.data() || {};
-    const codes = (data.codes && typeof data.codes === "object") ? data.codes : {};
+    const data = rows[0].value || {};
+    const codes =
+      data.codes && typeof data.codes === "object" ? data.codes : {};
     const codeData = codes[code];
 
     if (!codeData) {

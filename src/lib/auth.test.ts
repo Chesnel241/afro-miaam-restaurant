@@ -54,10 +54,9 @@ describe("access tokens (jose HS256)", () => {
 
   it("rejects a tampered token (bad signature)", async () => {
     const token = await signAccessToken(sampleUser);
-    // Flip a character in the signature segment.
+    // Replace the entire signature segment so the HMAC cannot possibly match.
     const parts = token.split(".");
-    const lastChar = parts[2].at(-1) === "a" ? "b" : "a";
-    parts[2] = parts[2].slice(0, -1) + lastChar;
+    parts[2] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     const tampered = parts.join(".");
     await expect(verifyAccessToken(tampered)).rejects.toBeInstanceOf(AuthError);
   });

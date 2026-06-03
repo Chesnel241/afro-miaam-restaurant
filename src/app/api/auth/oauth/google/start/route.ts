@@ -17,7 +17,7 @@ import { randomBytes } from "node:crypto";
  *   OAUTH_REDIRECT_BASE_URL (e.g. https://afro-miaam.fr)
  */
 
-export const OAUTH_STATE_COOKIE = "afro_oauth_state";
+const OAUTH_STATE_COOKIE = "afro_oauth_state";
 const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export async function GET(_request: Request) {
