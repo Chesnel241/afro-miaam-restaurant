@@ -16,7 +16,7 @@ import { clientIp } from "@/lib/utils";
  *
  * Required env:
  *   GOOGLE_OAUTH_CLIENT_ID
- *   OAUTH_REDIRECT_BASE_URL (e.g. https://afro-miaam.fr)
+ *   OAUTH_REDIRECT_BASE_URL (e.g. https://afromiaam.fr)
  */
 
 const OAUTH_STATE_COOKIE = "afro_oauth_state";

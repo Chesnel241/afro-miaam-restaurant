@@ -8,10 +8,10 @@
 
 # Global options. ACME registration email for Let's Encrypt notices/recovery.
 {
-	email bonjour@afro-miaam.fr
+	email bonjour@afromiaam.fr
 }
 
-afro-miaam.fr, www.afro-miaam.fr {
+afromiaam.fr, www.afromiaam.fr {
 	# -------------------------------------------------------------------------
 	# Serve uploaded menu images directly from disk (mounted at /srv/uploads,
 	# read-only). The `uploads` volume is exposed under /srv, so a request for

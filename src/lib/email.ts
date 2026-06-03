@@ -15,7 +15,7 @@
  */
 
 const RESEND_API_URL = "https://api.resend.com/emails";
-const DEFAULT_FROM = "Afro Miaam <commandes@afro-miaam.fr>";
+const DEFAULT_FROM = "Afro Miaam <commandes@afromiaam.fr>";
 const FETCH_TIMEOUT_MS = 5000;
 
 interface ResendPayload {
