@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/rate-limit-store";
 import { requireAuth, AuthError, authErrorResponse } from "@/lib/auth";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { getSql, withTransaction } from "@/lib/db";
+import { sendReservationConfirmation, sendReservationAlert } from "@/lib/email";
 
 type ClientItem = {
   id?: unknown;
@@ -359,6 +360,9 @@ export async function POST(request: Request) {
     let finalTotal = serverTotalBeforeDiscount;
     let finalDeposit = 0;
     let orderId = "";
+    // Captured inside the transaction for the post-commit notification emails.
+    let notifyName = "";
+    let notifyEmail = "";
 
     await withTransaction(async (tx) => {
       const userRows = await tx<
@@ -495,6 +499,8 @@ export async function POST(request: Request) {
 
       const userName = userData.name || `${customer.firstName} ${customer.lastName}`;
       const userEmail = (userData.email || customer.email || "").trim().toLowerCase();
+      notifyName = userName;
+      notifyEmail = userEmail;
 
       // Insert order. status defaults to 'Attente Acompte' at the column level
       // but we set it explicitly to mirror the previous Firestore write.
@@ -547,6 +553,37 @@ export async function POST(request: Request) {
     });
 
     console.log("[Afro Miaam] Réservation confirmée et stockée", { orderId, reference, finalTotal });
+
+    // Notification emails — fire-and-forget. The order is already committed;
+    // a mail failure (Resend down, missing key in dev) must NOT fail the
+    // request. Each sender already swallows its own errors, but we also guard
+    // here so an unexpected throw never bubbles into the response.
+    void (async () => {
+      try {
+        if (notifyEmail) {
+          await sendReservationConfirmation(
+            notifyEmail,
+            notifyName,
+            reference,
+            finalTotal,
+            date,
+            slot,
+          );
+        }
+        const restaurantEmail = process.env.RESTAURANT_EMAIL;
+        if (restaurantEmail) {
+          await sendReservationAlert(
+            restaurantEmail,
+            notifyName,
+            reference,
+            finalTotal,
+            sanitizedItems.map((i) => ({ name: i.name, quantity: i.quantity })),
+          );
+        }
+      } catch (e) {
+        console.warn("RESERVATION_EMAIL_FAILED", (e as { message?: string })?.message ?? "unknown");
+      }
+    })();
 
     return NextResponse.json({
       ok: true,
