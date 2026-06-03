@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/components/AuthContext";
+import { useAuth, useRecaptcha } from "@/components/AuthContext";
 import { useOrders, type Order, type OrderStatus } from "@/components/OrderContext";
 import { useMenu } from "@/components/MenuContext";
 import { useSettings } from "@/components/SettingsContext";
@@ -10,9 +10,16 @@ import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon,
 import { AdminMenuManager } from "@/components/AdminMenuManager";
 import { QRCodeSVG } from "qrcode.react";
 
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions" | "reviews" | "closures";
+
+type PromoEntry = { code: string; discountType: "percentage" | "fixed"; discountValue: number; isActive: boolean };
+
+// The Order.review field is typed `unknown` at the data layer. This narrows it
+// to the reaction string for the admin review aggregates.
+function reviewReaction(order: Order): string | undefined {
+  const r = order.review as { reaction?: string } | null | undefined;
+  return r?.reaction;
+}
 
 // Modal QR Code
 function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
@@ -26,16 +33,18 @@ function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void })
   const [validationUrl, setValidationUrl] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
+  const { authFetch } = useAuth();
+  const { getToken } = useRecaptcha();
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : "";
-        const res = await fetch("/api/delivery/token", {
+        const recaptchaToken = await getToken("delivery_token");
+        const res = await authFetch("/api/delivery/token", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
-          body: JSON.stringify({ orderId }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId, recaptchaToken }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Erreur lors de la génération du QR.");
@@ -51,7 +60,7 @@ function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void })
     return () => {
       cancelled = true;
     };
-  }, [orderId]);
+  }, [orderId, authFetch, getToken]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
@@ -78,7 +87,7 @@ function QRModal({ orderId, onClose }: { orderId: string; onClose: () => void })
 }
 
 export default function AdminPage() {
-  const { user, loading, logout, allCustomers, newsletterSubscribers } = useAuth();
+  const { user, loading, logout, allCustomers, newsletterSubscribers, authFetch } = useAuth();
   const { allOrders, updateOrderStatus } = useOrders();
   const { dynamicMenu, updateMenuItem } = useMenu();
   const { isReviewRewardActive, isWelcomeOfferActive, updateGlobalSettings } = useSettings();
@@ -93,7 +102,7 @@ export default function AdminPage() {
   const [selectedOrderForQR, setSelectedOrderForQR] = useState<string | null>(null);
 
   // Promotions State & CRUD Handlers
-  const [promotions, setPromotions] = useState<Record<string, { code: string; discountType: "percentage" | "fixed"; discountValue: number; isActive: boolean }>>({});
+  const [promotions, setPromotions] = useState<Record<string, PromoEntry>>({});
   const [promoForm, setPromoForm] = useState({ code: "", discountType: "percentage" as "percentage" | "fixed", discountValue: 0, isActive: true });
   const [isLoadingPromos, setIsLoadingPromos] = useState(false);
 
@@ -107,9 +116,13 @@ export default function AdminPage() {
       const loadClosures = async () => {
         setIsLoadingClosures(true);
         try {
-          const snap = await getDoc(doc(db, "settings", "closures"));
-          if (snap.exists()) {
-            setBlockedDates(snap.data().blockedDates || []);
+          const res = await authFetch("/api/admin/settings/closures");
+          if (res.ok) {
+            const data = await res.json().catch(() => ({}));
+            const value = data.value ?? data.settings ?? data;
+            if (value && Array.isArray(value.blockedDates)) {
+              setBlockedDates(value.blockedDates);
+            }
           }
         } catch (err) {
           console.error("Error loading closures:", err);
@@ -119,7 +132,7 @@ export default function AdminPage() {
       };
       loadClosures();
     }
-  }, [activeTab]);
+  }, [activeTab, authFetch]);
 
   const handleAddClosure = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +143,12 @@ export default function AdminPage() {
     }
     const updated = [...blockedDates, closureDate].sort();
     try {
-      await setDoc(doc(db, "settings", "closures"), { blockedDates: updated });
+      const res = await authFetch("/api/admin/settings/closures", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blockedDates: updated }),
+      });
+      if (!res.ok) throw new Error("Erreur lors du blocage de la date.");
       setBlockedDates(updated);
       setClosureDate("");
     } catch (err) {
@@ -142,7 +160,12 @@ export default function AdminPage() {
     if (!confirm(`Débloquer la date ${dateToDelete} ?`)) return;
     const updated = blockedDates.filter(d => d !== dateToDelete);
     try {
-      await setDoc(doc(db, "settings", "closures"), { blockedDates: updated });
+      const res = await authFetch("/api/admin/settings/closures", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blockedDates: updated }),
+      });
+      if (!res.ok) throw new Error("Erreur lors du déblocage de la date.");
       setBlockedDates(updated);
     } catch (err) {
       alert("Erreur lors du déblocage de la date.");
@@ -168,9 +191,13 @@ export default function AdminPage() {
       const loadPromotions = async () => {
         setIsLoadingPromos(true);
         try {
-          const snap = await getDoc(doc(db, "settings", "promotions"));
-          if (snap.exists()) {
-            setPromotions(snap.data().codes || {});
+          const res = await authFetch("/api/admin/settings/promotions");
+          if (res.ok) {
+            const data = await res.json().catch(() => ({}));
+            const value = data.value ?? data.settings ?? data;
+            if (value && value.codes && typeof value.codes === "object") {
+              setPromotions(value.codes as Record<string, PromoEntry>);
+            }
           }
         } catch (err) {
           console.error("Error loading promotions:", err);
@@ -180,7 +207,7 @@ export default function AdminPage() {
       };
       loadPromotions();
     }
-  }, [activeTab]);
+  }, [activeTab, authFetch]);
 
   const handleSavePromo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,7 +225,12 @@ export default function AdminPage() {
     };
 
     try {
-      await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
+      const res = await authFetch("/api/admin/settings/promotions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: updatedCodes }),
+      });
+      if (!res.ok) throw new Error("Erreur lors de la sauvegarde.");
       setPromotions(updatedCodes);
       setPromoForm({ code: "", discountType: "percentage", discountValue: 0, isActive: true });
     } catch (err) {
@@ -210,7 +242,12 @@ export default function AdminPage() {
     if (!confirm("Voulez-vous supprimer ce code promo ?")) return;
     const { [codeKey]: _, ...updatedCodes } = promotions;
     try {
-      await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
+      const res = await authFetch("/api/admin/settings/promotions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: updatedCodes }),
+      });
+      if (!res.ok) throw new Error("Erreur lors de la suppression.");
       setPromotions(updatedCodes);
     } catch (err) {
       alert("Erreur lors de la suppression.");
@@ -226,7 +263,12 @@ export default function AdminPage() {
       }
     };
     try {
-      await setDoc(doc(db, "settings", "promotions"), { codes: updatedCodes });
+      const res = await authFetch("/api/admin/settings/promotions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: updatedCodes }),
+      });
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour.");
       setPromotions(updatedCodes);
     } catch (err) {
       alert("Erreur lors de la mise à jour.");
@@ -835,7 +877,7 @@ export default function AdminPage() {
               const isNew = customer.isFirstLogin === true;
               const hasUsedWelcome = customer.hasUsedWelcomeOffer === true;
               const createdAt = customer.createdAt;
-              const createdDate = createdAt?.toDate ? createdAt.toDate().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : createdAt ? new Date(createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+              const createdDate = createdAt ? new Date(createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
               return (
                 <div key={customer.id} className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 flex flex-col justify-between hover:scale-[1.02] transition-transform">
                   <div>
@@ -1081,17 +1123,17 @@ export default function AdminPage() {
               />
               <KPI 
                 title="Bon 😋" 
-                value={reviewedOrders.filter(o => o.review?.reaction === 'bon').length.toString()} 
+                value={reviewedOrders.filter(o => reviewReaction(o) === 'bon').length.toString()}
                 sub="Avis positifs"
               />
-              <KPI 
-                title="Moyen 😐" 
-                value={reviewedOrders.filter(o => o.review?.reaction === 'moyen').length.toString()} 
+              <KPI
+                title="Moyen 😐"
+                value={reviewedOrders.filter(o => reviewReaction(o) === 'moyen').length.toString()}
                 sub="Avis neutres"
               />
-              <KPI 
-                title="Pas bon 😞" 
-                value={reviewedOrders.filter(o => o.review?.reaction === 'pas_bon').length.toString()} 
+              <KPI
+                title="Pas bon 😞"
+                value={reviewedOrders.filter(o => reviewReaction(o) === 'pas_bon').length.toString()}
                 sub="Avis insatisfaits"
               />
             </div>
@@ -1109,15 +1151,16 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-cream/10">
                     {reviewedOrders.map(order => {
-                      const reaction = order.review?.reaction;
+                      const review = (order.review ?? {}) as { reaction?: string; createdAt?: string | Date };
+                      const reaction = review.reaction;
                       const emoji = reaction === 'bon' ? '😋 Bon' : reaction === 'moyen' ? '😐 Moyen' : '😞 Pas bon';
-                      const badgeClass = reaction === 'bon' 
-                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                        : reaction === 'moyen' 
-                          ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                      const badgeClass = reaction === 'bon'
+                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                        : reaction === 'moyen'
+                          ? 'bg-amber-50 text-amber-600 border border-amber-100'
                           : 'bg-red-50 text-red-600 border border-red-100';
-                      const dateStr = order.review?.createdAt
-                        ? new Date(order.review.createdAt.toDate ? order.review.createdAt.toDate() : order.review.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      const dateStr = review.createdAt
+                        ? new Date(review.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                         : "Date inconnue";
 
                       return (

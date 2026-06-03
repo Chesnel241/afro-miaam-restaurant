@@ -184,7 +184,7 @@ function MonCompteContent() {
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40 mb-4">Gestion du compte</h3>
             <button
               onClick={async () => {
-                await logout();
+                await signOut();
                 router.push("/login");
               }}
               className="btn btn-md bg-afro-red/10 text-afro-red w-full border-none hover:bg-afro-red hover:text-white transition-all font-black text-xs tracking-widest"
@@ -288,7 +288,7 @@ function MonCompteContent() {
 
                         {activeTab === "dashboard" && (() => {
               // Calculate wallet transactions dynamically
-              const signupDate = user.createdAt?.toDate ? user.createdAt.toDate() : user.createdAt ? new Date(user.createdAt) : new Date();
+              const signupDate = user.createdAt ? new Date(user.createdAt) : new Date();
               const transactions = [
                 {
                   id: "welcome-credit",

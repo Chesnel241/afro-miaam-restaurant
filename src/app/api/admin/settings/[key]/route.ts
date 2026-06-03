@@ -49,6 +49,30 @@ function validateClosures(v: unknown): boolean {
   return true;
 }
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ key: string }> },
+) {
+  try {
+    await requireAdmin(request);
+    const { key } = await params;
+    if (!ALLOWED_KEYS.has(key)) {
+      return NextResponse.json({ error: "Clé inconnue." }, { status: 400 });
+    }
+    const sql = getSql();
+    const rows = await sql<{ value: unknown }[]>`
+      SELECT value FROM settings WHERE key = ${key}
+    `;
+    const value = rows.length > 0 ? rows[0].value : null;
+    return NextResponse.json(
+      { ok: true, value },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ key: string }> },
