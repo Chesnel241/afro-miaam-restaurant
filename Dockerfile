@@ -76,7 +76,7 @@ EXPOSE 3000
 # Container-level health probe. Compose/orchestrators use this to gate traffic
 # and the CD pipeline waits on `healthy`. /api/health is a lightweight endpoint.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
 
 # server.js is the entrypoint emitted by Next's standalone output.
 CMD ["node", "server.js"]
