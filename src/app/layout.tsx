@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { AuthProvider } from "@/components/AuthContext";
+import { RecaptchaProvider } from "@/components/RecaptchaProvider";
 import { OrderProvider } from "@/components/OrderContext";
 import { MenuProvider } from "@/components/MenuContext";
 import { SettingsProvider } from "@/components/SettingsContext";
@@ -18,8 +19,6 @@ import { Chatbot } from "@/components/Chatbot";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CartRecovery } from "@/components/CartRecovery";
 import { CacheBuster } from "@/components/CacheBuster";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -128,28 +127,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <LoadingScreen />
         <CacheBuster />
-        <AuthProvider>
-          <SettingsProvider>
-            <MenuProvider>
-              <OrderProvider>
-                <AppOverlay />
-                <CartProvider>
-                  <Header />
-                  <main id="main-content" role="main" className="flex-1 pb-28 lg:pb-0 animate-fade-in">{children}</main>
-                  <Footer />
-                  <BottomNavBar />
-                  <FloatingCart />
-                  <Chatbot />
-                  <WhatsAppButton />
-                  <CartRecovery />
-                </CartProvider>
-              </OrderProvider>
-            </MenuProvider>
-          </SettingsProvider>
-        </AuthProvider>
+        <RecaptchaProvider>
+          <AuthProvider>
+            <SettingsProvider>
+              <MenuProvider>
+                <OrderProvider>
+                  <AppOverlay />
+                  <CartProvider>
+                    <Header />
+                    <main id="main-content" role="main" className="flex-1 pb-28 lg:pb-0 animate-fade-in">{children}</main>
+                    <Footer />
+                    <BottomNavBar />
+                    <FloatingCart />
+                    <Chatbot />
+                    <WhatsAppButton />
+                    <CartRecovery />
+                  </CartProvider>
+                </OrderProvider>
+              </MenuProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </RecaptchaProvider>
         <JsonLd data={restaurantJsonLd()} />
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

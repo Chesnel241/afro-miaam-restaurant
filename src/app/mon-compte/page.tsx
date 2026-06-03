@@ -13,7 +13,13 @@ import { formatPrice } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { MemberCard } from "@/components/MemberCard";
 import { useCart } from "@/components/CartContext";
-import { auth } from "@/lib/firebase";
+
+type ReferralRow = {
+  name?: string;
+  joinedBucket?: string;
+  ordersCount?: number;
+  hasContributed?: boolean;
+};
 
 const QRScannerModal = dynamic(
   () => import("@/components/QRScannerModal").then((mod) => mod.QRScannerModal),
@@ -23,48 +29,48 @@ const QRScannerModal = dynamic(
 type Tab = "menu" | "orders" | "dashboard" | "profile";
 
 function MonCompteContent() {
-  const { user, loading, logout, deleteAccount, updateProfile } = useAuth();
+  const { user, loading, signOut, deleteAccount, updateProfile, authFetch } = useAuth();
   const { userOrders, confirmOrderDeletion } = useOrders();
   const { dynamicMenu } = useMenu();
   const { addItem, clearCart } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // Onglet par défaut ou depuis l'URL
   const [activeTab, setActiveTab] = useState<Tab>("menu");
 
-  const [referrals, setReferrals] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<ReferralRow[]>([]);
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
 
   useEffect(() => {
-    if (activeTab !== "dashboard" || !auth.currentUser) return;
-    
+    if (activeTab !== "dashboard" || !user) return;
+
     let isMounted = true;
-    const fetchReferrals = async () => {
-      setIsLoadingReferrals(true);
+    const fetchReferrals = async (showSpinner: boolean) => {
+      if (showSpinner) setIsLoadingReferrals(true);
       try {
-        const token = await auth.currentUser!.getIdToken();
-        const res = await fetch("/api/referrals", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
+        const res = await authFetch("/api/referrals");
         if (res.ok) {
-          const data = await res.json();
+          const data = (await res.json()) as { referrals?: ReferralRow[] };
           if (isMounted) setReferrals(data.referrals || []);
         }
       } catch (err) {
         console.error("Failed to load referrals", err);
       } finally {
-        if (isMounted) setIsLoadingReferrals(false);
+        if (isMounted && showSpinner) setIsLoadingReferrals(false);
       }
     };
 
-    fetchReferrals();
+    void fetchReferrals(true);
+    const interval = setInterval(() => {
+      void fetchReferrals(false);
+    }, 60_000);
+
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
-  }, [activeTab]);
+  }, [activeTab, user, authFetch]);
 
   useEffect(() => {
     const tab = searchParams.get("tab") as Tab;
