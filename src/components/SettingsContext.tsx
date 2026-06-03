@@ -1,8 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { doc, setDoc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useAuth } from "./AuthContext";
 
 type SettingsContextType = {
@@ -13,34 +19,71 @@ type SettingsContextType = {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
+const POLL_INTERVAL_MS = 60_000;
+
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, authFetch } = useAuth();
   const [isReviewRewardActive, setIsReviewRewardActive] = useState(true);
   const [isWelcomeOfferActive, setIsWelcomeOfferActive] = useState(true);
+  const cancelledRef = useRef(false);
+
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!user) return;
+      try {
+        const res = await authFetch("/api/settings/global", { signal });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          ok: boolean;
+          settings?: { isReviewRewardActive?: boolean; isWelcomeOfferActive?: boolean };
+        };
+        if (!data.ok || cancelledRef.current) return;
+        const s = data.settings ?? {};
+        setIsReviewRewardActive(s.isReviewRewardActive ?? true);
+        setIsWelcomeOfferActive(s.isWelcomeOfferActive ?? true);
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") {
+          console.warn("SETTINGS_FETCH_FAILED", (e as Error).message);
+        }
+      }
+    },
+    [user, authFetch],
+  );
 
   useEffect(() => {
+    cancelledRef.current = false;
     if (!user) return;
+    const ctrl = new AbortController();
+    load(ctrl.signal);
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") load();
+    }, POLL_INTERVAL_MS);
+    return () => {
+      cancelledRef.current = true;
+      ctrl.abort();
+      clearInterval(id);
+    };
+  }, [user, load]);
 
-    const unsub = onSnapshot(
-      doc(db, "settings", "global"),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          setIsReviewRewardActive(data.isReviewRewardActive ?? true);
-          setIsWelcomeOfferActive(data.isWelcomeOfferActive ?? true);
-        }
-      },
-      (err) => {
-        console.warn("SETTINGS_SNAPSHOT_ERROR", (err as { code?: string }).code ?? "unknown");
-      },
-    );
-    return () => unsub();
-  }, [user?.id, user?.role, user?.email]);
-
-  const updateGlobalSettings = useCallback(async (settings: Record<string, boolean>) => {
-    const settingsRef = doc(db, "settings", "global");
-    await setDoc(settingsRef, settings, { merge: true });
-  }, []);
+  const updateGlobalSettings = useCallback(
+    async (settings: Record<string, boolean>) => {
+      if (!user || user.role !== "admin") return;
+      const next = {
+        isReviewRewardActive,
+        isWelcomeOfferActive,
+        ...settings,
+      };
+      const res = await authFetch("/api/admin/settings/global", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (!res.ok) throw new Error("Mise à jour des paramètres impossible.");
+      setIsReviewRewardActive(next.isReviewRewardActive);
+      setIsWelcomeOfferActive(next.isWelcomeOfferActive);
+    },
+    [user, authFetch, isReviewRewardActive, isWelcomeOfferActive],
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -48,7 +91,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       isWelcomeOfferActive,
       updateGlobalSettings,
     }),
-    [isReviewRewardActive, isWelcomeOfferActive, updateGlobalSettings]
+    [isReviewRewardActive, isWelcomeOfferActive, updateGlobalSettings],
   );
 
   return (
