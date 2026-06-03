@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { ArrowRightIcon } from "./Icons";
-
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useRecaptcha } from "@/components/AuthContext";
 
 export function NewsletterSignup() {
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { getToken } = useRecaptcha();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,15 +16,19 @@ export function NewsletterSignup() {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, "newsletter"), {
-        email: email.trim().toLowerCase(),
-        createdAt: serverTimestamp(),
-        source: "footer",
+      const recaptchaToken = await getToken("newsletter");
+      await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          recaptchaToken: recaptchaToken ?? undefined,
+        }),
       });
       setDone(true);
     } catch (error) {
       console.error("Erreur newsletter:", error);
-      // On affiche quand même "Merci" pour ne pas bloquer l'utilisateur, 
+      // On affiche quand même "Merci" pour ne pas bloquer l'utilisateur,
       // ou on peut gérer une erreur. Ici on reste simple.
       setDone(true);
     } finally {

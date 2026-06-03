@@ -27,9 +27,12 @@ const nextConfig = {
   // errors. ESLint kept in ignoreDuringBuilds (mostly stylistic).
   eslint: { ignoreDuringBuilds: true },
   images: {
+    // Self-hosted: menu images are served from /uploads/* (local volume via
+    // Caddy in prod) and are same-origin, so no remotePattern is needed for
+    // them. Unsplash kept for any remaining placeholder; Google avatar host
+    // kept for OAuth profile pictures.
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
@@ -38,14 +41,6 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
-      },
-    ];
-  },
-  async rewrites() {
-    return [
-      {
-        source: "/__/auth/:path*",
-        destination: "https://afro-miaam.firebaseapp.com/__/auth/:path*",
       },
     ];
   },

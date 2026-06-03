@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/rate-limit-store";
 import { requireAuth, AuthError, authErrorResponse } from "@/lib/auth";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { getSql, withTransaction } from "@/lib/db";
+import { sendReservationConfirmation, sendReservationAlert } from "@/lib/email";
 
 type ClientItem = {
   id?: unknown;
@@ -60,41 +61,86 @@ const ALLOWED_SLOTS = new Set([
 ]);
 
 const PRICE_CACHE_TTL_MS = 60_000;
-const STATIC_PRICE_BY_ID: Record<string, number> = Object.fromEntries(
-  menuItems.map((i) => [i.id, i.price]),
+
+type FlavorSupplement = { name: string; supplement: number };
+type MenuEntry = {
+  price: number;
+  available: boolean;
+  flavors: FlavorSupplement[];
+};
+
+// Static fallback used ONLY when the Postgres read fails (e.g. transient DB
+// outage). It is treated as a last-resort safety net so reservations don't
+// 500 outright; admin-set availability and prices still take precedence
+// whenever the DB read succeeds.
+const STATIC_MENU_BY_ID: Record<string, MenuEntry> = Object.fromEntries(
+  menuItems.map((i) => [
+    i.id,
+    {
+      price: i.price,
+      available: true,
+      flavors: Array.isArray((i as { flavors?: FlavorSupplement[] }).flavors)
+        ? ((i as { flavors?: FlavorSupplement[] }).flavors as FlavorSupplement[])
+        : [],
+    },
+  ]),
 );
 
-let priceCache: { byId: Record<string, number>; expires: number } | null = null;
-let priceCachePromise: Promise<Record<string, number>> | null = null;
+let menuCache: { byId: Record<string, MenuEntry>; expires: number } | null = null;
+let menuCachePromise: Promise<Record<string, MenuEntry>> | null = null;
 
-async function getPriceById(): Promise<Record<string, number>> {
+async function getMenuById(): Promise<Record<string, MenuEntry>> {
   const now = Date.now();
-  if (priceCache && now < priceCache.expires) return priceCache.byId;
-  if (priceCachePromise) return priceCachePromise;
+  if (menuCache && now < menuCache.expires) return menuCache.byId;
+  if (menuCachePromise) return menuCachePromise;
 
-  priceCachePromise = (async () => {
-    const byId: Record<string, number> = { ...STATIC_PRICE_BY_ID };
+  menuCachePromise = (async () => {
     try {
       const sql = getSql();
-      const rows = await sql<{ id: string; price: string | number }[]>`
-        SELECT id, price FROM menu_items WHERE available = true
+      const rows = await sql<
+        { id: string; price: string | number; available: boolean; flavors: unknown }[]
+      >`
+        SELECT id, price, available, flavors
+        FROM menu_items
+        WHERE deleted_at IS NULL
       `;
+      const byId: Record<string, MenuEntry> = {};
       for (const row of rows) {
         const price = typeof row.price === "number" ? row.price : Number(row.price);
-        if (Number.isFinite(price) && price > 0) {
-          byId[row.id] = price;
-        }
+        if (!Number.isFinite(price) || price < 0) continue;
+        const flavors = Array.isArray(row.flavors)
+          ? (row.flavors as unknown[])
+              .map((f): FlavorSupplement | null => {
+                if (!f || typeof f !== "object") return null;
+                const obj = f as { name?: unknown; supplement?: unknown };
+                const name = typeof obj.name === "string" ? obj.name : null;
+                const supplement =
+                  typeof obj.supplement === "number"
+                    ? obj.supplement
+                    : Number(obj.supplement);
+                if (!name || !Number.isFinite(supplement) || supplement < 0) {
+                  return null;
+                }
+                return { name, supplement };
+              })
+              .filter((f): f is FlavorSupplement => f !== null)
+          : [];
+        byId[row.id] = { price, available: row.available !== false, flavors };
       }
-      priceCache = { byId, expires: Date.now() + PRICE_CACHE_TTL_MS };
+      menuCache = { byId, expires: Date.now() + PRICE_CACHE_TTL_MS };
+      return byId;
     } catch (e) {
       console.warn("MENU_PG_READ_FAILED", (e as { code?: string }).code ?? "unknown");
+      // Fall back to the static menu so we don't outright reject reservations
+      // during a transient DB hiccup. Items in the static map are treated as
+      // available; admin-side overrides are simply unavailable for ~1 minute.
+      return STATIC_MENU_BY_ID;
     } finally {
-      priceCachePromise = null;
+      menuCachePromise = null;
     }
-    return byId;
   })();
 
-  return priceCachePromise;
+  return menuCachePromise;
 }
 
 function bad(error: string, status = 400) {
@@ -228,28 +274,53 @@ export async function POST(request: Request) {
   const deliveryMode: "retrait" | "livraison" =
     payload.deliveryMode === "livraison" ? "livraison" : "retrait";
 
-  const PRICE_BY_ID = await getPriceById();
+  const MENU_BY_ID = await getMenuById();
   let serverSubtotal = 0;
-  const sanitizedItems: any[] = [];
+  const sanitizedItems: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    flavor: string | null;
+    image: string;
+  }> = [];
 
   for (const item of items) {
     const id = clean(item.id, 60);
     const qty = item.quantity;
-    if (!id || !(id in PRICE_BY_ID)) {
+    const entry = MENU_BY_ID[id];
+    if (!id || !entry) {
       return bad(`Article inconnu: ${id || "(vide)"}`);
+    }
+    if (!entry.available) {
+      return bad(`Article non disponible: ${clean(item.name, 80) || id}`);
     }
     if (typeof qty !== "number" || !Number.isInteger(qty) || qty < 1 || qty > MAX_QUANTITY) {
       return bad("Quantité invalide.");
     }
-    const price = PRICE_BY_ID[id];
-    serverSubtotal += price * qty;
+
+    // Apply flavor supplement server-side (client could lie about price).
+    const requestedFlavor = item.flavor ? clean(item.flavor, 50) : null;
+    let flavorSupplement = 0;
+    let chosenFlavor: string | null = null;
+    if (requestedFlavor) {
+      const match = entry.flavors.find((f) => f.name === requestedFlavor);
+      if (!match) {
+        return bad(`Saveur invalide pour ${clean(item.name, 80) || id}.`);
+      }
+      flavorSupplement = match.supplement;
+      chosenFlavor = match.name;
+    }
+
+    const unitPrice = round2(entry.price + flavorSupplement);
+    serverSubtotal += unitPrice * qty;
 
     sanitizedItems.push({
-      id: id,
+      id,
       name: clean(item.name, 100) || "Plat",
-      price: price,
+      price: unitPrice,
       quantity: qty,
-      flavor: item.flavor ? clean(item.flavor, 50) : null,
+      flavor: chosenFlavor,
       image: item.image ? clean(item.image, 200) : "",
     });
   }
@@ -289,6 +360,9 @@ export async function POST(request: Request) {
     let finalTotal = serverTotalBeforeDiscount;
     let finalDeposit = 0;
     let orderId = "";
+    // Captured inside the transaction for the post-commit notification emails.
+    let notifyName = "";
+    let notifyEmail = "";
 
     await withTransaction(async (tx) => {
       const userRows = await tx<
@@ -322,8 +396,19 @@ export async function POST(request: Request) {
         typeof userData.orders_count === "number" ? userData.orders_count : 0;
       const hasUsedWelcomeOffer = userData.has_used_welcome_offer === true;
 
+      // Check the admin-controlled global settings (default-on if missing or
+      // the row hasn't been seeded). When admin toggles isWelcomeOfferActive
+      // off, the -5€ discount must stop applying server-side regardless of
+      // what the client says.
+      const globalSettingsRow = await tx<
+        { value: { isWelcomeOfferActive?: unknown } | null }[]
+      >`SELECT value FROM settings WHERE key = 'global' LIMIT 1`;
+      const isWelcomeOfferActive =
+        globalSettingsRow[0]?.value?.isWelcomeOfferActive !== false;
+
       // Logic des réductions
-      const welcomeDiscount = (!hasUsedWelcomeOffer && ordersCount === 0) ? 5 : 0;
+      const welcomeDiscount =
+        isWelcomeOfferActive && !hasUsedWelcomeOffer && ordersCount === 0 ? 5 : 0;
       let creditsToUse = 0;
       let promoDiscount = 0;
       let promoCodeUsed = "";
@@ -389,7 +474,7 @@ export async function POST(request: Request) {
 
       const discounts = {
         referralCredits: creditsToUse,
-        welcomeOffer: welcomeDiscount > 0,
+        welcomeOffer: actualWelcomeDiscount > 0,
         referralCodeUsed: cleanedReferralCode,
         promoCodeUsed: promoCodeUsed || null,
         promoDiscount: promoDiscount > 0 ? promoDiscount : null,
@@ -414,6 +499,8 @@ export async function POST(request: Request) {
 
       const userName = userData.name || `${customer.firstName} ${customer.lastName}`;
       const userEmail = (userData.email || customer.email || "").trim().toLowerCase();
+      notifyName = userName;
+      notifyEmail = userEmail;
 
       // Insert order. status defaults to 'Attente Acompte' at the column level
       // but we set it explicitly to mirror the previous Firestore write.
@@ -457,7 +544,7 @@ export async function POST(request: Request) {
         UPDATE users
         SET
           orders_count = orders_count + 1,
-          has_used_welcome_offer = (${welcomeDiscount > 0} OR has_used_welcome_offer),
+          has_used_welcome_offer = (${actualWelcomeDiscount > 0} OR has_used_welcome_offer),
           referral_credits = referral_credits - ${creditsToUse},
           referred_by = COALESCE(referred_by, ${referrerId}),
           updated_at = now()
@@ -466,6 +553,37 @@ export async function POST(request: Request) {
     });
 
     console.log("[Afro Miaam] Réservation confirmée et stockée", { orderId, reference, finalTotal });
+
+    // Notification emails — fire-and-forget. The order is already committed;
+    // a mail failure (Resend down, missing key in dev) must NOT fail the
+    // request. Each sender already swallows its own errors, but we also guard
+    // here so an unexpected throw never bubbles into the response.
+    void (async () => {
+      try {
+        if (notifyEmail) {
+          await sendReservationConfirmation(
+            notifyEmail,
+            notifyName,
+            reference,
+            finalTotal,
+            date,
+            slot,
+          );
+        }
+        const restaurantEmail = process.env.RESTAURANT_EMAIL;
+        if (restaurantEmail) {
+          await sendReservationAlert(
+            restaurantEmail,
+            notifyName,
+            reference,
+            finalTotal,
+            sanitizedItems.map((i) => ({ name: i.name, quantity: i.quantity })),
+          );
+        }
+      } catch (e) {
+        console.warn("RESERVATION_EMAIL_FAILED", (e as { message?: string })?.message ?? "unknown");
+      }
+    })();
 
     return NextResponse.json({
       ok: true,

@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { revokeSession, SESSION_COOKIE } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { clientIp } from "@/lib/utils";
 
 export async function POST(request: Request) {
+  if (!(await checkRateLimit(`logout:ip:${clientIp(request)}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
+  }
+
   const cookie = request.headers.get("cookie") ?? "";
   // Cheap manual cookie parse — we only need one specific value and importing
   // next/headers' cookies() couples this route to the App Router request

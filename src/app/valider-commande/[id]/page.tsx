@@ -1,18 +1,20 @@
 "use client";
 
-import { useAuth } from "@/components/AuthContext";
+import { useAuth, useRecaptcha } from "@/components/AuthContext";
+import { useOrders, type Order } from "@/components/OrderContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckIcon, ClockIcon } from "@/components/Icons";
 
 export default function ValiderCommandePage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading } = useAuth();
+  const { authFetch } = useAuth();
+  const { getToken } = useRecaptcha();
+  const { userOrders } = useOrders();
   const router = useRouter();
   const [orderId, setOrderId] = useState<string>("");
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -28,6 +30,12 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
     };
   }, [params]);
 
+  // The customer's own orders are polled by OrderContext. Find the matching one.
+  const matchedOrder = useMemo(
+    () => userOrders.find((o) => o.id === orderId) ?? null,
+    [userOrders, orderId],
+  );
+
   useEffect(() => {
     if (!orderId) return;
     if (!loading && !user) {
@@ -35,61 +43,35 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
       return;
     }
 
-    const fetchOrder = async () => {
-      try {
-        const docRef = doc(db, "orders", orderId);
-        const snap = await getDoc(docRef);
-        
-        if (!snap.exists()) {
-          setError("Commande introuvable.");
-          setVerifying(false);
-          return;
-        }
+    if (!user) return;
 
-        const data = snap.data();
-        
-        // Vérification de sécurité : la commande doit appartenir à l'utilisateur
-        if (data.userId !== user?.id && data.userEmail?.toLowerCase() !== user?.email?.toLowerCase()) {
-          setError("Vous n'êtes pas autorisé à valider cette commande.");
-          setVerifying(false);
-          return;
-        }
-
-        if (data.status === "Livré") {
-          setSuccess(true);
-          setOrder(data);
-          setVerifying(false);
-          return;
-        }
-
-        setOrder(data);
-        setVerifying(false);
-      } catch (err) {
-        console.error(err);
-        setError("Erreur lors de la récupération de la commande.");
-        setVerifying(false);
+    if (matchedOrder) {
+      setOrder(matchedOrder);
+      if (matchedOrder.status === "Livré") {
+        setSuccess(true);
       }
-    };
-
-    if (user) fetchOrder();
-  }, [user, loading, orderId, router]);
+      setVerifying(false);
+    }
+    // If the order isn't in the user's own list yet, we keep waiting for the
+    // poll to hydrate it (verifying spinner stays up).
+  }, [user, loading, orderId, router, matchedOrder]);
 
   const handleValider = async () => {
     setIsUpdating(true);
     try {
       // The single-use delivery token is carried in the QR URL (?t=...). The
-      // status transition is performed server-side by /api/delivery/confirm
-      // (Admin SDK) — clients can no longer write "Livré" directly (Vague1-B).
+      // status transition is performed server-side by /api/delivery/confirm —
+      // clients can no longer write "Livré" directly.
       const token = new URLSearchParams(window.location.search).get("t") || "";
       if (!token) {
         setError("Lien de confirmation incomplet. Scannez le QR Code présenté par l'équipe Afro Miaam.");
         return;
       }
-      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : "";
-      const res = await fetch("/api/delivery/confirm", {
+      const recaptchaToken = await getToken("delivery_confirm");
+      const res = await authFetch("/api/delivery/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({ orderId, token }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, token, recaptchaToken }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -122,7 +104,7 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
       <div className="mx-auto max-w-md">
         <AnimatePresence mode="wait">
           {error ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="rounded-3xl bg-white p-8 text-center shadow-xl ring-1 ring-black/5"
@@ -137,7 +119,7 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
               <button onClick={() => router.push("/")} className="btn btn-primary mt-8 w-full">Retour à l'accueil</button>
             </motion.div>
           ) : success ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="rounded-3xl bg-white p-10 text-center shadow-xl ring-1 ring-black/5"
@@ -150,7 +132,7 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
               <p className="mt-6 text-[10px] font-black uppercase tracking-widest text-accent italic">Redirection vers votre historique...</p>
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-black/5"
@@ -168,7 +150,7 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
               <div className="space-y-4 rounded-2xl bg-creamSoft/50 p-6 border border-cream/20 mb-8">
                 <p className="text-sm font-bold text-primary">Détails :</p>
                 <ul className="space-y-2">
-                  {order?.items.map((item: any, i: number) => (
+                  {order?.items.map((item, i: number) => (
                     <li key={i} className="text-xs text-primary/60 flex justify-between">
                       <span>{item.quantity}x {item.name}</span>
                       <span className="font-bold">{(item.price * item.quantity).toFixed(2)} €</span>
@@ -181,7 +163,7 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={handleValider}
                 disabled={isUpdating}
                 className="btn btn-primary w-full py-6 text-lg shadow-glow relative overflow-hidden"

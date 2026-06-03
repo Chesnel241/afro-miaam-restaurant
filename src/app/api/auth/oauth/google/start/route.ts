@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { clientIp } from "@/lib/utils";
 
 /**
  * GET /api/auth/oauth/google/start
@@ -21,6 +23,9 @@ const OAUTH_STATE_COOKIE = "afro_oauth_state";
 const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export async function GET(_request: Request) {
+  if (!(await checkRateLimit(`oauth-start:ip:${clientIp(_request)}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
+  }
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const baseUrl = process.env.OAUTH_REDIRECT_BASE_URL;
 

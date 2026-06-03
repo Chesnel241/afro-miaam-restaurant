@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { docToOrder } from "./order-logic";
-import { Timestamp } from "firebase/firestore";
+
+// Minimal stand-in for Firestore's Timestamp — only the toDate() method is
+// used by the mapper. Avoids a hard dependency on firebase from tests.
+class FakeTimestamp {
+  constructor(private readonly date: Date) {}
+  toDate(): Date {
+    return this.date;
+  }
+}
 
 describe("OrderContext - docToOrder", () => {
   it("should map fields correctly from basic data", () => {
@@ -26,9 +34,7 @@ describe("OrderContext - docToOrder", () => {
 
   it("should handle Firestore Timestamp conversion", () => {
     const data = {
-      createdAt: {
-        toDate: () => new Date("2026-05-27T10:00:00.000Z"),
-      } as Timestamp,
+      createdAt: new FakeTimestamp(new Date("2026-05-27T10:00:00.000Z")),
     };
 
     const order = docToOrder("order2", data);

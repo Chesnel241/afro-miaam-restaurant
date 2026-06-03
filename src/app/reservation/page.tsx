@@ -1,26 +1,24 @@
 "use client";
 
-import { useAuth } from "@/components/AuthContext";
+import { useAuth, useRecaptcha } from "@/components/AuthContext";
 import { useCart } from "@/components/CartContext";
-import { appCheck, auth } from "@/lib/firebase";
 import { formatPrice } from "@/lib/utils";
-import { collection, addDoc, serverTimestamp, doc, runTransaction, getDoc } from "firebase/firestore";
-import { getToken } from "firebase/app-check";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CheckIcon, ClockIcon, MapPinIcon, PhoneIcon, UserIcon, GiftIcon } from "@/components/Icons";
+import { CheckIcon, ClockIcon, MapPinIcon, UserIcon, GiftIcon } from "@/components/Icons";
 import { DELIVERY_FEE } from "@/lib/booking";
 
 export default function ReservationPage() {
   const { cart, subtotal, clearCart } = useCart();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, authFetch } = useAuth();
+  const { getToken: getRecaptchaToken } = useRecaptcha();
   const router = useRouter();
 
   // Redirection vers login si non connecté
   useEffect(() => {
     if (!authLoading && !user) {
-      router.replace(`/login?redirect=${encodeURIComponent("/reservation")}`);
+      router.replace(`/login?next=${encodeURIComponent("/reservation")}`);
     }
   }, [user, authLoading, router]);
 
@@ -51,24 +49,7 @@ export default function ReservationPage() {
   const [promoError, setPromoError] = useState("");
   const [isVerifyingPromo, setIsVerifyingPromo] = useState(false);
 
-  const [blockedDates, setBlockedDates] = useState<string[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchClosures = async () => {
-      try {
-        const { db } = await import("@/lib/firebase");
-        const snap = await getDoc(doc(db, "settings", "closures"));
-        if (snap.exists() && isMounted) {
-          setBlockedDates(snap.data().blockedDates || []);
-        }
-      } catch (err) {
-        console.warn("Failed to load holiday closures", err);
-      }
-    };
-    fetchClosures();
-    return () => { isMounted = false; };
-  }, []);
+  const [blockedDates] = useState<string[]>([]);
 
   const handleApplyPromo = async () => {
     const enteredCode = promoCodeInput.trim().toUpperCase();
@@ -76,28 +57,16 @@ export default function ReservationPage() {
     setPromoError("");
     setIsVerifyingPromo(true);
     try {
-      const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : "";
-      let appCheckToken = "";
-      if (appCheck) {
-        try {
-          appCheckToken = (await getToken(appCheck, false)).token;
-        } catch (e) {
-          console.warn("APP_CHECK_TOKEN_FAILED", (e as { code?: string }).code ?? "unknown");
-        }
-      }
-      const res = await fetch("/api/promotions/validate", {
+      const recaptchaToken = await getRecaptchaToken("reservation");
+      const res = await authFetch("/api/promotions/validate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
-          ...(appCheckToken ? { "X-Firebase-AppCheck": appCheckToken } : {}),
-        },
-        body: JSON.stringify({ code: enteredCode }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: enteredCode, recaptchaToken }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.ok === true) {
+      if (res.ok && data?.ok === true && data?.valid === true) {
         setAppliedPromo({
-          code: data.code,
+          code: enteredCode,
           discountType: data.discountType,
           discountValue: data.discountValue,
         });
@@ -105,7 +74,7 @@ export default function ReservationPage() {
       } else {
         setPromoError("Code invalide ou inactif.");
       }
-    } catch (err) {
+    } catch {
       setPromoError("Impossible de vérifier le code.");
     } finally {
       setIsVerifyingPromo(false);
@@ -165,7 +134,7 @@ export default function ReservationPage() {
     e.preventDefault();
 
     if (!user?.id) {
-      router.replace(`/login?redirect=${encodeURIComponent("/reservation")}`);
+      router.replace(`/login?next=${encodeURIComponent("/reservation")}`);
       return;
     }
 
@@ -181,48 +150,30 @@ export default function ReservationPage() {
 
     setLoading(true);
     try {
-      // The server (/api/reservation) is now the source of truth for prices:
-      // it reads the Firestore menu, rejects unknown items, recomputes the
-      // subtotal, and returns the authoritative total + deposit + reference.
-      // We send {id, quantity} only and let the server validate.
+      // The server (/api/reservation) is the source of truth for prices:
+      // it reads the menu, rejects unknown items, recomputes the subtotal,
+      // and returns the authoritative total + deposit + reference.
+      // We send {id, quantity, name, flavor?, image?} and let the server validate.
       const sanitizedItems = cart.map((item) => ({
-        id: item.id || "unknown",
-        name: item.name || "Plat",
-        price: item.price || 0,
+        id: (item.id || "unknown").split("__")[0],
         quantity: item.quantity || 1,
+        name: item.name || "Plat",
         flavor: item.flavor || null,
         image: item.image || "",
       }));
 
-      const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
-      let appCheckToken = "";
-      if (appCheck) {
-        try {
-          appCheckToken = (await getToken(appCheck, false)).token;
-        } catch (e) {
-          console.warn("APP_CHECK_TOKEN_FAILED", (e as { code?: string }).code ?? "unknown");
-        }
-      }
+      const recaptchaToken = await getRecaptchaToken("reservation");
 
-      const apiRes = await fetch("/api/reservation", {
+      const apiRes = await authFetch("/api/reservation", {
         method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-            ...(appCheckToken ? { "X-Firebase-AppCheck": appCheckToken } : {}),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: sanitizedItems.map((i) => ({
-            id: i.id.split("__")[0],
-            quantity: i.quantity,
-            name: i.name,
-            flavor: i.flavor,
-            image: i.image
-          })),
+          items: sanitizedItems,
           date: form.date,
           slot: form.slot,
           deliveryMode: form.deliveryMode,
           useCredits,
+          useWelcomeOffer: welcomeDiscount > 0,
           referralCode: isReferralValid ? referralCode : undefined,
           promoCode: appliedPromo ? appliedPromo.code : undefined,
           customer: {
@@ -233,27 +184,27 @@ export default function ReservationPage() {
             address: form.address,
             notes: form.notes,
           },
+          recaptchaToken,
         }),
       });
 
-      if (!apiRes.ok) {
-        const { error } = await apiRes
-          .json()
-          .catch(() => ({ error: "Erreur lors de la validation." }));
-        alert(error || "Erreur lors de la validation.");
+      const apiData = await apiRes.json().catch(() => ({}));
+
+      if (!apiRes.ok || !apiData?.ok) {
+        alert(apiData?.error || "Erreur, réessayez.");
         setLoading(false);
         return;
       }
 
-      const apiData = await apiRes.json();
-      const serverDeposit = typeof apiData.depositAmount === "number" ? apiData.depositAmount : 0;
+      const serverDeposit =
+        typeof apiData.depositAmount === "number" ? apiData.depositAmount : 0;
 
       setFinalDeposit(serverDeposit);
       setSuccess(true);
       clearCart();
     } catch (err) {
       console.error("BOOKING_ERROR", (err as { code?: string }).code ?? "unknown");
-      alert("Erreur lors de la réservation. Vérifiez votre connexion et réessayez.");
+      alert("Erreur, réessayez.");
     } finally {
       setLoading(false);
     }

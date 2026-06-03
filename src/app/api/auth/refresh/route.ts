@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { clientIp } from "@/lib/utils";
 import {
   rotateSession,
   signAccessToken,
@@ -39,6 +41,12 @@ function clearSessionCookie(res: NextResponse): void {
 }
 
 export async function POST(request: Request) {
+  // Lightweight IP guard so a stolen or guessed cookie can't be replayed at
+  // arbitrary rate, and so unauth'd noise (no cookie at all) can't pin the DB.
+  if (!(await checkRateLimit(`refresh:ip:${clientIp(request)}`, 60, 60_000))) {
+    return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
+  }
+
   const rawToken = readCookie(request, SESSION_COOKIE);
   if (!rawToken) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });

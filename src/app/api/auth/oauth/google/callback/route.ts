@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
 import { withTransaction } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit-store";
+import { clientIp } from "@/lib/utils";
 import {
   createSession,
   signAccessToken,
@@ -79,6 +81,9 @@ interface GoogleUserInfo {
 }
 
 export async function GET(request: Request) {
+  if (!(await checkRateLimit(`oauth-callback:ip:${clientIp(request)}`, 30, 60_000))) {
+    return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
+  }
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
   const baseUrl = process.env.OAUTH_REDIRECT_BASE_URL;
@@ -203,7 +208,13 @@ export async function GET(request: Request) {
       `;
       if (linked.length > 0) return linked[0];
 
-      // b) Existing user with this email — link.
+      // b) Existing user with this email — link ONLY if both sides are
+      // verified. Otherwise an attacker could pre-register a victim's email
+      // with a password, then the real victim's Google login would attach
+      // the Google identity to the attacker-controlled row and grant the
+      // victim access to the attacker's account (and vice versa).
+      // Required: the local user has email_verified=true AND Google says
+      // the email is verified. If either is false, refuse to auto-link.
       const byEmail = await tx<UserRow[]>`
         select id, email, email_verified, role, name, referral_code
         from users
@@ -212,6 +223,11 @@ export async function GET(request: Request) {
       `;
       if (byEmail.length > 0) {
         const existing = byEmail[0];
+        if (!existing.email_verified || !emailVerified) {
+          // Refuse the link. The Google login fails closed; the user can
+          // verify their existing email first, then retry.
+          throw new Error("OAUTH_LINK_REFUSED_UNVERIFIED");
+        }
         await tx`
           insert into oauth_accounts (user_id, provider, provider_account_id)
           values (${existing.id}, 'google', ${providerAccountId})
@@ -241,6 +257,11 @@ export async function GET(request: Request) {
       return created;
     });
   } catch (e) {
+    if (e instanceof Error && e.message === "OAUTH_LINK_REFUSED_UNVERIFIED") {
+      // Don't reveal whether the email is already registered — return a
+      // generic reason that nudges the user to verify by email instead.
+      return failureRedirect(baseUrl, "verify_email_first");
+    }
     console.error("[oauth/google/callback] user upsert failed:", e);
     return failureRedirect(baseUrl, "user_upsert_failed");
   }

@@ -30,20 +30,37 @@ export function getProductImage(item: { name: string, image: string }): string {
 }
 
 export function clientIp(request: Request): string {
-  // Anti-spoofing: this app deploys on Vercel (see vercel.json), where
-  // `x-vercel-forwarded-for` is injected by the trusted edge and reflects the
-  // real client IP. It cannot be forged by the client.
+  // Anti-spoofing: only trust forwarded-for headers when we know a trusted
+  // proxy injected them. The trust model is configured via env vars:
+  //   - TRUSTED_PROXY: "caddy" → read `x-forwarded-for` (Caddy default)
+  //   - TRUSTED_PROXY: "vercel" → read `x-vercel-forwarded-for`
+  //   - unset / other → no trust (collapse to a shared bucket)
   //
-  // We deliberately do NOT fall back to `x-forwarded-for` or `x-real-ip`:
-  // both are fully client-supplied when a request does not pass through the
-  // Vercel edge, so trusting them would let an attacker mint a brand-new
-  // rate-limit bucket on every request by rotating a forged IP, completely
-  // defeating the limiter (pentest finding H-1). When the trusted header is
-  // absent we collapse every such request into one shared bucket
-  // ("untrusted-proxy") so they all throttle against the same counter rather
-  // than each getting unlimited per-spoofed-IP budgets.
-  const vercelIp = request.headers.get("x-vercel-forwarded-for");
-  if (vercelIp) return vercelIp.split(",")[0].trim();
+  // Critical: if we trusted `x-forwarded-for` unconditionally, an attacker
+  // could mint a fresh rate-limit bucket per request by forging the header.
+  // We only read it when explicitly told the deployment puts a trusted proxy
+  // in front (Caddy in our self-hosted production stack). When the trusted
+  // header is absent we collapse every such request into one shared bucket
+  // ("untrusted-proxy") so they all throttle against the same counter.
+  const trusted = process.env.TRUSTED_PROXY;
+
+  if (trusted === "vercel") {
+    const v = request.headers.get("x-vercel-forwarded-for");
+    if (v) return v.split(",")[0].trim();
+    return "untrusted-proxy";
+  }
+
+  if (trusted === "caddy") {
+    // Caddy's reverse_proxy sets X-Forwarded-For with the original client IP
+    // as the FIRST entry, and appends each hop. Take the leftmost.
+    const xff = request.headers.get("x-forwarded-for");
+    if (xff) return xff.split(",")[0].trim();
+    // Fallback for direct Caddy → Next inside the same Docker network when
+    // X-Forwarded-For somehow got stripped: X-Real-IP.
+    const realIp = request.headers.get("x-real-ip");
+    if (realIp) return realIp.trim();
+    return "untrusted-proxy";
+  }
 
   return "untrusted-proxy";
 }

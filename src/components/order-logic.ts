@@ -1,5 +1,3 @@
-import { Timestamp } from "firebase/firestore";
-
 export type OrderStatus = "Attente Acompte" | "Acompte Reçu" | "En attente" | "En cours" | "Livré";
 
 export type OrderItem = {
@@ -22,7 +20,14 @@ export type Order = {
   createdAt: string;
   hasReviewed?: boolean;
   referrerId?: string;
-  review?: any;
+  review?: unknown;
+  discounts?: {
+    welcomeOffer?: boolean;
+    referralCredits?: number;
+    referralCodeUsed?: string;
+    promoCodeUsed?: string;
+    promoDiscount?: number;
+  } | null;
   deletionRequested?: boolean;
   customer?: {
     phone?: string;
@@ -31,24 +36,21 @@ export type Order = {
   };
 };
 
-// Extracted from OrderContext.tsx so unit tests can import this pure logic
-// without dragging in JSX (vitest's esbuild transform with tsconfig
-// "jsx: preserve" trips on the Provider's <OrderContext.Provider> return).
+// Pure mapper used by tests and by the OrderContext when normalizing rows.
+// Accepts either an ISO string, a Date, or a Firestore-like object exposing
+// toDate() — the last form is retained so legacy test fixtures keep working.
+type DateLike = string | Date | { toDate(): Date } | undefined | null;
+
+function toIso(value: DateLike): string {
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return new Date().toISOString();
+}
 
 export function docToOrder(id: string, data: Record<string, unknown>): Order {
-  let dateStr = "";
-  const createdAt = data.createdAt;
-
-  if (createdAt && typeof (createdAt as Timestamp).toDate === "function") {
-    dateStr = (createdAt as Timestamp).toDate().toISOString();
-  } else if (createdAt instanceof Date) {
-    dateStr = createdAt.toISOString();
-  } else if (typeof createdAt === "string") {
-    dateStr = createdAt;
-  } else {
-    dateStr = new Date().toISOString();
-  }
-
   return {
     id,
     userId: (data.userId as string) || "",
@@ -57,10 +59,14 @@ export function docToOrder(id: string, data: Record<string, unknown>): Order {
     items: (data.items as OrderItem[]) || [],
     total: (data.total as number) || 0,
     status: (data.status as OrderStatus) || "En attente",
-    createdAt: dateStr,
+    createdAt: toIso(data.createdAt as DateLike),
     hasReviewed: (data.hasReviewed as boolean) || false,
-    review: data.review || null,
+    referrerId: (data.referrerId as string) || undefined,
+    review: data.review ?? null,
+    discounts: (data.discounts as Order["discounts"]) ?? null,
     deletionRequested: (data.deletionRequested as boolean) || false,
-    customer: data.customer as { phone?: string; slot?: string; deliveryMode?: string; } | undefined,
+    customer: data.customer as
+      | { phone?: string; slot?: string; deliveryMode?: string }
+      | undefined,
   };
 }
