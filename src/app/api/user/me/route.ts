@@ -148,13 +148,22 @@ export async function PATCH(request: Request) {
     nextSubscribe = payload.subscribeNewsletter;
   }
 
+  // For fields where the client may legitimately clear the value (phone,
+  // image), COALESCE doesn't work — null collapses to the existing value.
+  // Use a "did the client send this key?" flag (set when it did) so the
+  // UPDATE applies the new value (including null) only when explicitly
+  // provided, and otherwise leaves the column untouched.
   const sql = getSql();
+  const phoneSent = nextPhone !== undefined;
+  const phoneValue = phoneSent ? (nextPhone === "" ? null : nextPhone ?? null) : null;
+  const imageSent = nextImage !== undefined;
+  const imageValue = imageSent ? (nextImage === "" ? null : nextImage ?? null) : null;
   const rows = await sql<UserRow[]>`
     UPDATE users
     SET
       name = COALESCE(${nextName}, name),
-      phone = COALESCE(${nextPhone === undefined ? null : nextPhone}, phone),
-      image = COALESCE(${nextImage === undefined ? null : nextImage}, image),
+      phone = CASE WHEN ${phoneSent} THEN ${phoneValue} ELSE phone END,
+      image = CASE WHEN ${imageSent} THEN ${imageValue} ELSE image END,
       subscribe_newsletter = COALESCE(${nextSubscribe}, subscribe_newsletter),
       is_first_login = false,
       updated_at = now()

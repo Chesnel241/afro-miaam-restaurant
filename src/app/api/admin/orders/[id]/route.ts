@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSql } from "@/lib/db";
+import { getSql, withTransaction } from "@/lib/db";
 import { requireAdmin, authErrorResponse } from "@/lib/auth";
 
 /**
@@ -149,19 +149,78 @@ export async function PATCH(
     return bad("Aucun champ à mettre à jour.");
   }
 
-  const sql = getSql();
-  const rows = await sql<OrderRow[]>`
-    UPDATE orders
-    SET status = COALESCE(${nextStatus}, status),
-        deletion_requested = COALESCE(${nextDeletionRequested}, deletion_requested),
-        updated_at = now()
-    WHERE id = ${id}
-    RETURNING id, reference, user_id, user_name, user_email, items,
-              subtotal, delivery_fee, total, deposit_amount, discounts,
-              status, customer, referrer_id, referral_reward_paid,
-              has_reviewed, review, delivery_token_hash, delivery_token_exp,
-              delivered_at, deletion_requested, created_at, updated_at
-  `;
+  // Apply the update inside a transaction so that, when an admin sets the
+  // status to 'Livré' directly (bypassing the QR /api/delivery/confirm flow),
+  // we still apply the same idempotent loyalty side-effects: bump the buyer's
+  // orders_count by 1 and credit the referrer +5€ once. The referral payout
+  // is gated on referral_reward_paid so concurrent flips and replays are safe.
+  const rows = await withTransaction(async (tx) => {
+    // Lock the order row first.
+    const before = await tx<OrderRow[]>`
+      SELECT id, reference, user_id, user_name, user_email, items,
+             subtotal, delivery_fee, total, deposit_amount, discounts,
+             status, customer, referrer_id, referral_reward_paid,
+             has_reviewed, review, delivery_token_hash, delivery_token_exp,
+             delivered_at, deletion_requested, created_at, updated_at
+      FROM orders
+      WHERE id = ${id}
+      FOR UPDATE
+    `;
+    if (before.length === 0) return [] as OrderRow[];
+    const previous = before[0];
+
+    const updated = await tx<OrderRow[]>`
+      UPDATE orders
+      SET status = COALESCE(${nextStatus}, status),
+          deletion_requested = COALESCE(${nextDeletionRequested}, deletion_requested),
+          delivered_at = CASE
+            WHEN ${nextStatus} = 'Livré' AND delivered_at IS NULL THEN now()
+            ELSE delivered_at
+          END,
+          updated_at = now()
+      WHERE id = ${id}
+      RETURNING id, reference, user_id, user_name, user_email, items,
+                subtotal, delivery_fee, total, deposit_amount, discounts,
+                status, customer, referrer_id, referral_reward_paid,
+                has_reviewed, review, delivery_token_hash, delivery_token_exp,
+                delivered_at, deletion_requested, created_at, updated_at
+    `;
+
+    // Did this PATCH actually transition the order INTO the 'Livré' state?
+    // Only fire side effects on the transition edge so admins can edit other
+    // fields on a delivered order without doubling counters.
+    const becameDelivered =
+      nextStatus === "Livré" && previous.status !== "Livré";
+    if (becameDelivered) {
+      const ownerId = previous.user_id;
+      const referrerId = previous.referrer_id;
+      if (ownerId) {
+        await tx`
+          UPDATE users
+          SET orders_count = orders_count + 1, updated_at = now()
+          WHERE id = ${ownerId}
+        `;
+      }
+      if (
+        referrerId &&
+        referrerId !== ownerId &&
+        previous.referral_reward_paid !== true
+      ) {
+        await tx`
+          UPDATE users
+          SET referral_credits = referral_credits + 5, updated_at = now()
+          WHERE id = ${referrerId}
+        `;
+        await tx`
+          UPDATE orders
+          SET referral_reward_paid = true, updated_at = now()
+          WHERE id = ${id}
+        `;
+      }
+    }
+
+    return updated;
+  });
 
   if (rows.length === 0) {
     return bad("Commande introuvable.", 404);

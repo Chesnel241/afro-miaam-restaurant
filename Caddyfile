@@ -25,8 +25,13 @@ afro-miaam.fr, www.afro-miaam.fr {
 	}
 
 	# Everything else goes to the Next.js app over the internal network.
+	# Inject the real client IP via X-Forwarded-For (leftmost = client).
+	# The app's clientIp() reads this only when TRUSTED_PROXY=caddy.
 	handle {
-		reverse_proxy app:3000
+		reverse_proxy app:3000 {
+			header_up X-Forwarded-For {client_ip}
+			header_up X-Real-IP {client_ip}
+		}
 	}
 
 	# Response compression. zstd preferred, gzip fallback.
@@ -43,11 +48,16 @@ afro-miaam.fr, www.afro-miaam.fr {
 	}
 
 	# Structured access logs, rolled to keep disk usage bounded.
+	# Strip the maintenance bypass key from logged query strings — otherwise
+	# the very first bypass request would leak the secret to log readers
+	# (and any future log-shipping target).
 	log {
 		output file /var/log/caddy/access.log {
 			roll_size 50mb
 			roll_keep 5
 		}
-		format json
+		format json {
+			request>uri query>key delete
+		}
 	}
 }
