@@ -39,12 +39,20 @@ function validatePromotions(v: unknown): boolean {
   return true;
 }
 
+function isRealIsoDate(s: string): boolean {
+  if (!ISO_DATE_RE.test(s)) return false;
+  // Reject impossible calendar dates (e.g. 2026-13-45): re-serialize and compare.
+  const d = new Date(s + "T00:00:00Z");
+  if (Number.isNaN(d.getTime())) return false;
+  return d.toISOString().slice(0, 10) === s;
+}
+
 function validateClosures(v: unknown): boolean {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
   if (!Array.isArray(o.blockedDates)) return false;
   for (const d of o.blockedDates) {
-    if (typeof d !== "string" || !ISO_DATE_RE.test(d)) return false;
+    if (typeof d !== "string" || !isRealIsoDate(d)) return false;
   }
   return true;
 }
