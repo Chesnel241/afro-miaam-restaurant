@@ -287,10 +287,10 @@ Point the domain at the VPS. Caddy provisions TLS automatically via Let's Encryp
 once the A records resolve and ports 80/443 are reachable.
 
 1. At your DNS provider, create/update:
-   - `afro-miaam.fr`     → A → `<VPS_IP>`
-   - `www.afro-miaam.fr` → A → `<VPS_IP>`
+   - `afromiaam.com`     → A → `<VPS_IP>`
+   - `www.afromiaam.com` → A → `<VPS_IP>`
 2. Set a **low TTL** (e.g. 300s) first so you can roll back quickly if needed.
-3. Wait for propagation (`dig +short afro-miaam.fr`), then watch Caddy obtain certs:
+3. Wait for propagation (`dig +short afromiaam.com`), then watch Caddy obtain certs:
 
 ```bash
 docker compose logs -f caddy   # look for "certificate obtained successfully"
@@ -308,8 +308,8 @@ docker compose logs -f caddy   # look for "certificate obtained successfully"
 In **Google Cloud Console → APIs & Services → Credentials**, create an OAuth 2.0
 Client ID (type *Web application*):
 
-- **Authorized JavaScript origins:** `https://afro-miaam.fr`
-- **Authorized redirect URI:** `https://afro-miaam.fr/api/auth/oauth/google/callback`
+- **Authorized JavaScript origins:** `https://afromiaam.com`
+- **Authorized redirect URI:** `https://afromiaam.com/api/auth/oauth/google/callback`
 
 Copy the Client ID / secret into `.env` as `GOOGLE_OAUTH_CLIENT_ID` and
 `GOOGLE_OAUTH_CLIENT_SECRET`, then restart the app:
@@ -325,7 +325,7 @@ docker compose up -d app
 In the [reCAPTCHA admin console](https://www.google.com/recaptcha/admin), register
 a **v3** site:
 
-- **Domains:** `afro-miaam.fr` (and `www.afro-miaam.fr`)
+- **Domains:** `afromiaam.com` (and `www.afromiaam.com`)
 
 Put the keys in `.env`:
 
@@ -345,18 +345,18 @@ Run through these after cutover:
 
 ```bash
 # Health endpoint (through Caddy / TLS).
-curl -fsS https://afro-miaam.fr/api/health
+curl -fsS https://afromiaam.com/api/health
 
 # Security headers present (HSTS, nosniff, frame-deny, no Server header).
-curl -sI https://afro-miaam.fr | grep -iE 'strict-transport|x-content-type|x-frame|referrer-policy|^server'
+curl -sI https://afromiaam.com | grep -iE 'strict-transport|x-content-type|x-frame|referrer-policy|^server'
 
 # Uploaded image served directly by Caddy with a long cache.
-curl -sI https://afro-miaam.fr/uploads/<some-image>.jpg | grep -i cache-control
+curl -sI https://afromiaam.com/uploads/<some-image>.jpg | grep -i cache-control
 ```
 
 Functional smoke test (manual, in a browser):
 
-- [ ] `https://afro-miaam.fr` loads with a valid certificate; `www` redirects/works.
+- [ ] `https://afromiaam.com` loads with a valid certificate; `www` redirects/works.
 - [ ] **Sign up** with email → receive verification email (Resend).
 - [ ] **Log in** with email/password.
 - [ ] **Google OAuth** sign-in works.
