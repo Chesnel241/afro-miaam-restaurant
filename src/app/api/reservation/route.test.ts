@@ -93,6 +93,16 @@ function buildRequest(body: unknown, headers: Record<string, string> = {}): Requ
 function installSqlMock(opts: {
   closures?: string[];
   menuPrices?: Array<{ id: string; price: number }>;
+  // When set, the pre-transaction idempotency lookup returns this row and
+  // the route short-circuits to a replay response.
+  existingIdempotentOrder?: {
+    id: string;
+    reference: string;
+    subtotal: number;
+    delivery_fee: number;
+    total: number;
+    deposit_amount: number;
+  };
 } = {}) {
   const sqlMock = getSql() as unknown as ReturnType<typeof vi.fn>;
   sqlMock.mockReset();
@@ -108,6 +118,11 @@ function installSqlMock(opts: {
         opts.closures !== undefined
           ? [{ value: { blockedDates: opts.closures } }]
           : [],
+      );
+    }
+    if (text.includes("FROM orders") && text.includes("idempotency_key")) {
+      return Promise.resolve(
+        opts.existingIdempotentOrder ? [opts.existingIdempotentOrder] : [],
       );
     }
     return Promise.resolve([]);
@@ -351,6 +366,81 @@ describe("POST /api/reservation", () => {
     // (the fixture user has both conditions true by default).
     expect(data.total).toBe(21);
     expect(data.depositAmount).toBe(10.5); // 50% of 21
+  });
+
+  describe("idempotency (Idempotency-Key header)", () => {
+    it("replays an existing order when the same key has already been used", async () => {
+      installSqlMock({
+        existingIdempotentOrder: {
+          id: "existing-order-uuid",
+          reference: "AM-20260101-AAAAAAAA",
+          subtotal: 26,
+          delivery_fee: 0,
+          total: 21,
+          deposit_amount: 10.5,
+        },
+      });
+      installTransactionMock();
+
+      const req = buildRequest(
+        {
+          items: [{ id: "garba", quantity: 2 }],
+          date: futureIsoDate(),
+          slot: "12h00 - 12h30",
+          deliveryMode: "retrait",
+          customer: { firstName: "John", lastName: "Doe", phone: "0612345678" },
+        },
+        { "Idempotency-Key": "replay-key-123" },
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.ok).toBe(true);
+      expect(data.replayed).toBe(true);
+      expect(data.orderId).toBe("existing-order-uuid");
+      expect(data.reference).toBe("AM-20260101-AAAAAAAA");
+      expect(data.total).toBe(21);
+      // The transaction must NOT run when we replay — no second insert.
+      expect((withTransaction as any)).not.toHaveBeenCalled();
+    });
+
+    it("proceeds normally when the header is absent (no replay)", async () => {
+      installSqlMock();
+      installTransactionMock();
+      const req = buildRequest({
+        items: [{ id: "garba", quantity: 2 }],
+        date: futureIsoDate(),
+        slot: "12h00 - 12h30",
+        deliveryMode: "retrait",
+        customer: { firstName: "John", lastName: "Doe", phone: "0612345678" },
+      });
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.ok).toBe(true);
+      expect(data.replayed).toBeUndefined();
+      expect((withTransaction as any)).toHaveBeenCalled();
+    });
+
+    it("proceeds normally when the header is fresh (no prior order)", async () => {
+      installSqlMock(); // existingIdempotentOrder omitted -> [] from lookup
+      installTransactionMock();
+      const req = buildRequest(
+        {
+          items: [{ id: "garba", quantity: 2 }],
+          date: futureIsoDate(),
+          slot: "12h00 - 12h30",
+          deliveryMode: "retrait",
+          customer: { firstName: "John", lastName: "Doe", phone: "0612345678" },
+        },
+        { "Idempotency-Key": "fresh-unique-key" },
+      );
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.replayed).toBeUndefined();
+      expect((withTransaction as any)).toHaveBeenCalled();
+    });
   });
 });
 

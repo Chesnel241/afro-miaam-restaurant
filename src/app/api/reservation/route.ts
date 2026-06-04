@@ -354,7 +354,56 @@ export async function POST(request: Request) {
     return bad("Email invalide.");
   }
 
-  const reference = generateReference();
+  // -------------------------------------------------------------------------
+  // Idempotency: the client passes an Idempotency-Key header (random UUID
+  // generated once per submit attempt). If we already have an order for this
+  // (user_id, idempotency_key) pair, return it as-is — same response shape as
+  // the original submission. Prevents double-orders from network retries,
+  // browser back+resubmit, or two open tabs.
+  //
+  // We accept a missing header (legacy clients) but log it — future versions
+  // can make it required once all clients are updated.
+  // -------------------------------------------------------------------------
+  const idempotencyKey = request.headers
+    .get("idempotency-key")
+    ?.trim()
+    .slice(0, 200) || null;
+
+  if (idempotencyKey) {
+    try {
+      const sqlPre = getSql();
+      const existing = await sqlPre<
+        { id: string; reference: string; subtotal: string | number; delivery_fee: string | number; total: string | number; deposit_amount: string | number }[]
+      >`
+        SELECT id, reference, subtotal, delivery_fee, total, deposit_amount
+        FROM orders
+        WHERE user_id = ${userId} AND idempotency_key = ${idempotencyKey}
+        LIMIT 1
+      `;
+      if (existing.length > 0) {
+        const e = existing[0];
+        return NextResponse.json({
+          ok: true,
+          reference: e.reference,
+          orderId: e.id,
+          serverSubtotal: Number(e.subtotal),
+          deliveryFee: Number(e.delivery_fee),
+          total: Number(e.total),
+          depositAmount: Number(e.deposit_amount),
+          replayed: true,
+        });
+      }
+    } catch (e) {
+      // If the lookup fails (DB hiccup) we proceed and let the unique index
+      // catch a real collision below — fail-open here is acceptable since
+      // the unique constraint is the authoritative guard.
+      console.warn("IDEMPOTENCY_LOOKUP_FAILED", (e as { code?: string }).code ?? "unknown");
+    }
+  }
+
+  // Generate a reference. With ~16M possible 8-hex suffixes per day, collisions
+  // are vanishingly rare but non-zero — we retry once on a unique_violation.
+  let reference = generateReference();
 
   try {
     let finalTotal = serverTotalBeforeDiscount;
@@ -364,6 +413,72 @@ export async function POST(request: Request) {
     let notifyName = "";
     let notifyEmail = "";
 
+    // Retry the whole transaction up to 2 times on a unique_violation that
+    // targets orders.reference — collisions are vanishingly rare (8 hex chars
+    // = ~16M / day) but a real outage of randomness or two requests landing
+    // on the same suffix should not become a 500.
+    let attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        await withTransactionImpl();
+        break;
+      } catch (txError: unknown) {
+        const pgErr = txError as { code?: string; constraint_name?: string };
+        const isReferenceCollision =
+          pgErr?.code === "23505" &&
+          (pgErr.constraint_name === "orders_reference_key" ||
+            String((txError as { message?: string })?.message ?? "").includes(
+              "orders_reference_key",
+            ));
+        const isIdempotencyCollision =
+          pgErr?.code === "23505" &&
+          String((txError as { message?: string })?.message ?? "").includes(
+            "orders_user_idempotency_key_idx",
+          );
+        if (isIdempotencyCollision) {
+          // Concurrent submission with the same idempotency key already
+          // succeeded. Re-read the existing row and return it as a replay.
+          const sqlR = getSql();
+          const existing = await sqlR<
+            {
+              id: string;
+              reference: string;
+              subtotal: string | number;
+              delivery_fee: string | number;
+              total: string | number;
+              deposit_amount: string | number;
+            }[]
+          >`
+            SELECT id, reference, subtotal, delivery_fee, total, deposit_amount
+            FROM orders
+            WHERE user_id = ${userId} AND idempotency_key = ${idempotencyKey}
+            LIMIT 1
+          `;
+          if (existing.length > 0) {
+            const e = existing[0];
+            return NextResponse.json({
+              ok: true,
+              reference: e.reference,
+              orderId: e.id,
+              serverSubtotal: Number(e.subtotal),
+              deliveryFee: Number(e.delivery_fee),
+              total: Number(e.total),
+              depositAmount: Number(e.deposit_amount),
+              replayed: true,
+            });
+          }
+          throw txError;
+        }
+        if (isReferenceCollision && attempt < 3) {
+          reference = generateReference();
+          continue;
+        }
+        throw txError;
+      }
+    }
+
+    async function withTransactionImpl() {
     await withTransaction(async (tx) => {
       const userRows = await tx<
         {
@@ -504,6 +619,10 @@ export async function POST(request: Request) {
 
       // Insert order. status defaults to 'Attente Acompte' at the column level
       // but we set it explicitly to mirror the previous Firestore write.
+      // Includes the optional idempotency_key so a same-key retry returns the
+      // existing order via the partial unique index instead of creating a
+      // duplicate (the route's pre-tx lookup already short-circuits that path,
+      // this is belt-and-suspenders).
       const orderRows = await tx<{ id: string }[]>`
         INSERT INTO orders (
           reference,
@@ -518,7 +637,8 @@ export async function POST(request: Request) {
           discounts,
           status,
           customer,
-          referrer_id
+          referrer_id,
+          idempotency_key
         ) VALUES (
           ${reference},
           ${userId},
@@ -532,7 +652,8 @@ export async function POST(request: Request) {
           ${tx.json(discounts)},
           ${"Attente Acompte"},
           ${tx.json(customer)},
-          ${referrerId}
+          ${referrerId},
+          ${idempotencyKey}
         )
         RETURNING id
       `;
@@ -551,6 +672,7 @@ export async function POST(request: Request) {
         WHERE id = ${userId}
       `;
     });
+    }
 
     console.log("[Afro Miaam] Réservation confirmée et stockée", { orderId, reference, finalTotal });
 

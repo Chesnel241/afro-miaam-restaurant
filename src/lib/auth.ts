@@ -70,6 +70,16 @@ function getJwtSecret(): Uint8Array {
   if (!secret) {
     throw new Error("[auth] AUTH_JWT_SECRET is not set.");
   }
+  // HMAC-SHA256 requires at least 32 bytes of entropy to be secure. Refuse
+  // anything shorter than 32 chars (≥ 32 bytes for plain ASCII; conservative
+  // for any UTF-8). Operators are explicitly told to use `openssl rand -hex 32`
+  // in .env.example.
+  if (secret.length < 32) {
+    throw new Error(
+      "[auth] AUTH_JWT_SECRET must be at least 32 characters. " +
+        "Generate one with `openssl rand -hex 32`.",
+    );
+  }
   return new TextEncoder().encode(secret);
 }
 

@@ -29,6 +29,12 @@ services:
       # First-boot schema. The entrypoint only runs *.sql here when the data
       # directory is empty (i.e. a brand-new volume).
       - ./migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+      # Additive hardening (orders.idempotency_key, delivery_fee CHECK).
+      # /docker-entrypoint-initdb.d/ runs files alphabetically on first boot
+      # only — re-run manually on an existing volume:
+      #   docker compose exec -T postgres psql -U "$$POSTGRES_USER" \
+      #     -d "$$POSTGRES_DB" -f /docker-entrypoint-initdb.d/002_hardening.sql
+      - ./migrations/002_hardening.sql:/docker-entrypoint-initdb.d/002_hardening.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s

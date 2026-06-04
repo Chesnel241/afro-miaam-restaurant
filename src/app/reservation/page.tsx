@@ -4,7 +4,7 @@ import { useAuth, useRecaptcha } from "@/components/AuthContext";
 import { useCart } from "@/components/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { CheckIcon, ClockIcon, MapPinIcon, UserIcon, GiftIcon } from "@/components/Icons";
 import { DELIVERY_FEE } from "@/lib/booking";
@@ -37,6 +37,12 @@ export default function ReservationPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [finalDeposit, setFinalDeposit] = useState(0);
+  // Idempotency key — generated once per real submit attempt and sent as
+  // Idempotency-Key. If the server already saw this key for this user, it
+  // returns the original order instead of creating a duplicate (covers
+  // double-click, two open tabs, network retry, browser back+resubmit).
+  // We re-generate on a fresh attempt only AFTER the previous attempt failed.
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   // Growth Features State
   const [referralCode, setReferralCode] = useState("");
@@ -164,9 +170,22 @@ export default function ReservationPage() {
 
       const recaptchaToken = await getRecaptchaToken("reservation");
 
+      // Pin the idempotency key for the duration of this submit attempt so a
+      // network retry of the SAME submission carries the same key (and is
+      // de-duplicated server-side). Reset on next successful submit / unmount.
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `ik-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      }
+
       const apiRes = await authFetch("/api/reservation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKeyRef.current,
+        },
         body: JSON.stringify({
           items: sanitizedItems,
           date: form.date,
@@ -202,6 +221,9 @@ export default function ReservationPage() {
       setFinalDeposit(serverDeposit);
       setSuccess(true);
       clearCart();
+      // Order succeeded — release the key so a future *new* booking by the
+      // same user (after going back to the menu) gets a fresh one.
+      idempotencyKeyRef.current = null;
     } catch (err) {
       console.error("BOOKING_ERROR", (err as { code?: string }).code ?? "unknown");
       alert("Erreur, réessayez.");
