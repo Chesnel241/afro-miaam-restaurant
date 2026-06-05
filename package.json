@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test smoke",
+    "smoke": "./scripts/smoke-fumigation.sh",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

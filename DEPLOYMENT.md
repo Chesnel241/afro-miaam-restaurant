@@ -344,15 +344,21 @@ Restart the app to apply (`docker compose up -d app`).
 Run through these after cutover:
 
 ```bash
-# Health endpoint (through Caddy / TLS).
+# Automated smoke fumigation — exercises liveness, public pages, auth flow,
+# security headers, CSP, reservation contract, idempotency. Returns non-zero
+# if anything fails. Run BEFORE inviting users.
+BASE_URL=https://afromiaam.com npm run smoke
+
+# Spot checks (manual):
 curl -fsS https://afromiaam.com/api/health
-
-# Security headers present (HSTS, nosniff, frame-deny, no Server header).
 curl -sI https://afromiaam.com | grep -iE 'strict-transport|x-content-type|x-frame|referrer-policy|^server'
-
-# Uploaded image served directly by Caddy with a long cache.
 curl -sI https://afromiaam.com/uploads/<some-image>.jpg | grep -i cache-control
 ```
+
+The smoke script creates throwaway test accounts (`e2e+smoke-<ts>@example.com`)
+so it is safe to re-run. In a strict-prod environment with real reCAPTCHA
+enforcement, the auth-touching tests will SKIP rather than FAIL — the script
+exits 0 if the contract is intact.
 
 Functional smoke test (manual, in a browser):
 
