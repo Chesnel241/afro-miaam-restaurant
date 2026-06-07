@@ -58,7 +58,7 @@ export function Footer() {
 
           <div className="mt-5 flex items-center gap-3">
             <Social label="Instagram" href="https://www.instagram.com/afro_miaam?igsh=amV1YXZjc3lhNTV3"><LottiePlayer src="instagram.json" onHover speed={1.5} className="w-10 h-10" /></Social>
-            <Social label="Facebook" href="https://www.facebook.com/share/1Kr7G9GA3d/?mibextid=wwXIfr"><LottiePlayer src="facebook.json" onHover speed={1.5} className="w-8 h-8" /></Social>
+            <Social label="Facebook" href="https://www.facebook.com/share/1Kr7G9GA3d/?mibextid=wwXIfr"><LottiePlayer src="facebook.json" onHover speed={1.5} className="w-full h-full scale-[2.2]" /></Social>
             <Social label="TikTok" href="https://www.tiktok.com/@afro_miaam?_r=1&_t=ZS-96GwYiFGd09"><LottiePlayer src="Tiktok.json" onHover speed={1.5} className="w-8 h-8" /></Social>
           </div>
         </div>
