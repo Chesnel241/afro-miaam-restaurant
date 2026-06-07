@@ -11,7 +11,7 @@
 	email bonjour@afromiaam.com
 }
 
-afromiaam.com, www.afromiaam.com {
+http://afromiaam.com, http://www.afromiaam.com {
 	# -------------------------------------------------------------------------
 	# Serve uploaded menu images directly from disk (mounted at /srv/uploads,
 	# read-only). The `uploads` volume is exposed under /srv, so a request for
