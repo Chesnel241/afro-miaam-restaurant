@@ -6,6 +6,7 @@ import { CHAT_TOPICS, answerFor, type ChatCta } from "@/data/chatbot";
 
 import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthContext";
+import { LottiePlayer } from "./LottiePlayer";
 
 type Sender = "bot" | "user";
 
@@ -197,23 +198,8 @@ export function Chatbot() {
             {open ? (
               <CloseIcon />
             ) : (
-              <span className="block h-full w-full overflow-hidden rounded-full">
-                {!imgFailed ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={AVATAR_PRIMARY}
-                    alt="Assistant Afro Miaam"
-                    onError={() => setImgFailed(true)}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={AVATAR_FALLBACK}
-                    alt="Assistant Afro Miaam"
-                    className="h-full w-full object-cover"
-                  />
-                )}
+              <span className="block h-full w-full overflow-hidden rounded-full flex items-center justify-center p-1">
+                 <LottiePlayer src="a mettre sur le chatbot.json" autoplay loop speed={1} className="w-full h-full" />
               </span>
             )}
 
@@ -239,14 +225,8 @@ export function Chatbot() {
           className="fixed inset-x-3 bottom-20 z-50 flex max-h-[78vh] flex-col overflow-hidden rounded-2xl bg-white shadow-soft lg:inset-auto lg:bottom-28 lg:right-6 lg:w-[380px]"
         >
           <header className="relative flex items-center gap-3 bg-primary-gradient bg-grain p-4 text-cream">
-            <span className="relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-cream ring-2 ring-accent">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imgFailed ? AVATAR_FALLBACK : AVATAR_PRIMARY}
-                onError={() => setImgFailed(true)}
-                alt="Assistant Afro Miaam"
-                className="h-full w-full object-cover"
-              />
+            <span className="relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-cream ring-2 ring-accent flex items-center justify-center p-0.5">
+               <LottiePlayer src="a mettre sur le chatbot.json" autoplay loop speed={1} className="w-full h-full" />
               <span className="absolute bottom-0 right-0 inline-flex h-3 w-3 rounded-full border-2 border-cream bg-emerald-500" />
             </span>
             <div className="flex-1 leading-tight">

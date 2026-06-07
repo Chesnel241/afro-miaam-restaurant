@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { CheckIcon, ClockIcon, MapPinIcon, UserIcon, GiftIcon } from "@/components/Icons";
+import { LottiePlayer } from "@/components/LottiePlayer";
 import { DELIVERY_FEE } from "@/lib/booking";
 
 export default function ReservationPage() {
@@ -303,7 +304,15 @@ export default function ReservationPage() {
   }
 
   return (
-    <div className="container-x py-12 sm:py-20">
+    <div className="container-x py-12 sm:py-20 relative">
+      {loading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-cream/90 backdrop-blur-sm transition-all duration-300">
+          <div className="w-64 h-64">
+            <LottiePlayer src="loading chargement confirmation de commande.json" autoplay loop speed={1.2} />
+          </div>
+          <p className="mt-4 text-xl font-bold text-primary animate-pulse">Validation de votre commande...</p>
+        </div>
+      )}
       <div className="grid gap-12 lg:grid-cols-2">
         {/* Formulaire */}
         <div className="space-y-8">

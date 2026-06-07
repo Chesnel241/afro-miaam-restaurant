@@ -13,6 +13,7 @@ import { formatPrice } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { MemberCard } from "@/components/MemberCard";
 import { useCart } from "@/components/CartContext";
+import { LottiePlayer } from "@/components/LottiePlayer";
 
 type ReferralRow = {
   name?: string;
@@ -836,6 +837,19 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
          </p>
       </div>
 
+      {/* Lottie Status Animation */}
+      {order.status !== "Livré" && (
+        <div className="mt-6 sm:ml-19 pl-1 flex justify-center sm:justify-start">
+          <div className="h-32 w-32 sm:h-40 sm:w-40 relative">
+            {order.status === "Attente Acompte" && <LottiePlayer src="ATTENTE DE PAIEMENT ACCOMPTE.json" loop={true} />}
+            {["Acompte Reçu", "En attente"].includes(order.status) && <LottiePlayer src="ANIMATION EN ATTENTE DE CONFIRMATION DE COMMANDE.json" loop={true} />}
+            {order.status === "En cours" && <LottiePlayer src="COMMANDE EN CUISINE EN PREPARATION.json" loop={true} />}
+            {order.status === "En Livraison" && <LottiePlayer src="EN COURS DE LIVRAISON.json" loop={true} />}
+            {order.status === "Rejetée" && <LottiePlayer src="PROBLEME AVEC COMMANDE OU REJETEE.json" loop={true} />}
+          </div>
+        </div>
+      )}
+
       {/* Dynamic tracking stepper */}
       <div className="mt-6 sm:ml-19 pl-1">
         <div className="rounded-2xl bg-creamSoft/30 border border-cream/15 p-5">
@@ -863,43 +877,45 @@ function OrderRow({ order, onScan }: { order: Order, onScan: () => void }) {
               <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-black transition-all ${
                 ["Acompte Reçu", "En attente"].includes(order.status)
                   ? "bg-accent text-white animate-pulse shadow-lg shadow-accent/20"
-                  : ["En cours", "Livré"].includes(order.status)
+                  : ["En cours", "En Livraison", "Livré"].includes(order.status)
                     ? "bg-emerald-500 text-white"
-                    : "bg-primary/5 text-primary/30"
+                    : order.status === "Rejetée" ? "bg-red-500 text-white" : "bg-primary/5 text-primary/30"
               }`}>
-                {["En cours", "Livré"].includes(order.status) ? "✓" : "🍳"}
+                {["En cours", "En Livraison", "Livré"].includes(order.status) ? "✓" : order.status === "Rejetée" ? "X" : "🍳"}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-black text-primary leading-tight">Confirmée</p>
+                <p className="text-xs font-black text-primary leading-tight">{order.status === "Rejetée" ? "Annulée" : "Confirmée"}</p>
                 <p className="text-[9px] text-primary/40 font-bold uppercase tracking-wider mt-0.5">
                   {["Acompte Reçu", "En attente"].includes(order.status)
                     ? "Reçue"
-                    : ["En cours", "Livré"].includes(order.status)
+                    : ["En cours", "En Livraison", "Livré"].includes(order.status)
                       ? "Validée"
-                      : "En attente"}
+                      : order.status === "Rejetée" ? "Problème" : "En attente"}
                 </p>
               </div>
             </div>
 
-            {/* Step 3: En cuisine */}
+            {/* Step 3: En cuisine / Livraison */}
             <div className="flex items-center gap-3">
               <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-black transition-all ${
-                order.status === "En cours"
+                ["En cours", "En Livraison"].includes(order.status)
                   ? "bg-amber-500 text-white animate-pulse shadow-lg shadow-amber-200"
                   : order.status === "Livré"
                     ? "bg-emerald-500 text-white"
                     : "bg-primary/5 text-primary/30"
               }`}>
-                {order.status === "Livré" ? "✓" : "🧑‍🍳"}
+                {order.status === "Livré" ? "✓" : order.status === "En Livraison" ? "🛵" : "🧑‍🍳"}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-black text-primary leading-tight">En cuisine</p>
+                <p className="text-xs font-black text-primary leading-tight">{order.status === "En Livraison" ? "En Livraison" : "En cuisine"}</p>
                 <p className="text-[9px] text-primary/40 font-bold uppercase tracking-wider mt-0.5">
                   {order.status === "En cours"
                     ? "Préparation"
-                    : order.status === "Livré"
-                      ? "Prêt"
-                      : "À venir"}
+                    : order.status === "En Livraison"
+                      ? "En route"
+                      : order.status === "Livré"
+                        ? "Prêt"
+                        : "À venir"}
                 </p>
               </div>
             </div>

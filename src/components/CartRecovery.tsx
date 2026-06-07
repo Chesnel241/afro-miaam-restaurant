@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ClockIcon, ArrowRightIcon } from "./Icons";
+import { ArrowRightIcon } from "./Icons";
 import Link from "next/link";
+import { LottiePlayer } from "./LottiePlayer";
 import { useAuth } from "./AuthContext";
 
 export function CartRecovery() {
@@ -73,8 +74,8 @@ export function CartRecovery() {
           />
           
           <div className="relative z-10 flex items-center gap-5">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-              <ClockIcon className="h-8 w-8 animate-pulse" />
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent/5 overflow-hidden relative">
+              <LottiePlayer src="CartRecovery.json" autoplay loop={true} speed={1.2} className="w-20 h-20 absolute" />
             </div>
             <div className="flex-1">
               <h3 className="font-display text-lg font-black text-primary leading-tight">On garde votre Tiep au chaud ?</h3>

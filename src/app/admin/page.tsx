@@ -94,8 +94,8 @@ export default function AdminPage() {
 
   // Séparation des commandes (scope declared early for KDS and BI charts)
   const depositPendingOrders = allOrders.filter(o => o.status === "Attente Acompte");
-  const activeOrders = allOrders.filter(o => o.status === "En attente" || o.status === "En cours" || o.status === "Acompte Reçu");
-  const historyOrders = allOrders.filter(o => o.status === "Livré");
+  const activeOrders = allOrders.filter(o => o.status === "En attente" || o.status === "En cours" || o.status === "Acompte Reçu" || o.status === "En Livraison");
+  const historyOrders = allOrders.filter(o => o.status === "Livré" || o.status === "Rejetée");
   
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -1317,7 +1317,8 @@ function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusC
     <div className="flex flex-col gap-6 p-8 sm:flex-row sm:items-center sm:justify-between hover:bg-cream/5 transition-colors group">
       <div className="flex items-start gap-5">
         <div className={`h-12 w-12 shrink-0 rounded-2xl flex items-center justify-center ${
-          order.status === 'En attente' ? 'bg-orange-50 text-orange-500' : 'bg-blue-50 text-blue-500'
+          order.status === 'En attente' ? 'bg-orange-50 text-orange-500' : 
+          order.status === 'Rejetée' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
         }`}>
           <ClockIcon className="h-6 w-6" />
         </div>
@@ -1325,7 +1326,8 @@ function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusC
           <div className="flex items-center gap-3">
             <p className="font-display font-black text-primary text-lg">{order.id.substring(0, 8).toUpperCase()}</p>
             <span className={`rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest ${
-              order.status === 'En attente' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+              order.status === 'En attente' ? 'bg-orange-100 text-orange-700' : 
+              order.status === 'Rejetée' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
             }`}>
               {order.status}
             </span>
@@ -1376,7 +1378,13 @@ function OrderRow({ order, onStatusChange, onShowQR }: { order: Order, onStatusC
             <button onClick={() => onStatusChange(order.id, "En cours")} className="btn btn-sm bg-primary text-white px-6">Préparer</button>
           )}
           {(order.status === "En cours" || order.status === "Acompte Reçu") && (
-            <button onClick={() => onStatusChange(order.id, "Livré")} className="btn btn-sm bg-accent text-white px-6 shadow-glow">Terminer</button>
+            <button onClick={() => onStatusChange(order.id, "En Livraison")} className="btn btn-sm bg-accent text-white px-6 shadow-glow">Expédier</button>
+          )}
+          {order.status === "En Livraison" && (
+            <button onClick={() => onStatusChange(order.id, "Livré")} className="btn btn-sm bg-emerald-500 text-white px-6 shadow-glow">Terminer</button>
+          )}
+          {order.status !== "Rejetée" && order.status !== "Livré" && (
+            <button onClick={() => onStatusChange(order.id, "Rejetée")} className="btn btn-sm bg-red-100 text-red-600 px-4">Rejeter</button>
           )}
           <button 
             onClick={handleDelete} 

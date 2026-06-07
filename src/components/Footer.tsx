@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
 import {
-  FacebookIcon,
-  InstagramIcon,
   MailIcon,
   PhoneIcon,
   PinIcon,
-  TiktokIcon,
 } from "./Icons";
+import { LottiePlayer } from "./LottiePlayer";
 import { NewsletterSignup } from "./NewsletterSignup";
 
 export function Footer() {
@@ -59,9 +57,9 @@ export function Footer() {
           </ul>
 
           <div className="mt-5 flex items-center gap-3">
-            <Social label="Instagram" href="https://www.instagram.com/afro_miaam?igsh=amV1YXZjc3lhNTV3"><InstagramIcon className="h-5 w-5" /></Social>
-            <Social label="Facebook" href="https://www.facebook.com/share/1Kr7G9GA3d/?mibextid=wwXIfr"><FacebookIcon className="h-5 w-5" /></Social>
-            <Social label="TikTok" href="https://www.tiktok.com/@afro_miaam?_r=1&_t=ZS-96GwYiFGd09"><TiktokIcon className="h-5 w-5" /></Social>
+            <Social label="Instagram" href="https://www.instagram.com/afro_miaam?igsh=amV1YXZjc3lhNTV3"><LottiePlayer src="instagram.json" onHover speed={1.5} className="w-10 h-10" /></Social>
+            <Social label="Facebook" href="https://www.facebook.com/share/1Kr7G9GA3d/?mibextid=wwXIfr"><LottiePlayer src="facebook.json" onHover speed={1.5} className="w-8 h-8" /></Social>
+            <Social label="TikTok" href="https://www.tiktok.com/@afro_miaam?_r=1&_t=ZS-96GwYiFGd09"><LottiePlayer src="Tiktok.json" onHover speed={1.5} className="w-8 h-8" /></Social>
           </div>
         </div>
 
@@ -101,7 +99,7 @@ function Social({ label, href, children }: { label: string; href: string; childr
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-accent"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cream/10 text-cream transition hover:bg-cream/20 overflow-hidden"
     >
       {children}
     </a>

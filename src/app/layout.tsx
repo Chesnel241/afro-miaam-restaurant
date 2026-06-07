@@ -19,6 +19,7 @@ import { Chatbot } from "@/components/Chatbot";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CartRecovery } from "@/components/CartRecovery";
 import { CacheBuster } from "@/components/CacheBuster";
+import { SeasonalTheme } from "@/components/SeasonalTheme";
 
 const display = Poppins({
   subsets: ["latin"],
@@ -134,8 +135,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <OrderProvider>
                   <AppOverlay />
                   <CartProvider>
+                    <SeasonalTheme />
                     <Header />
-                    <main id="main-content" role="main" className="flex-1 pb-28 lg:pb-0 animate-fade-in">{children}</main>
+                    <main id="main-content" role="main" className="flex min-h-[100dvh] flex-col overflow-x-hidden pt-[calc(env(safe-area-inset-top)+84px)] lg:pt-0 animate-fade-in">{children}</main>
                     <Footer />
                     <BottomNavBar />
                     <FloatingCart />

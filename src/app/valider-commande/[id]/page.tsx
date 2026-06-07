@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckIcon, ClockIcon } from "@/components/Icons";
+import { LottiePlayer } from "@/components/LottiePlayer";
 
 export default function ValiderCommandePage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading } = useAuth();
@@ -124,8 +125,8 @@ export default function ValiderCommandePage({ params }: { params: Promise<{ id: 
               animate={{ opacity: 1, scale: 1 }}
               className="rounded-3xl bg-white p-10 text-center shadow-xl ring-1 ring-black/5"
             >
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600">
-                <CheckIcon className="h-10 w-10" />
+              <div className="mx-auto mb-6 flex justify-center h-48 w-48">
+                <LottiePlayer src="LIVRAISON RECUE MERCI POUR VOTRE COMMANDE.json" loop={false} />
               </div>
               <h1 className="heading-display mb-2 text-2xl text-primary">Merci !</h1>
               <p className="text-primary/60 font-medium">Votre commande a été marquée comme livrée. Bon appétit !</p>

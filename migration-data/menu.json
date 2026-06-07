@@ -1,0 +1,603 @@
+[
+  {
+    "id": "attieke",
+    "name": "Attiéké",
+    "description": "Semoule de manioc cuite à la vapeur.",
+    "price": 3,
+    "image": "/img/accompagnements/attieke.png",
+    "category": "accompagnement",
+    "tags": [],
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.730Z",
+    "available": true,
+    "updatedAt": "2026-05-19T13:16:35.830Z"
+  },
+  {
+    "id": "banane-bouillie",
+    "name": "Banane bouillie",
+    "description": "Banane plantain bouillie nature.",
+    "price": 4,
+    "image": "/img/accompagnements/banane-bouillie.png",
+    "category": "accompagnement",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.652Z"
+  },
+  {
+    "id": "beignets",
+    "name": "Beignets",
+    "description": "Frites de bananes plantain.",
+    "price": 4,
+    "image": "/img/accompagnements/beignets.png",
+    "category": "accompagnement",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.766Z"
+  },
+  {
+    "id": "bissap",
+    "name": "Bissap",
+    "description": "Infusion de fleurs d'hibiscus.",
+    "price": 3.5,
+    "image": "/img/boissons/bissap.png",
+    "category": "boisson",
+    "tags": [],
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.242Z",
+    "available": true,
+    "updatedAt": "2026-05-19T10:50:18.149Z"
+  },
+  {
+    "id": "boisson-detox",
+    "name": "Boisson détox",
+    "description": "Mélange frais et sain pour se revitaliser.",
+    "price": 5.5,
+    "image": "/img/boissons/boisson-detox.png",
+    "category": "boisson",
+    "tags": [],
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.201Z",
+    "available": true,
+    "updatedAt": "2026-05-19T10:50:20.417Z"
+  },
+  {
+    "id": "crepes",
+    "name": "Crêpes",
+    "description": "Crêpes fondantes et gourmandes.",
+    "price": 5,
+    "image": "/img/desserts/crepes.png",
+    "category": "dessert",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.055Z"
+  },
+  {
+    "id": "degue",
+    "name": "Dégué",
+    "description": "Dessert rafraîchissant au yaourt et grains de mil.",
+    "price": 4,
+    "image": "/img/desserts/degue.png",
+    "category": "dessert",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.019Z"
+  },
+  {
+    "id": "eau",
+    "name": "Eau",
+    "description": "Bouteille d'eau plate.",
+    "price": 2,
+    "image": "/img/boissons/eau.png",
+    "category": "boisson",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.315Z"
+  },
+  {
+    "id": "feuilles-manioc",
+    "name": "Feuilles de manioc",
+    "description": "Feuilles de manioc pilées et mijotées.",
+    "price": 13,
+    "image": "/img/menu/feuilles-manioc.png",
+    "category": "plat",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.447Z"
+  },
+  {
+    "id": "fondant-chocolat",
+    "name": "Fondant chocolat",
+    "description": "Gâteau au coeur coulant de chocolat.",
+    "price": 5,
+    "image": "/img/desserts/fondant-chocolat.png",
+    "category": "dessert",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.092Z"
+  },
+  {
+    "id": "frites",
+    "name": "Frites",
+    "description": "Frites classiques de pomme de terre.",
+    "price": 3.5,
+    "image": "/img/accompagnements/frites.png",
+    "category": "accompagnement",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.821Z"
+  },
+  {
+    "id": "frites-patates-douces",
+    "name": "Frites de patates douces",
+    "description": "Frites de patates douces croustillantes.",
+    "price": 4.5,
+    "image": "/img/accompagnements/frites-patates-douces.png",
+    "category": "accompagnement",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.612Z"
+  },
+  {
+    "id": "garba",
+    "name": "Garba",
+    "description": "Plat traditionnel ivoirien avec attiéké et thon.",
+    "price": 13,
+    "image": "/img/menu/garba.png",
+    "category": "plat",
+    "tags": [
+      "Populaire"
+    ],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.003Z"
+  },
+  {
+    "id": "gateau-banane",
+    "name": "Gâteau banane",
+    "description": "Cake moelleux à la banane.",
+    "price": 4,
+    "image": "/img/gourmandises/gateau-banane.png",
+    "category": "gourmandise",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.128Z"
+  },
+  {
+    "id": "gateau-farine",
+    "name": "Gâteau farine",
+    "description": "Douceur locale à découvrir.",
+    "price": 4,
+    "image": "/img/gourmandises/gateau-farine.png",
+    "category": "gourmandise",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.164Z"
+  },
+  {
+    "id": "haricot-beignets",
+    "name": "Haricot beignets",
+    "description": "Haricots rouges mijotés servis avec beignets croustillants.",
+    "price": 12,
+    "image": "/img/menu/haricot-beignets.png",
+    "category": "plat",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.288Z"
+  },
+  {
+    "id": "jus-gingembre",
+    "name": "Jus de Gingembre",
+    "description": "Boisson tonifiante au gingembre et citron.",
+    "price": 3.5,
+    "image": "/img/boissons/jus-gingembre.png",
+    "category": "boisson",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "spicy",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.352Z"
+  },
+  {
+    "id": "jus-orange-presse",
+    "name": "Jus orange pressé",
+    "description": "Oranges fraîchement pressées.",
+    "price": 3.5,
+    "image": "/img/boissons/jus-orange-presse.png",
+    "category": "boisson",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:22.280Z"
+  },
+  {
+    "id": "lait-caille",
+    "name": "Lait caillé",
+    "description": "Dessert traditionnel doux et onctueux.",
+    "price": 4,
+    "image": "/img/desserts/lait-caille.png",
+    "category": "dessert",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.898Z"
+  },
+  {
+    "id": "mafe-boeuf",
+    "name": "Mafé boeuf",
+    "description": "Bœuf fondant dans une sauce onctueuse à l'arachide.",
+    "price": 14,
+    "image": "/img/menu/mafe-boeuf.png",
+    "category": "signature",
+    "tags": [
+      "Le plus commandé"
+    ],
+    "available": true,
+    "preferences": [
+      "halal",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.367Z"
+  },
+  {
+    "id": "mafe-poulet",
+    "name": "Mafé poulet",
+    "description": "Poulet mijoté dans une sauce onctueuse à la pâte d'arachide.",
+    "price": 13,
+    "image": "/img/menu/mafe-poulet.png",
+    "category": "plat",
+    "tags": [],
+    "preferences": [
+      "halal",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.109Z",
+    "available": true,
+    "updatedAt": "2026-05-19T13:17:35.456Z"
+  },
+  {
+    "id": "manioc",
+    "name": "Manioc",
+    "description": "Tubercule de manioc bouilli.",
+    "price": 3.5,
+    "image": "/img/accompagnements/manioc.png",
+    "category": "accompagnement",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.861Z"
+  },
+  {
+    "id": "menu-decouverte",
+    "name": "Menu Découverte",
+    "description": "1 Entrée + 1 Plat + 1 Accompagnement + 1 Boisson au choix.",
+    "price": 15.99,
+    "image": "/logo-afromiaam.png",
+    "category": "formule",
+    "tags": [
+      "Formule Populaire"
+    ],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:20.855Z"
+  },
+  {
+    "id": "menu-gourmand",
+    "name": "Menu Gourmand",
+    "description": "1 Entrée + 1 Plat Premium + 1 Accompagnement Premium + 1 Dessert + 1 Boisson au choix.",
+    "price": 24.99,
+    "image": "/logo-afromiaam.png",
+    "category": "formule",
+    "tags": [
+      "Formule Gourmande"
+    ],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:20.932Z"
+  },
+  {
+    "id": "odika-poulet",
+    "name": "Odika poulet",
+    "description": "Poulet au chocolat indigène (sauce odika) du Gabon.",
+    "price": 19.9,
+    "image": "/img/menu/odika-poulet.png",
+    "category": "plat",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "spicy",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.209Z"
+  },
+  {
+    "id": "pancakes",
+    "name": "Pancakes",
+    "description": "Pancakes moelleux et sirop.",
+    "price": 6,
+    "image": "/img/desserts/pancakes.png",
+    "category": "dessert",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.942Z"
+  },
+  {
+    "id": "pastels",
+    "name": "Pastels",
+    "description": "Beignets farcis accompagnés d'une sauce relevée.",
+    "price": 5,
+    "image": "/img/entrees/pastels.png",
+    "category": "entree",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "spicy",
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.523Z"
+  },
+  {
+    "id": "poisson-sale",
+    "name": "Poisson salé",
+    "description": "Poisson salé mijoté aux légumes.",
+    "price": 16.9,
+    "image": "/img/menu/poisson-sale.png",
+    "category": "signature",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.407Z"
+  },
+  {
+    "id": "poulet-mayo",
+    "name": "Poulet mayo",
+    "description": "Poulet braisé avec sa sauce mayonnaise maison.",
+    "price": 14,
+    "image": "/img/menu/poulet-mayo.png",
+    "category": "plat",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.246Z"
+  },
+  {
+    "id": "poulet-yassa",
+    "name": "Poulet yassa",
+    "description": "Poulet mariné au citron et oignons confits.",
+    "price": 14,
+    "image": "/img/menu/poulet-yassa.png",
+    "category": "plat",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.326Z"
+  },
+  {
+    "id": "riz",
+    "name": "Riz",
+    "description": "Portion de riz parfumé.",
+    "price": 3.5,
+    "image": "/img/accompagnements/riz.png",
+    "category": "accompagnement",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.693Z"
+  },
+  {
+    "id": "samoussa-boeuf",
+    "name": "Samoussa boeuf",
+    "description": "Triangles croustillants garnis de viande de boeuf hachée et épicée.",
+    "price": 5,
+    "image": "/img/entrees/samoussa-boeuf.png",
+    "category": "entree",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.481Z"
+  },
+  {
+    "id": "samoussa-thon",
+    "name": "Samoussa thon",
+    "description": "Triangles croustillants garnis de thon.",
+    "price": 5,
+    "image": "/img/entrees/samoussa-thon.png",
+    "category": "entree",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.571Z"
+  },
+  {
+    "id": "tiep-poisson",
+    "name": "Tièp poisson",
+    "description": "Riz au gras avec poisson, plat emblématique d'Afrique de l'Ouest.",
+    "price": 15,
+    "image": "/img/menu/tiep-poisson.png",
+    "category": "signature",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.161Z"
+  },
+  {
+    "id": "tiep-poulet",
+    "name": "Tièp poulet",
+    "description": "Riz au gras sénégalais avec poulet et légumes.",
+    "price": 14,
+    "image": "/img/menu/tiep-poulet.png",
+    "category": "plat",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.057Z"
+  },
+  {
+    "id": "tiramisu",
+    "name": "Tiramisu",
+    "description": "Tiramisu onctueux revisité.",
+    "price": 6.5,
+    "image": "/img/desserts/tiramisu.png",
+    "category": "dessert",
+    "tags": [],
+    "available": true,
+    "preferences": [
+      "veg",
+      "halal",
+      "nutfree",
+      "glutenfree"
+    ],
+    "createdAt": "2026-05-19T09:28:21.982Z"
+  }
+]

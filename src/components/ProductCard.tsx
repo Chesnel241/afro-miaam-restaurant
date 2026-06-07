@@ -6,6 +6,7 @@ import type { MenuItem } from "@/lib/types";
 import { useCart } from "./CartContext";
 import { formatPrice, getProductImage } from "@/lib/utils";
 import { CheckIcon, PlusIcon } from "./Icons";
+import { LottiePlayer } from "./LottiePlayer";
 
 // Accept both the static MenuItem (slug-based catalog) and the dynamic
 // shape coming from Firestore (auto-generated id, string category).
@@ -15,6 +16,18 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const [selectedFlavor, setSelectedFlavor] = useState<string>("");
+  const [liked, setLiked] = useState(false);
+  const [hasInteractedWithLike, setHasInteractedWithLike] = useState(false);
+
+  const toggleLike = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setHasInteractedWithLike(true);
+    setLiked(!liked);
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  };
 
   const isFormule = item.category === "formule";
   const isDecouverte = item.id.includes("decouverte");
@@ -114,6 +127,23 @@ export function ProductCard({ item }: { item: DisplayableMenuItem }) {
               ))}
             </div>
           )}
+          <button 
+            onClick={toggleLike} 
+            className="absolute top-3 right-3 h-10 w-10 z-10 bg-white/90 rounded-full shadow-sm backdrop-blur-sm flex items-center justify-center transition-transform hover:scale-110 overflow-hidden"
+          >
+            {hasInteractedWithLike ? (
+              <LottiePlayer 
+                key={liked ? 'liked' : 'unliked'} 
+                src={liked ? "LIKE THIS FOOD.json" : "UNLINK THIS FOOD.json"} 
+                autoplay 
+                loop={false} 
+                speed={1.5} 
+                className="w-16 h-16 absolute pointer-events-none" 
+              />
+            ) : (
+               <svg className="w-5 h-5 text-primary/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+            )}
+          </button>
         </div>
 
         <div className="flex flex-1 flex-col gap-2 px-1 pt-4">

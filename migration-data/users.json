@@ -1,0 +1,116 @@
+[
+  {
+    "id": "DGBnl13UKFcKHUHNrJoUhOIVbHu2",
+    "name": "Noe Melvin Nzamba",
+    "email": "dhyelmelvin@gmail.com",
+    "phone": "",
+    "role": "customer",
+    "ordersCount": 0,
+    "isFirstLogin": true,
+    "referralCode": "AFRO-NOE-8PMHHKC9",
+    "referralCredits": 0,
+    "hasUsedWelcomeOffer": false,
+    "createdAt": "2026-05-19T13:42:42.253Z"
+  },
+  {
+    "id": "GVarKMXcDRejdrHVyh56WqYIo2i2",
+    "name": "Dant Dant",
+    "email": "dantjeux@gmail.com",
+    "phone": "",
+    "role": "customer",
+    "ordersCount": 0,
+    "createdAt": "2026-05-12T00:13:18.413Z"
+  },
+  {
+    "id": "IkSFZFwuuWa1EqGPtp3rw6irhOk2",
+    "name": "Afro MIAAM",
+    "email": "afromiaam@gmail.com",
+    "phone": "",
+    "ordersCount": 0,
+    "createdAt": "2026-05-11T18:44:46.408Z",
+    "role": "admin"
+  },
+  {
+    "id": "UF8SRQvVbaboVNgvq8nS3yHDlWr1",
+    "name": "Brenda Zang",
+    "email": "brendazang66@gmail.com",
+    "phone": "",
+    "role": "customer",
+    "ordersCount": 0,
+    "createdAt": "2026-05-11T21:29:30.022Z"
+  },
+  {
+    "id": "VNkNcoqymEeXBRbviuUyquoHbZ02",
+    "name": "Chesnel EKOGHA",
+    "email": "ekoghachesneloff@gmail.com",
+    "role": "customer",
+    "createdAt": "2026-05-11T14:16:58.922Z",
+    "phone": "0778669907",
+    "updatedAt": "2026-05-11T15:38:03.562Z",
+    "hasUsedWelcomeOffer": true,
+    "ordersCount": 2,
+    "referralCredits": 5
+  },
+  {
+    "id": "YhECS3DrA3YavjnTEEndwQURYax2",
+    "name": "Kecia NTSAME ABAGHA",
+    "email": "keciantsame@gmail.com",
+    "phone": "",
+    "role": "customer",
+    "ordersCount": 0,
+    "createdAt": "2026-05-11T17:05:10.773Z"
+  },
+  {
+    "id": "gx3HCnsXSsPJ0FoPQzoWFV7sJpg2",
+    "name": "Lyse",
+    "email": "lysepascale745@gmail.com",
+    "phone": "0769 741 337",
+    "role": "customer",
+    "ordersCount": 0,
+    "subscribeNewsletter": true,
+    "createdAt": "2026-05-11T20:05:19.381Z"
+  },
+  {
+    "id": "hSZq8YGNjFRxg4gT3QWdKQaEa6N2",
+    "name": "Yvan",
+    "email": "epaleyvan@yahoo.com",
+    "role": "customer",
+    "ordersCount": 0,
+    "createdAt": "2026-05-11T12:22:11.564Z"
+  },
+  {
+    "id": "jFqsnQEXMxayZYX40DlLj23o20O2",
+    "name": "Danielle Tcheugoue Mouatchoua",
+    "email": "tcheugouedanie@gmail.com",
+    "phone": "01774002935",
+    "role": "customer",
+    "ordersCount": 0,
+    "subscribeNewsletter": true,
+    "createdAt": "2026-05-12T19:52:02.493Z"
+  },
+  {
+    "id": "mRMuTe3J1Fj4g5VJRbMf",
+    "email": "tester-client@afromiaam.com",
+    "firstName": "Client",
+    "lastName": "Test",
+    "role": "user",
+    "createdAt": "2026-05-15T18:25:06.742Z"
+  },
+  {
+    "id": "rJXTc3mMklefQOrCcGPNyhY8Xdp2",
+    "name": "Victoire ",
+    "email": "vokome811@gmail.com",
+    "phone": "0759313404",
+    "role": "customer",
+    "ordersCount": 0,
+    "subscribeNewsletter": true,
+    "createdAt": "2026-05-11T16:30:44.564Z"
+  },
+  {
+    "id": "uid",
+    "displayName": "Afro Miaam",
+    "photoURL": "https://afro-miaam.com/avatar.png",
+    "email": "afromiaam@gmail.com",
+    "role": "admin"
+  }
+]

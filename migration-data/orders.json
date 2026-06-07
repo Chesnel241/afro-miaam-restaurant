@@ -1,0 +1,506 @@
+[
+  {
+    "id": "3rwKXw4DZVA11u8PJRRF",
+    "userId": null,
+    "userName": "Chesnel EKOGHA",
+    "userEmail": "ekoghachesneloff@gmail.com",
+    "items": [
+      {
+        "id": "ezGJXjGkpMdZXmBLJVpJ",
+        "name": "Samoussa thon",
+        "price": 5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/entrees/samoussa-thon.png"
+      },
+      {
+        "id": "VCmcftHk5btHhTedh8lq",
+        "name": "Pastels",
+        "price": 5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/entrees/pastels.png"
+      }
+    ],
+    "subtotal": 10,
+    "deliveryFee": 0,
+    "total": 10,
+    "depositAmount": 5,
+    "customer": {
+      "firstName": "Chesnel",
+      "lastName": "EKOGHA",
+      "email": "ekoghachesneloff@gmail.com",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-15",
+      "slot": "19h00 - 19h30",
+      "notes": "test pour faire apparaître l'historique côté client"
+    },
+    "createdAt": "2026-05-13T05:21:05.042Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-18T19:44:11.887Z",
+    "hasReviewed": true,
+    "review": {
+      "reaction": "bon",
+      "createdAt": "2026-05-18T21:40:33.418Z"
+    }
+  },
+  {
+    "id": "4hdW21QmwjyThi2kCLF4",
+    "userId": null,
+    "userName": "ches ches",
+    "userEmail": "",
+    "items": [
+      {
+        "id": "fi53bSRdlnIFidW6pifl",
+        "name": "Poisson salé",
+        "price": 16.9,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/poisson-sale.png"
+      },
+      {
+        "id": "8ZpKnmRawfZcQNq2jZLI",
+        "name": "Beignets",
+        "price": 4,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/accompagnements/beignets.png"
+      },
+      {
+        "id": "sM6YeYfCSzCZsfOD58RY",
+        "name": "Banane cuite à la vapeur",
+        "price": 4,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/accompagnements/banane-bouillie.png"
+      }
+    ],
+    "subtotal": 24.9,
+    "deliveryFee": 0,
+    "total": 24.9,
+    "depositAmount": 7.469999999999999,
+    "customer": {
+      "firstName": "ches",
+      "lastName": "ches",
+      "email": "",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-13",
+      "slot": "20h00 - 20h30",
+      "notes": "test 4"
+    },
+    "createdAt": "2026-05-12T20:46:28.449Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-12T21:01:40.094Z"
+  },
+  {
+    "id": "CuZaOfQFduT2uOkgFBXT",
+    "userId": null,
+    "userName": "Chesnel EKOGHA",
+    "userEmail": "ekoghachesneloff@gmail.com",
+    "items": [
+      {
+        "id": "BXdk5mp4lpc2tksT53FO",
+        "name": "Mafé boeuf",
+        "price": 14,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/mafe-boeuf.png"
+      },
+      {
+        "id": "L0yNneyq50Gz9OPxg8yw",
+        "name": "Tièp poisson",
+        "price": 15,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/tiep-poisson.png"
+      }
+    ],
+    "subtotal": 29,
+    "deliveryFee": 0,
+    "total": 29,
+    "depositAmount": 14.5,
+    "customer": {
+      "firstName": "Chesnel",
+      "lastName": "EKOGHA",
+      "email": "ekoghachesneloff@gmail.com",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-13",
+      "slot": "19h00 - 19h30",
+      "notes": "test ultime"
+    },
+    "createdAt": "2026-05-12T21:51:23.775Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-18T19:44:14.736Z",
+    "hasReviewed": true,
+    "review": {
+      "reaction": "bon",
+      "createdAt": "2026-05-18T21:40:49.826Z"
+    }
+  },
+  {
+    "id": "DNsxTabjwW047QcmQEij",
+    "userId": null,
+    "userName": "ches  ches",
+    "userEmail": "",
+    "items": [
+      {
+        "id": "fi53bSRdlnIFidW6pifl",
+        "name": "Poisson salé",
+        "price": 16.9,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/poisson-sale.png"
+      },
+      {
+        "id": "sM6YeYfCSzCZsfOD58RY",
+        "name": "Banane cuite à la vapeur",
+        "price": 4,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/accompagnements/banane-bouillie.png"
+      },
+      {
+        "id": "kwh6KtHhUMg9aBC9TdhX",
+        "name": "Frites de patates douces",
+        "price": 4.5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/accompagnements/frites-patates-douces.png"
+      }
+    ],
+    "subtotal": 25.4,
+    "deliveryFee": 0,
+    "total": 25.4,
+    "depositAmount": 7.619999999999999,
+    "customer": {
+      "firstName": "ches ",
+      "lastName": "ches",
+      "email": "",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-13",
+      "slot": "20h30 - 21h00",
+      "notes": "test 2"
+    },
+    "createdAt": "2026-05-12T20:13:41.890Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-12T21:01:41.810Z"
+  },
+  {
+    "id": "EAk964TWu0flEdYJUo9r",
+    "userId": null,
+    "userName": "Chesnel EKOGHA",
+    "userEmail": "ekoghachesneloff@gmail.com",
+    "items": [
+      {
+        "id": "voGqllnqoNxPoLeg0Pct",
+        "name": "Samoussa boeuf",
+        "price": 5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/entrees/samoussa-boeuf.png"
+      }
+    ],
+    "subtotal": 5,
+    "deliveryFee": 0,
+    "total": 5,
+    "depositAmount": 2.5,
+    "customer": {
+      "firstName": "Chesnel",
+      "lastName": "EKOGHA",
+      "email": "ekoghachesneloff@gmail.com",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-13",
+      "slot": "20h30 - 21h00",
+      "notes": "Teste 5"
+    },
+    "createdAt": "2026-05-12T20:59:45.040Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-12T21:01:48.144Z",
+    "hasReviewed": true,
+    "review": {
+      "reaction": "bon",
+      "createdAt": "2026-05-18T19:41:59.720Z"
+    }
+  },
+  {
+    "id": "XEixJd92bk8Z2OjCIUMG",
+    "userId": null,
+    "userName": "ches ches",
+    "userEmail": "",
+    "items": [
+      {
+        "id": "VCmcftHk5btHhTedh8lq",
+        "name": "Pastels",
+        "price": 5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/entrees/pastels.png"
+      },
+      {
+        "id": "BXdk5mp4lpc2tksT53FO",
+        "name": "Mafé boeuf",
+        "price": 14,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/mafe-boeuf.png"
+      }
+    ],
+    "subtotal": 19,
+    "deliveryFee": 0,
+    "total": 19,
+    "depositAmount": 5.7,
+    "customer": {
+      "firstName": "ches",
+      "lastName": "ches",
+      "email": "",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-14",
+      "slot": "20h00 - 20h30",
+      "notes": "test"
+    },
+    "createdAt": "2026-05-12T19:06:27.971Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-12T21:01:14.864Z"
+  },
+  {
+    "id": "aVLblOKGew0uuvlvJY3S",
+    "userId": "VNkNcoqymEeXBRbviuUyquoHbZ02",
+    "userName": "Chesnel EKOGHA",
+    "userEmail": "ekoghachesneloff@gmail.com",
+    "items": [
+      {
+        "id": "BPObF7MRDWL9sVru2tvQ",
+        "name": "Tièp poisson",
+        "price": 15,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/tiep-poisson.png"
+      },
+      {
+        "id": "nross8pMjIxNSoWZLl0K",
+        "name": "Samoussa thon",
+        "price": 5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/entrees/samoussa-thon.png"
+      },
+      {
+        "id": "Mq8cxOvVBLTEy8X6xKw7",
+        "name": "Haricot beignets",
+        "price": 12,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/haricot-beignets.png"
+      }
+    ],
+    "subtotal": 32,
+    "deliveryFee": 0,
+    "total": 27,
+    "depositAmount": 13.5,
+    "discounts": {
+      "referralCredits": 0,
+      "welcomeOffer": true,
+      "referralCodeUsed": null,
+      "promoCodeUsed": null,
+      "promoDiscount": null
+    },
+    "reference": "AM-20260518-65DBB1E5",
+    "customer": {
+      "firstName": "Chesnel",
+      "lastName": "EKOGHA",
+      "phone": "0778669907",
+      "email": "ekoghachesneloff@gmail.com",
+      "address": "",
+      "notes": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-19",
+      "slot": "20h00 - 20h30"
+    },
+    "createdAt": "2026-05-18T19:57:10.253Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-18T19:58:14.178Z",
+    "hasReviewed": true,
+    "review": {
+      "reaction": "bon",
+      "createdAt": "2026-05-18T19:59:00.010Z"
+    }
+  },
+  {
+    "id": "o1Nv6HJEOQ1ykru7x2BD",
+    "userId": null,
+    "userName": "Chesnel EKOGHA",
+    "userEmail": "ekoghachesneloff@gmail.com",
+    "items": [
+      {
+        "id": "BXdk5mp4lpc2tksT53FO",
+        "name": "Mafé boeuf",
+        "price": 14,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/mafe-boeuf.png"
+      },
+      {
+        "id": "VCmcftHk5btHhTedh8lq",
+        "name": "Pastels",
+        "price": 5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/entrees/pastels.png"
+      },
+      {
+        "id": "ezGJXjGkpMdZXmBLJVpJ",
+        "name": "Samoussa thon",
+        "price": 5,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/entrees/samoussa-thon.png"
+      }
+    ],
+    "subtotal": 24,
+    "deliveryFee": 0,
+    "total": 24,
+    "depositAmount": 12,
+    "customer": {
+      "firstName": "Chesnel",
+      "lastName": "EKOGHA",
+      "email": "ekoghachesneloff@gmail.com",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-14",
+      "slot": "13h00 - 13h30",
+      "notes": "bhhj"
+    },
+    "createdAt": "2026-05-12T22:05:58.889Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-18T19:44:13.458Z",
+    "hasReviewed": true,
+    "review": {
+      "reaction": "bon",
+      "createdAt": "2026-05-18T21:40:45.093Z"
+    }
+  },
+  {
+    "id": "pnzbEpau9X8qeu8vE3mS",
+    "userId": null,
+    "userName": "Chesnel EKOGHA",
+    "userEmail": "ekoghachesneloff@gmail.com",
+    "items": [
+      {
+        "id": "BXdk5mp4lpc2tksT53FO",
+        "name": "Mafé boeuf",
+        "price": 14,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/mafe-boeuf.png"
+      },
+      {
+        "id": "L0yNneyq50Gz9OPxg8yw",
+        "name": "Tièp poisson",
+        "price": 15,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/tiep-poisson.png"
+      }
+    ],
+    "subtotal": 29,
+    "deliveryFee": 0,
+    "total": 29,
+    "depositAmount": 14.5,
+    "customer": {
+      "firstName": "Chesnel",
+      "lastName": "EKOGHA",
+      "email": "ekoghachesneloff@gmail.com",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-13",
+      "slot": "20h00 - 20h30",
+      "notes": "T’es sup "
+    },
+    "createdAt": "2026-05-12T21:13:12.723Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-18T19:43:42.913Z",
+    "hasReviewed": true,
+    "review": {
+      "reaction": "bon",
+      "createdAt": "2026-05-18T21:40:58.736Z"
+    }
+  },
+  {
+    "id": "qkVzDyO37ajA538BWB7A",
+    "userId": null,
+    "userName": "Chesnel EKOGHA",
+    "userEmail": "ekoghachesneloff@gmail.com",
+    "items": [
+      {
+        "id": "BXdk5mp4lpc2tksT53FO",
+        "name": "Mafé boeuf",
+        "price": 14,
+        "quantity": 1,
+        "flavor": null,
+        "image": "/img/menu/mafe-boeuf.png"
+      }
+    ],
+    "subtotal": 14,
+    "deliveryFee": 0,
+    "total": 14,
+    "depositAmount": 7,
+    "customer": {
+      "firstName": "Chesnel",
+      "lastName": "EKOGHA",
+      "email": "ekoghachesneloff@gmail.com",
+      "phone": "0778669907",
+      "address": "",
+      "deliveryMode": "retrait",
+      "date": "2026-05-13",
+      "slot": "20h00 - 20h30",
+      "notes": ""
+    },
+    "createdAt": "2026-05-12T21:07:01.245Z",
+    "status": "Livré",
+    "updatedAt": "2026-05-18T19:43:40.793Z",
+    "hasReviewed": true,
+    "review": {
+      "reaction": "bon",
+      "createdAt": "2026-05-18T21:41:02.266Z"
+    }
+  },
+  {
+    "id": "test-qr-order-final",
+    "userId": "mRMuTe3J1Fj4g5VJRbMf",
+    "userName": "Client Test",
+    "userEmail": "tester-client@afromiaam.com",
+    "items": [
+      {
+        "name": "Garba",
+        "quantity": 1,
+        "price": 13
+      }
+    ],
+    "total": 13,
+    "customer": {
+      "firstName": "Client",
+      "lastName": "Test",
+      "phone": "0600000001",
+      "date": "2026-05-30",
+      "slot": "12:00",
+      "deliveryMode": "retrait"
+    },
+    "createdAt": "2026-05-15T18:25:06.827Z",
+    "validatedAt": "2026-05-15T18:30:47.340Z",
+    "status": "Livré"
+  }
+]

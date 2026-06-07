@@ -12,6 +12,7 @@ import {
   TrashIcon,
   TruckIcon,
 } from "@/components/Icons";
+import { LottiePlayer } from "@/components/LottiePlayer";
 
 export default function CartPage() {
   const {
@@ -106,9 +107,9 @@ export default function CartPage() {
                       type="button"
                       onClick={() => removeItem(line.id)}
                       aria-label={`Retirer ${line.name}`}
-                      className="ml-4 p-2.5 rounded-full bg-red-50 text-red-500 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-red-100/50"
+                      className="ml-4 h-10 w-10 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-all shadow-sm border border-red-100/50"
                     >
-                      <TrashIcon className="h-5 w-5" />
+                      <LottiePlayer src="corbeille.json" onHover speed={1.5} className="w-8 h-8 pointer-events-none" />
                     </button>
                   </div>
                 </li>

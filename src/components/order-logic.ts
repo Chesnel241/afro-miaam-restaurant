@@ -1,4 +1,4 @@
-export type OrderStatus = "Attente Acompte" | "Acompte Reçu" | "En attente" | "En cours" | "Livré";
+export type OrderStatus = "Attente Acompte" | "Acompte Reçu" | "En attente" | "En cours" | "En Livraison" | "Livré" | "Rejetée";
 
 export type OrderItem = {
   name: string;
