@@ -198,12 +198,14 @@ export function Chatbot() {
             {open ? (
               <CloseIcon />
             ) : (
-              <img
-                src={imgFailed ? AVATAR_FALLBACK : AVATAR_PRIMARY}
-                alt="Afro Miaam Assistant"
-                onError={() => setImgFailed(true)}
-                className="h-full w-full object-cover"
-              />
+              <span className="block h-full w-full overflow-hidden rounded-full p-0.5">
+                <img
+                  src={imgFailed ? AVATAR_FALLBACK : AVATAR_PRIMARY}
+                  alt="Afro Miaam Assistant"
+                  onError={() => setImgFailed(true)}
+                  className="h-full w-full object-cover rounded-full"
+                />
+              </span>
             )}
 
             {/* Point vert : présence en ligne */}
@@ -229,12 +231,14 @@ export function Chatbot() {
         >
           <header className="relative flex items-center gap-3 bg-primary-gradient bg-grain p-4 text-cream">
             <span className="relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-cream ring-2 ring-accent">
-              <img
-                src={imgFailed ? AVATAR_FALLBACK : AVATAR_PRIMARY}
-                alt="Afro Miaam Assistant"
-                onError={() => setImgFailed(true)}
-                className="h-full w-full object-cover"
-              />
+              <span className="block h-full w-full overflow-hidden rounded-full">
+                <img
+                  src={imgFailed ? AVATAR_FALLBACK : AVATAR_PRIMARY}
+                  alt="Afro Miaam Assistant"
+                  onError={() => setImgFailed(true)}
+                  className="h-full w-full object-cover"
+                />
+              </span>
               <span className="absolute bottom-0 right-0 inline-flex h-3 w-3 rounded-full border-2 border-cream bg-emerald-500" />
             </span>
             <div className="flex-1 leading-tight">
