@@ -19,8 +19,8 @@ WORKDIR /app
 
 # Copy only the manifests first to maximise Docker layer caching.
 COPY package.json package-lock.json ./
-# `npm ci` installs the exact lockfile tree — reproducible and CI-friendly.
-RUN npm ci
+# Use npm install to avoid lockfile cross-platform issues with optional deps
+RUN npm install
 
 # -----------------------------------------------------------------------------
 # Stage 2 — builder: compile the Next.js app into a standalone bundle.
