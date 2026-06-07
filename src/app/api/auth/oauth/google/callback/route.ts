@@ -223,10 +223,14 @@ export async function GET(request: Request) {
       `;
       if (byEmail.length > 0) {
         const existing = byEmail[0];
-        if (!existing.email_verified || !emailVerified) {
-          // Refuse the link. The Google login fails closed; the user can
-          // verify their existing email first, then retry.
+        if (!emailVerified) {
+          // Refuse the link if Google hasn't verified the email.
           throw new Error("OAUTH_LINK_REFUSED_UNVERIFIED");
+        }
+        
+        if (!existing.email_verified) {
+           await tx`update users set email_verified = true where id = ${existing.id}`;
+           existing.email_verified = true;
         }
         await tx`
           insert into oauth_accounts (user_id, provider, provider_account_id)
