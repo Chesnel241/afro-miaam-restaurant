@@ -86,7 +86,7 @@ export function LottiePlayer({
         animationData={animationData}
         loop={loop}
         autoplay={autoplay && !onHover && !onClick}
-        renderer={renderer}
+        renderer={renderer as any}
         style={{ width: "100%", height: "100%" }}
       />
     </div>
