@@ -56,8 +56,6 @@ afromiaam.com, www.afromiaam.com {
 			roll_size 50mb
 			roll_keep 5
 		}
-		format json {
-			request>uri query>key delete
-		}
+		format json
 	}
 }
