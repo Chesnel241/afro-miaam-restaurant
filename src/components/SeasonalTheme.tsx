@@ -21,14 +21,14 @@ export function SeasonalTheme() {
   if (!season) return null;
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-30 mix-blend-overlay">
+    <div className="relative z-50 pointer-events-none w-0 h-0">
+      <div className="absolute left-2 -top-6 lg:-top-8 w-16 h-16 sm:w-20 sm:h-20 opacity-90 mix-blend-normal">
       {season === "HIVER" && (
         <LottiePlayer 
           src="HIVER 1.json" 
           autoplay 
           loop 
-          renderer="canvas"
-          className="absolute -top-20 -left-20 w-[150vw] h-[150vh] max-w-none max-h-none"
+          className="w-full h-full drop-shadow-md"
         />
       )}
       {season === "ETE" && (
@@ -36,10 +36,10 @@ export function SeasonalTheme() {
           src="ETE  ET PRINTEMPS.json" 
           autoplay 
           loop 
-          renderer="canvas"
-          className="absolute -top-20 -left-20 w-[150vw] h-[150vh] max-w-none max-h-none"
+          className="w-full h-full drop-shadow-md"
         />
       )}
+      </div>
     </div>
   );
 }

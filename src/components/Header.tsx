@@ -6,6 +6,7 @@ import { Logo } from "./Logo";
 import { useCart } from "./CartContext";
 import { CartIcon, UserIcon } from "./Icons";
 import { useAuth } from "./AuthContext";
+import { SeasonalTheme } from "./SeasonalTheme";
 
 const NAV_ITEMS_VISITOR = [
   { href: "/", label: "Accueil" },
@@ -48,7 +49,10 @@ export function Header() {
       <div className={`container-x flex items-center justify-between gap-4 transition-all duration-300 ${
         scrolled ? "h-12 lg:h-20" : "h-14 lg:h-24"
       }`}>
-        <Logo variant="light" size="lg" withTagline />
+        <div className="flex items-center">
+          <Logo variant="light" size="lg" withTagline />
+          <SeasonalTheme />
+        </div>
 
         <nav
           aria-label="Navigation principale"

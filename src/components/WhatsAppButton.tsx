@@ -39,8 +39,8 @@ export function WhatsAppButton() {
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
       }`}
     >
-      <div className="w-10 h-10 sm:w-12 sm:h-12 overflow-hidden flex items-center justify-center">
-        <LottiePlayer src="whatsapp.json" autoplay loop speed={1.2} className="w-full h-full scale-[1.3]" />
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
+        <LottiePlayer src="whatsapp.json" autoplay loop speed={1.2} className="w-[120%] h-[120%] object-cover pointer-events-none" />
       </div>
     </a>
   );

@@ -135,7 +135,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <OrderProvider>
                   <AppOverlay />
                   <CartProvider>
-                    <SeasonalTheme />
                     <Header />
                     <main id="main-content" role="main" className="flex min-h-[100dvh] flex-col overflow-x-hidden pt-[calc(env(safe-area-inset-top)+84px)] lg:pt-0 animate-fade-in">{children}</main>
                     <Footer />
