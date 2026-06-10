@@ -9,7 +9,7 @@ function AnimatedPrice({ value }: { value: number }) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    let start = displayValue;
+    const start = displayValue;
     const end = value;
     if (start === end) return;
 

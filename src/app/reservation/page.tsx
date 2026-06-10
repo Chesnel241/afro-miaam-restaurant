@@ -91,7 +91,6 @@ export default function ReservationPage() {
   // Pré-remplir avec les infos du compte
   useEffect(() => {
     if (user && !form.firstName && !form.lastName) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm((f) => ({
         ...f,
         firstName: user.name.split(" ")[0] || "",
