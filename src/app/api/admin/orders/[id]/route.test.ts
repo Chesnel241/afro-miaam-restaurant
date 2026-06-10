@@ -98,6 +98,44 @@ describe("PATCH /api/admin/orders/[id] — auth & validation", () => {
     expect(res.status).toBe(400);
   });
 
+  it("accepts the 'En Livraison' status (new workflow state)", async () => {
+    const before = {
+      id: "o1", reference: "AM-1", user_id: "u1", user_name: "U", user_email: "u@x.com",
+      items: [], subtotal: 10, delivery_fee: 0, total: 10, deposit_amount: 5, discounts: null,
+      status: "En cours", customer: {}, referrer_id: null, referral_reward_paid: false,
+      has_reviewed: false, review: null, delivery_token_hash: null, delivery_token_exp: null,
+      delivered_at: null, deletion_requested: false, created_at: new Date(), updated_at: new Date(),
+    };
+    const updated = { ...before, status: "En Livraison" };
+    withTransactionMock.mockImplementationOnce(async (fn: (t: unknown) => Promise<unknown>) =>
+      fn(makeTx([[before], [updated]])),
+    );
+    const res = await PATCH(patchReq({ status: "En Livraison" }), ctx());
+    expect(res.status).toBe(200);
+  });
+
+  it("accepts the 'Rejetée' status (new terminal state)", async () => {
+    const before = {
+      id: "o1", reference: "AM-1", user_id: "u1", user_name: "U", user_email: "u@x.com",
+      items: [], subtotal: 10, delivery_fee: 0, total: 10, deposit_amount: 5, discounts: null,
+      status: "En cours", customer: {}, referrer_id: null, referral_reward_paid: false,
+      has_reviewed: false, review: null, delivery_token_hash: null, delivery_token_exp: null,
+      delivered_at: null, deletion_requested: false, created_at: new Date(), updated_at: new Date(),
+    };
+    const updated = { ...before, status: "Rejetée" };
+    let tx: ReturnType<typeof makeTx> | null = null;
+    withTransactionMock.mockImplementationOnce(async (fn: (t: unknown) => Promise<unknown>) => {
+      tx = makeTx([[before], [updated]]);
+      return fn(tx);
+    });
+    const res = await PATCH(patchReq({ status: "Rejetée" }), ctx());
+    expect(res.status).toBe(200);
+    // Rejecting an order must NOT credit loyalty/referral side effects.
+    const sqls = tx!.calls.map((c) => c.sql).join("\n");
+    expect(sqls).not.toContain("orders_count = orders_count + 1");
+    expect(sqls).not.toContain("referral_credits = referral_credits + 5");
+  });
+
   it("400 on non-boolean deletionRequested", async () => {
     const res = await PATCH(patchReq({ deletionRequested: "yes" }), ctx());
     expect(res.status).toBe(400);
