@@ -659,12 +659,19 @@ export async function POST(request: Request) {
       `;
       orderId = orderRows[0].id;
 
-      // Update user: increment orders_count, optionally flip welcome offer,
-      // decrement referral credits, and set referred_by only if not already set.
+      // Update user: optionally flip welcome offer, decrement referral
+      // credits, and set referred_by only if not already set.
+      //
+      // NOTE: orders_count is intentionally NOT incremented here. It is the
+      // loyalty counter and is incremented exactly once, on the
+      // non-Livré -> Livré transition (in /api/delivery/confirm and the admin
+      // PATCH). Incrementing both at creation and on delivery double-counted
+      // every completed order. The welcome-offer "first order" guarantee does
+      // NOT depend on this increment — it is enforced atomically by
+      // has_used_welcome_offer under the row lock above.
       await tx`
         UPDATE users
         SET
-          orders_count = orders_count + 1,
           has_used_welcome_offer = (${actualWelcomeDiscount > 0} OR has_used_welcome_offer),
           referral_credits = referral_credits - ${creditsToUse},
           referred_by = COALESCE(referred_by, ${referrerId}),
