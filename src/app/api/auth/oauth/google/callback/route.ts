@@ -224,13 +224,34 @@ export async function GET(request: Request) {
       if (byEmail.length > 0) {
         const existing = byEmail[0];
         if (!emailVerified) {
-          // Refuse the link if Google hasn't verified the email.
+          // Refuse the link if Google hasn't verified the email — Google must
+          // prove the person completing this flow controls the inbox.
           throw new Error("OAUTH_LINK_REFUSED_UNVERIFIED");
         }
-        
+
         if (!existing.email_verified) {
-           await tx`update users set email_verified = true where id = ${existing.id}`;
-           existing.email_verified = true;
+          // Account pre-hijacking guard (CWE-287): an attacker can sign up with
+          // a victim's email + a password BEFORE the victim ever logs in, and
+          // (because /api/auth/login does not require email_verified) keep
+          // logging in with that password. If we merely auto-verified and
+          // linked here, the account would be SHARED — the victim's Google
+          // identity plus the attacker's still-valid password.
+          //
+          // Google has just proven the *current* user owns this email, so it is
+          // safe to claim the account for them — but we MUST invalidate any
+          // pre-existing password so a pre-registration attacker is evicted.
+          // The legitimate owner signs in with Google from now on, or uses
+          // "forgot password" to set a fresh one. We also revoke any existing
+          // sessions belonging to the (possibly attacker-created) row.
+          await tx`
+            update users
+            set email_verified = true,
+                password_hash = null,
+                updated_at = now()
+            where id = ${existing.id}
+          `;
+          await tx`delete from sessions where user_id = ${existing.id}`;
+          existing.email_verified = true;
         }
         await tx`
           insert into oauth_accounts (user_id, provider, provider_account_id)

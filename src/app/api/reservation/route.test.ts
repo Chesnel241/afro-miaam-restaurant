@@ -143,12 +143,14 @@ function installTransactionMock(opts: {
   };
   promoCodes?: Record<string, { code: string; isActive: boolean; discountType: string; discountValue: number }>;
   insertedOrderId?: string;
-} = {}) {
+} = {}): { statements: string[] } {
+  const recorder = { statements: [] as string[] };
   const withTx = withTransaction as unknown as ReturnType<typeof vi.fn>;
   withTx.mockReset();
   withTx.mockImplementation(async (cb: (tx: any) => Promise<unknown>) => {
     const tx: any = (strings: TemplateStringsArray) => {
       const text = strings.join(" ");
+      recorder.statements.push(text);
       if (text.includes("FROM users") && text.includes("FOR UPDATE")) {
         return Promise.resolve([
           {
@@ -183,6 +185,7 @@ function installTransactionMock(opts: {
     tx.json = (v: unknown) => v;
     return cb(tx);
   });
+  return recorder;
 }
 
 // ----- Tests ---------------------------------------------------------------
@@ -366,6 +369,29 @@ describe("POST /api/reservation", () => {
     // (the fixture user has both conditions true by default).
     expect(data.total).toBe(21);
     expect(data.depositAmount).toBe(10.5); // 50% of 21
+  });
+
+  it("does NOT increment orders_count at creation (loyalty counts on delivery only)", async () => {
+    // Regression guard: orders_count must be incremented exactly once, on the
+    // -> 'Livré' transition. Incrementing it here too double-counted every
+    // completed order on the member card.
+    installSqlMock();
+    const recorder = installTransactionMock();
+    const res = await POST(
+      buildRequest({
+        items: [{ id: "garba", quantity: 2 }],
+        date: futureIsoDate(),
+        slot: "12h00 - 12h30",
+        deliveryMode: "retrait",
+        customer: { firstName: "John", lastName: "Doe", phone: "0612345678" },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const userUpdate = recorder.statements.find(
+      (s) => s.includes("UPDATE users") && s.includes("has_used_welcome_offer"),
+    );
+    expect(userUpdate).toBeDefined();
+    expect(userUpdate).not.toContain("orders_count = orders_count + 1");
   });
 
   describe("idempotency (Idempotency-Key header)", () => {

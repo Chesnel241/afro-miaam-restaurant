@@ -35,6 +35,11 @@ services:
       #   docker compose exec -T postgres psql -U "$$POSTGRES_USER" \
       #     -d "$$POSTGRES_DB" -f /docker-entrypoint-initdb.d/002_hardening.sql
       - ./migrations/002_hardening.sql:/docker-entrypoint-initdb.d/002_hardening.sql:ro
+      # Extend orders.status whitelist with 'En Livraison' + 'Rejetée'.
+      # Re-run on an existing volume:
+      #   docker compose exec -T postgres psql -U "$$POSTGRES_USER" \
+      #     -d "$$POSTGRES_DB" -f /docker-entrypoint-initdb.d/003_order_statuses.sql
+      - ./migrations/003_order_statuses.sql:/docker-entrypoint-initdb.d/003_order_statuses.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s

@@ -22,7 +22,7 @@ const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 // Statuses for which a delivery QR can legitimately be issued. Mirrors the
 // DELIVERABLE list in /api/delivery/confirm: an order with no deposit yet, or
 // one already marked delivered, must not be assigned a fresh delivery token.
-const DELIVERABLE_STATUSES = ["Acompte Reçu", "En attente", "En cours"] as const;
+const DELIVERABLE_STATUSES = ["Acompte Reçu", "En attente", "En cours", "En Livraison"] as const;
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });

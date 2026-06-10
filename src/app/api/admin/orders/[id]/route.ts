@@ -18,7 +18,9 @@ const ALLOWED_STATUS = new Set([
   "Acompte Reçu",
   "En attente",
   "En cours",
+  "En Livraison",
   "Livré",
+  "Rejetée",
 ]);
 
 type OrderRow = {

@@ -19,7 +19,7 @@ import { clientIp } from "@/lib/utils";
 // the loyalty/referral side-effects — none of which the client can forge.
 // =============================================================================
 
-const DELIVERABLE = ["Acompte Reçu", "En attente", "En cours"];
+const DELIVERABLE = ["Acompte Reçu", "En attente", "En cours", "En Livraison"];
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
