@@ -156,6 +156,21 @@ describe("PATCH validatePromotions", () => {
     const res = await PATCH(patchReq("promotions", body), ctx("promotions"));
     expect(res.status).toBe(200);
   });
+  it("rejects a negative discountValue (implicit refund)", async () => {
+    const body = { codes: { EVIL: { code: "EVIL", isActive: true, discountType: "fixed", discountValue: -50 } } };
+    const res = await PATCH(patchReq("promotions", body), ctx("promotions"));
+    expect(res.status).toBe(400);
+  });
+  it("rejects a percentage discount over 100", async () => {
+    const body = { codes: { OVER: { code: "OVER", isActive: true, discountType: "percentage", discountValue: 150 } } };
+    const res = await PATCH(patchReq("promotions", body), ctx("promotions"));
+    expect(res.status).toBe(400);
+  });
+  it("rejects an absurd fixed discount (typo guard)", async () => {
+    const body = { codes: { BIG: { code: "BIG", isActive: true, discountType: "fixed", discountValue: 99999 } } };
+    const res = await PATCH(patchReq("promotions", body), ctx("promotions"));
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("PATCH validateClosures", () => {

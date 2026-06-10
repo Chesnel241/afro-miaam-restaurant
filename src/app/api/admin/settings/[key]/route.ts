@@ -35,6 +35,13 @@ function validatePromotions(v: unknown): boolean {
     if (typeof e.isActive !== "boolean") return false;
     if (e.discountType !== "percentage" && e.discountType !== "fixed") return false;
     if (typeof e.discountValue !== "number" || !Number.isFinite(e.discountValue)) return false;
+    // Reject nonsensical/abusive values at write time. A negative value would
+    // be an implicit refund; the reservation route already clamps it to 0, but
+    // we refuse to store it. Percentage is bounded to 0..100; fixed amounts to
+    // a sane ceiling so a typo (e.g. 99999) can't zero out big orders.
+    if (e.discountValue < 0) return false;
+    if (e.discountType === "percentage" && e.discountValue > 100) return false;
+    if (e.discountType === "fixed" && e.discountValue > 10000) return false;
   }
   return true;
 }
