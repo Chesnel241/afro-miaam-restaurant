@@ -595,20 +595,39 @@ export async function POST(request: Request) {
         promoDiscount: promoDiscount > 0 ? promoDiscount : null,
       };
 
-      // Vague2-E/H: resolve referral code to UID inside the order transaction.
-      // First-order-only (referred_by IS NULL). Self-referral rejected silently.
-      // Storing referrer_id here is the ONLY trusted population path; clients
-      // cannot set it.
+      // Resolve the referrer for THIS order. The +5€ reward fires on the
+      // delivery of the order whose referrer_id is set. We want it to fire
+      // exactly once per referred customer, on their first order — regardless
+      // of whether the referral code was entered at SIGNUP (-> users.referred_by)
+      // or on the order itself.
+      //
+      // referrer_id is the ONLY trusted population path; clients cannot set it.
+      // The whole block runs under the SELECT ... FOR UPDATE lock on the user
+      // row, so two concurrent first orders are serialized (no double-attach).
       let referrerId: string | null = null;
-      if (cleanedReferralCode && userData.referred_by === null) {
+      // Candidate: prefer the signup referral, else resolve the order's code.
+      let candidateReferrer: string | null = userData.referred_by;
+      if (!candidateReferrer && cleanedReferralCode) {
         const referrerRows = await tx<{ id: string }[]>`
           SELECT id FROM users WHERE referral_code = ${cleanedReferralCode} LIMIT 1
         `;
         if (referrerRows.length > 0) {
-          const matchId = referrerRows[0].id;
-          if (matchId !== userId) {
-            referrerId = matchId;
-          }
+          candidateReferrer = referrerRows[0].id;
+        }
+      }
+      // Self-referral guard.
+      if (candidateReferrer === userId) candidateReferrer = null;
+      // Once-per-referred-customer: only attach the referrer to the FIRST order
+      // that would carry one. If an earlier order already has a referrer_id,
+      // this user has already generated (or will generate) the single reward.
+      if (candidateReferrer) {
+        const prior = await tx<{ one: number }[]>`
+          SELECT 1 AS one FROM orders
+          WHERE user_id = ${userId} AND referrer_id IS NOT NULL
+          LIMIT 1
+        `;
+        if (prior.length === 0) {
+          referrerId = candidateReferrer;
         }
       }
 

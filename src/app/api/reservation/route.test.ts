@@ -394,6 +394,35 @@ describe("POST /api/reservation", () => {
     expect(userUpdate).not.toContain("orders_count = orders_count + 1");
   });
 
+  it("attaches the referrer on the first order of a SIGNUP-referred user", async () => {
+    // Regression guard: a customer who entered a referral code at SIGNUP has
+    // users.referred_by already set. The referrer reward must still be wired
+    // onto their first order (it was previously gated on referred_by IS NULL,
+    // which silently dropped the reward for every signup-referred customer).
+    installSqlMock();
+    const recorder = installTransactionMock({
+      user: { referred_by: "referrer-uid", orders_count: 0 },
+    });
+    const res = await POST(
+      buildRequest({
+        items: [{ id: "garba", quantity: 1 }],
+        date: futureIsoDate(),
+        slot: "12h00 - 12h30",
+        deliveryMode: "retrait",
+        customer: { firstName: "Fil", lastName: "Leul", phone: "0612345678" },
+      }),
+    );
+    expect(res.status).toBe(200);
+    // The new code path resolves the referrer from referred_by and then checks
+    // for a prior referral-bearing order — that "prior order" probe only runs
+    // when a candidate referrer exists, so its presence proves the reward is
+    // being wired for a signup-referred user.
+    const priorProbe = recorder.statements.find(
+      (s) => s.includes("FROM orders") && s.includes("referrer_id IS NOT NULL"),
+    );
+    expect(priorProbe).toBeDefined();
+  });
+
   describe("idempotency (Idempotency-Key header)", () => {
     it("replays an existing order when the same key has already been used", async () => {
       installSqlMock({
