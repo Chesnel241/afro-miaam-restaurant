@@ -300,16 +300,22 @@ export async function POST(request: Request) {
     }
 
     // Apply flavor supplement server-side (client could lie about price).
-    const requestedFlavor = item.flavor ? clean(item.flavor, 50) : null;
+    const requestedFlavor = item.flavor ? clean(item.flavor, 250) : null;
     let flavorSupplement = 0;
     let chosenFlavor: string | null = null;
     if (requestedFlavor) {
-      const match = entry.flavors.find((f) => f.name === requestedFlavor);
-      if (!match) {
-        return bad(`Saveur invalide pour ${clean(item.name, 80) || id}.`);
+      if (entry.flavors && entry.flavors.length > 0) {
+        const match = entry.flavors.find((f) => f.name === requestedFlavor);
+        if (!match) {
+          return bad(`Saveur invalide pour ${clean(item.name, 80) || id}.`);
+        }
+        flavorSupplement = match.supplement;
+        chosenFlavor = match.name;
+      } else {
+        // Items without predefined flavors (like Formules) use this field
+        // to pass their composition string. Accept it without supplement.
+        chosenFlavor = requestedFlavor;
       }
-      flavorSupplement = match.supplement;
-      chosenFlavor = match.name;
     }
 
     const unitPrice = round2(entry.price + flavorSupplement);
