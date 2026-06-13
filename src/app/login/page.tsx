@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/components/AuthContext";
+import { useAuth, useRecaptcha } from "@/components/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -13,7 +13,8 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const { loginWithEmail, signUpWithEmail, loginWithGoogle, user } = useAuth();
+  const { signIn, signUp, loginWithGoogle, user } = useAuth();
+  const { getToken } = useRecaptcha();
   const router = useRouter();
 
   // Si déjà connecté, rediriger (en effet, hors render, pour éviter le warning
@@ -38,9 +39,18 @@ export default function LoginPage() {
           setBusy(false);
           return;
         }
-        await signUpWithEmail(email, password, name || email.split("@")[0], phone, subscribeNewsletter);
+        const token = await getToken("SIGNUP");
+        await signUp({ 
+          email, 
+          password, 
+          name: name || email.split("@")[0], 
+          phone, 
+          subscribeNewsletter, 
+          recaptchaToken: token 
+        });
       } else {
-        await loginWithEmail(email, password);
+        const token = await getToken("LOGIN");
+        await signIn(email, password, token);
       }
       // La redirection sera faite par le useEffect dans les pages cibles
       // via onAuthStateChanged → user state change

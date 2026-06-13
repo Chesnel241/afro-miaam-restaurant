@@ -41,11 +41,13 @@ const RecaptchaContext = createContext<RecaptchaContextValue | undefined>(
 
 // Minimal subset of the grecaptcha API we use.
 type Grecaptcha = {
-  ready: (cb: () => void) => void;
-  execute: (
-    siteKey: string,
-    options: { action: string },
-  ) => Promise<string>;
+  enterprise?: {
+    ready: (cb: () => void) => void;
+    execute: (
+      siteKey: string,
+      options: { action: string },
+    ) => Promise<string>;
+  };
 };
 
 declare global {
@@ -57,7 +59,7 @@ declare global {
 const SCRIPT_ID = "afro-recaptcha-v3";
 
 export function RecaptchaProvider({ children }: { children: React.ReactNode }) {
-  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6Lf7GessAAAAAGDZVnxZQoq9C4YN8hAUg8pMIZya";
   const [ready, setReady] = useState(false);
   // We keep a single in-flight readiness promise so concurrent getToken()
   // callers all await the same "script loaded + grecaptcha.ready" event.
@@ -76,8 +78,8 @@ export function RecaptchaProvider({ children }: { children: React.ReactNode }) {
     const waitReady = () =>
       new Promise<void>((resolve) => {
         const tryReady = () => {
-          if (window.grecaptcha && typeof window.grecaptcha.ready === "function") {
-            window.grecaptcha.ready(() => resolve());
+          if (window.grecaptcha && window.grecaptcha.enterprise && typeof window.grecaptcha.enterprise.ready === "function") {
+            window.grecaptcha.enterprise.ready(() => resolve());
           } else {
             setTimeout(tryReady, 50);
           }
@@ -92,7 +94,7 @@ export function RecaptchaProvider({ children }: { children: React.ReactNode }) {
 
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
-    script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+    script.src = `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
@@ -118,10 +120,10 @@ export function RecaptchaProvider({ children }: { children: React.ReactNode }) {
       }
 
       const grecaptcha = window.grecaptcha;
-      if (!grecaptcha || typeof grecaptcha.execute !== "function") return null;
+      if (!grecaptcha || !grecaptcha.enterprise || typeof grecaptcha.enterprise.execute !== "function") return null;
 
       try {
-        const token = await grecaptcha.execute(siteKey, { action });
+        const token = await grecaptcha.enterprise.execute(siteKey, { action });
         return typeof token === "string" && token.length > 0 ? token : null;
       } catch {
         return null;
