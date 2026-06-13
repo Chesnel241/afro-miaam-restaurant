@@ -37,7 +37,13 @@ export async function verifyRecaptcha(
   token: string | null,
   opts?: { minScore?: number; remoteIp?: string },
 ): Promise<boolean> {
-  const minScore = opts?.minScore ?? 0.5;
+  // Threshold resolution order: explicit call arg > RECAPTCHA_MIN_SCORE env >
+  // 0.5 default. Tunable at runtime (no rebuild) so the operator can loosen it
+  // if legitimate customers are being blocked.
+  const envScore = Number.parseFloat(process.env.RECAPTCHA_MIN_SCORE ?? "");
+  const minScore =
+    opts?.minScore ??
+    (Number.isFinite(envScore) && envScore >= 0 && envScore <= 1 ? envScore : 0.5);
   const isProd = process.env.NODE_ENV === "production";
 
   // We strictly need a GCP API Key for new Enterprise projects.
@@ -95,13 +101,32 @@ export async function verifyRecaptcha(
 
     const data = (await res.json()) as AssessmentResponse;
     if (!data.tokenProperties?.valid) {
-      console.warn(`[recaptcha] token invalid: ${data.tokenProperties?.invalidReason}`);
+      // invalidReason is the single most useful diagnostic. Common values:
+      //   MALFORMED       -> the token string is not a real reCAPTCHA token
+      //   EXPIRED / DUPE  -> token reused or used too late (re-fetch on submit)
+      //   BROWSER_ERROR   -> client failed to produce a token
+      //   SITE_MISMATCH   -> the site key used by the browser != the one verified
+      //                      (usually the build-time vs runtime NEXT_PUBLIC bug)
+      console.warn(
+        `[recaptcha] token rejected: invalidReason=${data.tokenProperties?.invalidReason ?? "unknown"}`,
+      );
       return false;
     }
 
-    // Enterprise returns a score under riskAnalysis; if absent, we default to passing.
+    // Enterprise returns a score (0.0 bot .. 1.0 human) under riskAnalysis.
+    // If absent (e.g. checkbox keys), default to passing.
     const score = typeof data.riskAnalysis?.score === "number" ? data.riskAnalysis.score : 1;
-    return score >= minScore;
+    if (score < minScore) {
+      // Previously this rejected silently — a legitimate customer with a
+      // borderline score got blocked with no trace. Log it so the threshold
+      // can be tuned against real data (lower RECAPTCHA_MIN_SCORE to be more
+      // lenient for an ordering flow where false-positives = lost orders).
+      console.warn(
+        `[recaptcha] score ${score} below threshold ${minScore} — action blocked`,
+      );
+      return false;
+    }
+    return true;
   } catch (e) {
     console.warn(
       "[recaptcha] verification error:",

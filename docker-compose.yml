@@ -58,6 +58,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Pass the PUBLIC reCAPTCHA site key (and site URL) into the build so the
+      # client bundle is inlined with the SAME key the server verifies against.
+      # Compose substitutes ${...} from the project-dir .env file automatically.
+      # Defaults match the Dockerfile fallbacks so a missing .env still builds.
+      args:
+        NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${NEXT_PUBLIC_RECAPTCHA_SITE_KEY:-6Lf7GessAAAAAGDZVnxZQoq9C4YN8hAUg8pMIZya}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://afromiaam.com}
     # The CD pipeline pulls this image from GHCR and runs `up -d --no-deps app`.
     # The repository slug is lower-cased to satisfy GHCR naming rules.
     image: ghcr.io/chesnel241/afro-miaam-restaurant:latest

@@ -37,6 +37,17 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# CRITICAL: NEXT_PUBLIC_* variables are inlined into the CLIENT bundle at BUILD
+# time. `env_file: .env` in docker-compose only applies at RUNTIME, so without
+# these build args the client would be compiled with the hardcoded fallback
+# site key while the server reads the runtime one — a silent site-key mismatch
+# that makes reCAPTCHA reject every token. Pass the public site key as a build
+# arg so client and server always agree. (Site keys are public, not secret.)
+ARG NEXT_PUBLIC_RECAPTCHA_SITE_KEY="6Lf7GessAAAAAGDZVnxZQoq9C4YN8hAUg8pMIZya"
+ARG NEXT_PUBLIC_SITE_URL="https://afromiaam.com"
+ENV NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 # Produces .next/standalone, .next/static, etc.
 RUN npm run build
 
