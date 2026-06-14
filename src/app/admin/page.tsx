@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GiftIcon, CheckIcon, ClockIcon, MailIcon, PlusIcon, UserIcon, CartIcon, TrashIcon } from "@/components/Icons";
 import { AdminMenuManager } from "@/components/AdminMenuManager";
+import { ScheduleEditor } from "@/components/ScheduleEditor";
 import { QRCodeSVG } from "qrcode.react";
 
 type Tab = "overview" | "orders" | "customers" | "newsletter" | "menu" | "promotions" | "reviews" | "closures";
@@ -793,6 +794,9 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+
+            {/* --- HORAIRES & CRÉNEAUX --- */}
+            <ScheduleEditor />
 
             {/* --- RUPTURE DE STOCK D'URGENCE --- */}
             <div className="rounded-3xl bg-white p-8 shadow-card ring-1 ring-cream/10 mt-8">

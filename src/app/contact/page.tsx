@@ -45,9 +45,9 @@ export default function ContactPage() {
               note="Tous les arrondissements"
             />
             <InfoCard
-              title="Précommande"
-              value="24h minimum à l'avance"
-              note="Pour une cuisine fraîche, préparée à la commande"
+              title="Commande"
+              value="Même jour, 3 h de marge"
+              note="Le temps de cuisiner du frais, juste pour vous"
             />
           </div>
 

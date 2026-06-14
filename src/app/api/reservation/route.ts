@@ -8,6 +8,7 @@ import { requireAuth, AuthError, authErrorResponse } from "@/lib/auth";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { getSql, withTransaction } from "@/lib/db";
 import { sendReservationConfirmation, sendReservationAlert } from "@/lib/email";
+import { coerceGlobalSettings, isValidBooking } from "@/lib/schedule";
 
 type ClientItem = {
   id?: unknown;
@@ -48,17 +49,6 @@ const FIELD_LIMITS = {
   notes: 600,
 };
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-const ALLOWED_SLOTS = new Set([
-  "12h00 - 12h30",
-  "12h30 - 13h00",
-  "13h00 - 13h30",
-  "13h30 - 14h00",
-  "19h00 - 19h30",
-  "19h30 - 20h00",
-  "20h00 - 20h30",
-  "20h30 - 21h00",
-]);
 
 const PRICE_CACHE_TTL_MS = 60_000;
 
@@ -246,29 +236,42 @@ export async function POST(request: Request) {
   const slot = clean(payload.slot, 32);
   if (!ISO_DATE_RE.test(date)) return bad("Date invalide.");
 
-  // Check exception closures/holidays (blocked dates)
+  // Load schedule + closures from settings.global / settings.closures. Both
+  // reads are best-effort: a transient DB hiccup falls back to defaults rather
+  // than rejecting the order. The reservation transaction below re-reads what
+  // it strictly needs (welcome offer flag) inside its FOR UPDATE block.
+  let scheduleSettings = coerceGlobalSettings(null);
+  let blockedDates: string[] = [];
   try {
     const sql = getSql();
-    const closureRows = await sql<{ value: { blockedDates?: string[] } }[]>`
-      SELECT value FROM settings WHERE key = 'closures' LIMIT 1
+    const settingRows = await sql<{ key: string; value: unknown }[]>`
+      SELECT key, value FROM settings WHERE key IN ('global', 'closures')
     `;
-    if (closureRows.length > 0) {
-      const blockedDates = closureRows[0].value?.blockedDates || [];
-      if (Array.isArray(blockedDates) && blockedDates.includes(date)) {
-        return bad("Désolé, le restaurant est fermé exceptionnellement à cette date.");
+    for (const row of settingRows) {
+      if (row.key === "global") {
+        scheduleSettings = coerceGlobalSettings(row.value);
+      } else if (row.key === "closures") {
+        const v = row.value as { blockedDates?: unknown } | null;
+        if (v && Array.isArray(v.blockedDates)) {
+          blockedDates = v.blockedDates.filter((d): d is string => typeof d === "string");
+        }
       }
     }
   } catch (e) {
-    console.warn("CLOSURE_CHECK_FAILED", e);
+    console.warn("SETTINGS_READ_FAILED", e);
   }
-  if (!slot) return bad("Créneau invalide.");
-  if (!ALLOWED_SLOTS.has(slot)) return bad("Créneau non autorisé.");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const requested = new Date(date + "T00:00:00");
-  if (requested.getTime() < today.getTime() + 24 * 3600 * 1000) {
-    return bad("Réservation minimum 24h à l'avance.");
+  if (blockedDates.includes(date)) {
+    return bad("Désolé, le restaurant est fermé exceptionnellement à cette date.");
+  }
+
+  if (!slot) return bad("Créneau invalide.");
+
+  // Dynamic enforcement: opening day, slot membership, lead time. The error
+  // string surfaces directly to the customer (already French, sanitized).
+  const check = isValidBooking({ date, slot, settings: scheduleSettings });
+  if (!check.ok) {
+    return bad(check.reason);
   }
 
   const deliveryMode: "retrait" | "livraison" =

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "Comment fonctionne la commande ?",
-    a: "Vous composez votre panier sur le site et choisissez un créneau au minimum 24h à l'avance. Notre équipe vous rappelle ensuite pour confirmer et finaliser le paiement.",
+    a: "Vous composez votre panier sur le site et choisissez un créneau le jour même, avec au moins 3 h de marge pour laisser à l'équipe le temps de cuisiner. Notre équipe vous rappelle ensuite pour confirmer et finaliser le paiement.",
   },
   {
     q: "Puis-je me faire livrer ?",
@@ -29,8 +29,8 @@ const FAQ = [
     a: "Bien sûr. Le retrait est gratuit. L'adresse exacte vous est communiquée par téléphone après validation de votre commande.",
   },
   {
-    q: "Pourquoi commander 24h à l'avance ?",
-    a: "Pour vous garantir une cuisine fraîche, préparée spécialement pour vous. Cela nous permet de sélectionner les bons produits et d'éviter le gaspillage.",
+    q: "Pourquoi commander au moins 3 h à l'avance ?",
+    a: "Pour vous garantir une cuisine fraîche, préparée spécialement pour vous. Ce délai nous permet de sélectionner les bons produits et d'éviter le gaspillage. Vous pouvez commander dans la même journée — il faut juste laisser à l'équipe au moins 3 h pour cuisiner.",
   },
   {
     q: "Comment je paie ?",
@@ -42,7 +42,7 @@ const FAQ = [
   },
   {
     q: "Puis-je modifier ou annuler ma réservation ?",
-    a: "Oui, jusqu'à 24h avant le créneau choisi. Contactez-nous par téléphone ou via la page contact pour ajuster votre commande.",
+    a: "Oui. Contactez-nous par téléphone ou via la page contact dès que possible pour ajuster votre commande — au plus tard 3 h avant le créneau choisi, le temps qu'on adapte la prépa.",
   },
 ];
 

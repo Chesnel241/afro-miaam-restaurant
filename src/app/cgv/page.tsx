@@ -30,7 +30,7 @@ export default function CgvPage() {
         </Block>
 
         <Block title="3. Processus de Commande & Acompte">
-          Le client sélectionne ses produits sur le site et choisit un créneau de retrait ou de livraison (précommande au minimum 24h à l&apos;avance). 
+          Le client sélectionne ses produits sur le site et choisit un créneau de retrait ou de livraison (commande possible le jour même, avec un délai minimum de 3 heures avant le créneau choisi).
           Une commande n&apos;est définitivement enregistrée qu&apos;après validation par nos services et réception de l&apos;acompte obligatoire 
           destiné à couvrir les frais de préparation des denrées fraîches.
         </Block>
@@ -51,7 +51,7 @@ export default function CgvPage() {
         <Block title="6. Droit de Rétractation et Annulation">
           Conformément à l&apos;article L.221-28 du Code de la consommation, le droit de rétractation ne peut être exercé pour les contrats de fourniture 
           de biens susceptibles de se détériorer ou de se périmer rapidement (plats préparés, denrées périssables). 
-          Toute modification ou annulation de commande par le client doit intervenir au minimum 24 heures avant l&apos;heure prévue par appel direct 
+          Toute modification ou annulation de commande par le client doit intervenir au minimum 3 heures avant l&apos;heure prévue par appel direct
           au service clientèle. Passé ce délai, l&apos;acompte versé sera conservé.
         </Block>
       </div>

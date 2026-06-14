@@ -5,13 +5,13 @@ import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Comment ça marche — Précommander chez Afro Miaam",
+  title: "Comment ça marche — Commander chez Afro Miaam",
   description:
-    "Précommande 24h, choix du créneau, retrait gratuit ou livraison à 3 € dans Lyon. Paiement par téléphone après validation. Le mode d'emploi en 3 étapes.",
+    "Commande même jour avec 3 h de marge, choix du créneau, retrait gratuit ou livraison à 3 € dans Lyon. Paiement par téléphone après validation. Le mode d'emploi en 3 étapes.",
   alternates: { canonical: "/comment-ca-marche" },
   openGraph: {
     title: "Comment commander chez Afro Miaam",
-    description: "Précommande 24h, retrait ou livraison Lyon.",
+    description: "Commande même jour, 3 h de marge. Retrait ou livraison Lyon.",
     url: "/comment-ca-marche",
   },
 };
@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 const howToJsonLd = {
   "@context": "https://schema.org",
   "@type": "HowTo",
-  name: "Comment précommander chez Afro Miaam",
+  name: "Comment commander chez Afro Miaam",
   description:
-    "Précommander vos plats africains en 3 étapes : composer le panier, choisir un créneau au moins 24h à l'avance, payer après validation par téléphone.",
+    "Commander vos plats africains en 3 étapes : composer le panier, choisir un créneau le jour même avec au moins 3 h de marge, payer après validation par téléphone.",
   totalTime: "PT5M",
   step: [
     {
@@ -35,7 +35,7 @@ const howToJsonLd = {
       "@type": "HowToStep",
       position: 2,
       name: "Choisissez un créneau",
-      text: "Sélectionnez votre créneau au minimum 24h à l'avance et le mode (retrait ou livraison à 3 € dans Lyon).",
+      text: "Sélectionnez votre créneau avec au moins 3 h de marge (même jour possible) et le mode (retrait ou livraison à 3 € dans Lyon).",
       url: `${SITE_URL}/reservation`,
     },
     {
@@ -61,7 +61,7 @@ export default function HowItWorksPage() {
         <div className="container-x">
           <p className="eyebrow text-accentSoft">Mode d&apos;emploi</p>
           <h1 className="heading-display mt-3 text-3xl sm:text-4xl lg:text-6xl">
-            Précommande Afro Miaam, en 3 étapes claires.
+            Commande Afro Miaam, en 3 étapes claires.
           </h1>
           <p className="mt-4 max-w-2xl text-cream/85">
             Pour vous offrir une cuisine fraîche et préparée à la demande, on

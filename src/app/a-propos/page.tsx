@@ -52,14 +52,15 @@ export default function AboutPage() {
       <section className="bg-creamSoft py-16 xl:py-24">
         <div className="container-x rounded-xl bg-white p-8 shadow-soft sm:p-12 xl:p-16">
           <h2 className="heading-display text-3xl text-primary sm:text-4xl xl:text-5xl">
-            Pourquoi 24h à l&apos;avance&nbsp;?
+            Pourquoi une marge de 3&nbsp;h&nbsp;?
           </h2>
           <p className="mt-4 max-w-3xl xl:max-w-4xl text-primary/75 xl:text-lg">
-            Parce que nous refusons les compromis. Préparer 24h à l&apos;avance,
-            c&apos;est nous donner le temps de choisir les meilleurs produits,
-            d&apos;allumer les feux à la bonne heure et de cuisiner exactement
-            ce que vous avez commandé. Pas de batch cooking. Pas de perte. Pas
-            de tiédeur. Juste une cuisine vivante, juste pour vous.
+            Parce que nous refusons les compromis. Trois heures, c&apos;est
+            le temps qu&apos;il nous faut pour choisir les meilleurs produits,
+            allumer les feux à la bonne heure et cuisiner exactement ce que
+            vous avez commandé. Pas de batch cooking. Pas de perte. Pas de
+            tiédeur. Vous pouvez commander dans la journée, on s&apos;occupe
+            du reste — juste une cuisine vivante, juste pour vous.
           </p>
           <div className="mt-6">
             <Link href="/menu" className="btn btn-md btn-primary">

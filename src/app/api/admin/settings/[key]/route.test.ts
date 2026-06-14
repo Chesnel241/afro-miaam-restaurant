@@ -120,14 +120,24 @@ describe("PATCH validateGlobal", () => {
     );
     expect(res.status).toBe(400);
   });
-  it("accepts valid global and returns the value", async () => {
-    getSqlMock.mockReturnValueOnce(
-      makeSql([[{ value: { isReviewRewardActive: true, isWelcomeOfferActive: false } }]]),
-    );
-    const res = await PATCH(
-      patchReq("global", { isReviewRewardActive: true, isWelcomeOfferActive: false }),
-      ctx("global"),
-    );
+  it("accepts valid global (with schedule + lead time + slot duration) and returns the value", async () => {
+    const fullValue = {
+      isReviewRewardActive: true,
+      isWelcomeOfferActive: false,
+      leadTimeMin: 180,
+      slotDurationMin: 30,
+      schedule: [
+        { open: false, openHHMM: "17:00", closeHHMM: "22:00" },
+        { open: true, openHHMM: "17:00", closeHHMM: "22:00" },
+        { open: true, openHHMM: "17:00", closeHHMM: "22:00" },
+        { open: true, openHHMM: "17:00", closeHHMM: "22:00" },
+        { open: true, openHHMM: "17:00", closeHHMM: "22:00" },
+        { open: true, openHHMM: "17:00", closeHHMM: "22:00" },
+        { open: true, openHHMM: "17:00", closeHHMM: "22:00" },
+      ],
+    };
+    getSqlMock.mockReturnValueOnce(makeSql([[{ value: fullValue }]]));
+    const res = await PATCH(patchReq("global", fullValue), ctx("global"));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.ok).toBe(true);

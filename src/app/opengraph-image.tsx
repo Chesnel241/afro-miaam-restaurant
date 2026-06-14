@@ -72,8 +72,8 @@ export default async function OpengraphImage() {
               lineHeight: 1.3,
             }}
           >
-            Cuisine afro gastronomique à Lyon. Précommande 24h à l&apos;avance,
-            retrait sur place ou livraison 3 €.
+            Cuisine afro gastronomique à Lyon. Commande même jour, 3 h de
+            marge. Retrait sur place ou livraison 3 €.
           </div>
         </div>
 

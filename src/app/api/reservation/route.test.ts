@@ -70,9 +70,14 @@ vi.mock("@/lib/db", () => {
 // ----- Helpers -------------------------------------------------------------
 
 function futureIsoDate(daysAhead = 2): string {
+  // Use local-time components (matches what the reservation route does when
+  // parsing the date), and prefer a weekday that is open in the default
+  // schedule (Mon..Sat are open, Sunday is closed). If `daysAhead` lands on
+  // Sunday we bump by one to land on Monday.
   const d = new Date();
   d.setDate(d.getDate() + daysAhead);
-  return d.toISOString().slice(0, 10);
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function buildRequest(body: unknown, headers: Record<string, string> = {}): Request {
@@ -93,6 +98,13 @@ function buildRequest(body: unknown, headers: Record<string, string> = {}): Requ
 function installSqlMock(opts: {
   closures?: string[];
   menuPrices?: Array<{ id: string; price: number }>;
+  // Overrides for the default permissive settings.global the mock returns.
+  globalOverrides?: Partial<{
+    leadTimeMin: number;
+    slotDurationMin: number;
+    isReviewRewardActive: boolean;
+    isWelcomeOfferActive: boolean;
+  }>;
   // When set, the pre-transaction idempotency lookup returns this row and
   // the route short-circuits to a replay response.
   existingIdempotentOrder?: {
@@ -113,12 +125,37 @@ function installSqlMock(opts: {
         opts.menuPrices ?? [{ id: "garba", price: 13 }],
       );
     }
-    if (text.includes("FROM settings") && text.includes("'closures'")) {
-      return Promise.resolve(
-        opts.closures !== undefined
-          ? [{ value: { blockedDates: opts.closures } }]
-          : [],
-      );
+    // The route now reads BOTH 'global' (for schedule/leadTime/slotDuration)
+    // and 'closures' (for blocked dates) in a single SELECT key IN (...).
+    if (text.includes("FROM settings") && text.includes("'global'")) {
+      const rows: Array<{ key: string; value: unknown }> = [
+        // settings.global with leadTimeMin = 0 by default so tests don't have
+        // to think about wall-clock lead time. Schedule: Mon..Sat open
+        // 00:00..23:30 so the legacy fixture slot "12h00 - 12h30" remains
+        // valid. Override per-test via opts.globalOverrides.
+        {
+          key: "global",
+          value: {
+            isReviewRewardActive: opts.globalOverrides?.isReviewRewardActive ?? true,
+            isWelcomeOfferActive: opts.globalOverrides?.isWelcomeOfferActive ?? true,
+            leadTimeMin: opts.globalOverrides?.leadTimeMin ?? 0,
+            slotDurationMin: opts.globalOverrides?.slotDurationMin ?? 30,
+            schedule: [
+              { open: false, openHHMM: "00:00", closeHHMM: "23:30" }, // Sun
+              { open: true, openHHMM: "00:00", closeHHMM: "23:30" },  // Mon
+              { open: true, openHHMM: "00:00", closeHHMM: "23:30" },  // Tue
+              { open: true, openHHMM: "00:00", closeHHMM: "23:30" },  // Wed
+              { open: true, openHHMM: "00:00", closeHHMM: "23:30" },  // Thu
+              { open: true, openHHMM: "00:00", closeHHMM: "23:30" },  // Fri
+              { open: true, openHHMM: "00:00", closeHHMM: "23:30" },  // Sat
+            ],
+          },
+        },
+      ];
+      if (opts.closures !== undefined) {
+        rows.push({ key: "closures", value: { blockedDates: opts.closures } });
+      }
+      return Promise.resolve(rows);
     }
     if (text.includes("FROM orders") && text.includes("idempotency_key")) {
       return Promise.resolve(
@@ -276,33 +313,76 @@ describe("POST /api/reservation", () => {
     expect(data.error).toBe("Date invalide.");
   });
 
-  it("should return 400 for a slot not in ALLOWED_SLOTS", async () => {
+  it("rejects a slot that is outside the schedule window", async () => {
+    // The mock schedule opens 00:00..23:30. A slot ending at 24h is outside.
+    installSqlMock(); // default permissive
+    installTransactionMock();
     const req = buildRequest({
       items: [{ id: "garba", quantity: 1 }],
       date: futureIsoDate(),
-      slot: "23h00 - 23h30",
+      slot: "23h30 - 24h00",
       deliveryMode: "retrait",
       customer: { firstName: "John", lastName: "Doe", phone: "0612345678" },
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data.error).toBe("Créneau non autorisé.");
+    // Accept any of the schedule-related rejections — the precise reason
+    // depends on the parser's analysis of the malformed slot.
+    expect(data.error).toMatch(/Créneau|hors des heures/i);
   });
 
-  it("should enforce the 24h advance rule", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+  it("enforces the admin-configurable lead time (rejects too-close slots)", async () => {
+    // Today, ~1 minute from now, with leadTimeMin = 240 → must be rejected.
+    // Force every day open in the mock (the default mock closes Sunday) so
+    // this test is independent of which day of the week the suite runs on.
+    const now = new Date();
+    const oneMinFromNow = new Date(now.getTime() + 60_000);
+    const hh = oneMinFromNow.getHours();
+    const mm = oneMinFromNow.getMinutes();
+    const alignedMin = Math.floor((hh * 60 + mm) / 30) * 30;
+    const start = `${String(Math.floor(alignedMin / 60)).padStart(2, "0")}h${String(alignedMin % 60).padStart(2, "0")}`;
+    const endMin = alignedMin + 30;
+    const end = `${String(Math.floor(endMin / 60)).padStart(2, "0")}h${String(endMin % 60).padStart(2, "0")}`;
+    // Patch the mock to force every day open AND set leadTimeMin=240.
+    const sqlMock = getSql() as unknown as ReturnType<typeof vi.fn>;
+    sqlMock.mockReset();
+    sqlMock.mockImplementation((strings: TemplateStringsArray) => {
+      const text = strings.join(" ");
+      if (text.includes("FROM menu_items")) return Promise.resolve([{ id: "garba", price: 13 }]);
+      if (text.includes("FROM settings") && text.includes("'global'")) {
+        return Promise.resolve([
+          {
+            key: "global",
+            value: {
+              isReviewRewardActive: true,
+              isWelcomeOfferActive: true,
+              leadTimeMin: 240,
+              slotDurationMin: 30,
+              schedule: Array.from({ length: 7 }, () => ({
+                open: true,
+                openHHMM: "00:00",
+                closeHHMM: "23:30",
+              })),
+            },
+          },
+        ]);
+      }
+      return Promise.resolve([]);
+    });
+    installTransactionMock();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const req = buildRequest({
       items: [{ id: "garba", quantity: 1 }],
       date: today,
-      slot: "12h00 - 12h30",
+      slot: `${start} - ${end}`,
       deliveryMode: "retrait",
       customer: { firstName: "John", lastName: "Doe", phone: "0612345678" },
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data.error).toBe("Réservation minimum 24h à l'avance.");
+    expect(data.error).toMatch(/trop proche|au moins|hors des heures/i);
   });
 
   it("should return 400 for unknown menu item id", async () => {

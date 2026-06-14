@@ -66,7 +66,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "jour même",
     ],
     answer:
-      "Minimum 24 heures à l'avance. Vous choisissez la date et le créneau au moment de la réservation. Pas de jour-même : c'est ce qui nous permet de cuisiner du frais, juste pour vous.",
+      "Le jour même, c'est possible ! Il faut juste un délai minimum de 3 h avant le créneau choisi pour qu'on ait le temps de cuisiner du frais juste pour vous. Vous choisissez la date et l'heure au moment de la réservation.",
   },
   {
     id: "phone",
@@ -200,7 +200,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
     label: "Comment annuler ma commande ?",
     keywords: ["annuler", "modifier", "changer", "annulation"],
     answer:
-      "Vous pouvez modifier ou annuler votre réservation jusqu'à 24h avant le créneau choisi. Contactez-nous par téléphone ou via la page contact.",
+      "Vous pouvez modifier ou annuler votre réservation jusqu'à 3 h avant le créneau choisi (le temps qu'on adapte la prépa). Contactez-nous par téléphone ou via la page contact.",
     cta: { label: "Page contact", href: "/contact" },
   },
   {
@@ -354,7 +354,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
       "marche",
     ],
     answer:
-      "100 %. On cuisine à la commande, c'est pour ça qu'on demande 24h à l'avance. Les viandes et légumes viennent de circuits courts à Lyon, et les épices d'importateurs spécialisés en produits africains.",
+      "100 %. On cuisine à la commande, c'est pour ça qu'on demande un délai minimum de 3 h avant le créneau. Les viandes et légumes viennent de circuits courts à Lyon, et les épices d'importateurs spécialisés en produits africains.",
   },
 ];
 
