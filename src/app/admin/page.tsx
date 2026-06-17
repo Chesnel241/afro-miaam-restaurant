@@ -463,7 +463,11 @@ export default function AdminPage() {
     try {
       await updateOrderStatus(orderId, newStatus);
     } catch (err) {
-      console.error("Erreur mise à jour statut:", err);
+      // Surface to the admin instead of just dumping in the console. The
+      // error message comes from authFetch -> /api/admin/orders/[id] which
+      // already returns a French sentence.
+      const msg = (err as { message?: string })?.message || "Mise à jour impossible.";
+      alert(msg);
     }
   };
 

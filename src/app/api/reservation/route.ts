@@ -240,16 +240,27 @@ export async function POST(request: Request) {
   // reads are best-effort: a transient DB hiccup falls back to defaults rather
   // than rejecting the order. The reservation transaction below re-reads what
   // it strictly needs (welcome offer flag) inside its FOR UPDATE block.
-  let scheduleSettings = coerceGlobalSettings(null);
+  //
+  // Fail CLOSED on settings read errors: if Postgres is briefly unreachable we
+  // do NOT silently fall back to the default schedule, because the operator's
+  // real schedule may be very different (closed days, different hours). A
+  // permissive fallback risks accepting orders for moments the kitchen is
+  // closed, which is exactly the kind of silent money/UX failure that prompted
+  // the dynamic-schedule feature. Reservations get retried by the customer
+  // once Postgres is back; everything else (auth, payments) is still up.
+  let scheduleSettings: ReturnType<typeof coerceGlobalSettings>;
   let blockedDates: string[] = [];
   try {
     const sql = getSql();
     const settingRows = await sql<{ key: string; value: unknown }[]>`
       SELECT key, value FROM settings WHERE key IN ('global', 'closures')
     `;
+    let foundGlobal = false;
+    let globalValue: unknown = null;
     for (const row of settingRows) {
       if (row.key === "global") {
-        scheduleSettings = coerceGlobalSettings(row.value);
+        foundGlobal = true;
+        globalValue = row.value;
       } else if (row.key === "closures") {
         const v = row.value as { blockedDates?: unknown } | null;
         if (v && Array.isArray(v.blockedDates)) {
@@ -257,8 +268,17 @@ export async function POST(request: Request) {
         }
       }
     }
+    // settings.global is seeded at install time + by migration 004. Its
+    // absence is therefore a real anomaly, not "fresh install" — we still
+    // accept and use defaults for it (so the route doesn't hard-fail when the
+    // closures row alone exists), but log loudly.
+    if (!foundGlobal) {
+      console.warn("SETTINGS_GLOBAL_MISSING_USING_DEFAULTS");
+    }
+    scheduleSettings = coerceGlobalSettings(globalValue);
   } catch (e) {
-    console.warn("SETTINGS_READ_FAILED", e);
+    console.error("SETTINGS_READ_FAILED", e);
+    return bad("Service temporairement indisponible, réessayez dans un instant.", 503);
   }
 
   if (blockedDates.includes(date)) {

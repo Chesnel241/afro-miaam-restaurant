@@ -48,7 +48,19 @@ export function ScheduleEditor() {
   const updateDay = (dayIdx: number, patch: Partial<DaySchedule>) => {
     setDraftSchedule((prev) => {
       const next = [...prev] as DaySchedule[];
-      next[dayIdx] = { ...next[dayIdx], ...patch };
+      const merged: DaySchedule = { ...next[dayIdx], ...patch };
+      // When the operator re-opens a day that was previously closed, the
+      // openHHMM/closeHHMM left over from before may be stale (e.g. "00:00"
+      // / "23:30" from the override). Copy Monday's hours over so a re-opened
+      // day starts with sensible defaults — they can still edit afterwards.
+      // We don't touch hours when the day stays open or stays closed.
+      const wasClosed = next[dayIdx].open === false;
+      if (patch.open === true && wasClosed) {
+        const mon = next[1];
+        merged.openHHMM = mon.openHHMM;
+        merged.closeHHMM = mon.closeHHMM;
+      }
+      next[dayIdx] = merged;
       return next as unknown as WeekSchedule;
     });
   };

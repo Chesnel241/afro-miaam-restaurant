@@ -19,6 +19,15 @@ export default function ReservationPage() {
   const { settings: scheduleSettings, leadTimeMin } = useSettings();
   const router = useRouter();
 
+  // Redirect to /panier if the cart is empty — the form is meaningless and
+  // the submit button would be locked anyway. Done in an effect (not in
+  // render) to avoid the "Cannot update a parent" warning and double-nav.
+  useEffect(() => {
+    if (!authLoading && user && (cart ?? []).length === 0) {
+      router.replace("/panier");
+    }
+  }, [authLoading, user, cart, router]);
+
   // Redirection vers login si non connecté
   useEffect(() => {
     if (!authLoading && !user) {
@@ -556,6 +565,63 @@ export default function ReservationPage() {
                   {isReferralValid === true && <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Code valide ! Récompense activée.</p>}
                   {isReferralValid === false && <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Code invalide ou expiré.</p>}
                 </div>
+              )}
+            </div>
+
+            {/* --- CODE PROMO --- */}
+            <div className="sm:col-span-2 mt-2 rounded-2xl border border-cream/20 bg-creamSoft/40 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">
+                Code promo
+              </p>
+              {appliedPromo ? (
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-50 px-3 py-2 ring-1 ring-emerald-200">
+                  <p className="text-sm font-bold text-emerald-700">
+                    {appliedPromo.code} appliqué
+                    {appliedPromo.discountType === "percentage"
+                      ? ` (-${appliedPromo.discountValue}%)`
+                      : ` (-${formatPrice(appliedPromo.discountValue)})`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedPromo(null);
+                      setPromoError("");
+                    }}
+                    className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 underline"
+                  >
+                    Retirer
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ex: XMAS"
+                      value={promoCodeInput}
+                      onChange={(e) => {
+                        setPromoCodeInput(e.target.value.toUpperCase());
+                        setPromoError("");
+                      }}
+                      maxLength={60}
+                      className={`field flex-1 ${promoError ? "border-red-500 bg-red-50" : ""}`}
+                      disabled={isVerifyingPromo}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyPromo}
+                      disabled={isVerifyingPromo || promoCodeInput.trim().length === 0}
+                      className="btn btn-md bg-primary text-white px-6 disabled:opacity-50"
+                    >
+                      {isVerifyingPromo ? "..." : "Appliquer"}
+                    </button>
+                  </div>
+                  {promoError && (
+                    <p className="mt-1 text-[10px] font-bold text-red-600 uppercase tracking-widest" role="alert">
+                      {promoError}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 

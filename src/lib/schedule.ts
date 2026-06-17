@@ -303,9 +303,14 @@ export function isValidBooking(args: {
     return { ok: false, reason: "Créneau invalide." };
   }
 
-  // Lead time: now + leadTimeMin <= slotStart
+  // Lead time: now + leadTimeMin <= slotStart. Compare at MINUTE granularity
+  // (Math.floor of the delta in minutes) so a sub-minute clock skew near the
+  // boundary doesn't flip the decision unpredictably. The client picker uses
+  // the same primitive (bookableSlotsForDate -> earliestBookable) so its
+  // dropdown is consistent with the server's verdict.
   const slotStartDate = new Date(y, mo, d, 0, parsed.startMin, 0, 0);
-  if (slotStartDate.getTime() - now.getTime() < settings.leadTimeMin * 60_000) {
+  const deltaMin = Math.floor((slotStartDate.getTime() - now.getTime()) / 60_000);
+  if (deltaMin < settings.leadTimeMin) {
     const hours = Math.round(settings.leadTimeMin / 60);
     return {
       ok: false,
@@ -342,7 +347,9 @@ export function earliestBookable(settings: GlobalSettings, now: Date = new Date(
       const p = parseSlot(s);
       if (!p) continue;
       const slotStart = new Date(probe.getFullYear(), probe.getMonth(), probe.getDate(), 0, p.startMin, 0, 0);
-      if (slotStart.getTime() - now.getTime() >= settings.leadTimeMin * 60_000) {
+      // Minute-granularity comparison to stay consistent with isValidBooking.
+      const deltaMin = Math.floor((slotStart.getTime() - now.getTime()) / 60_000);
+      if (deltaMin >= settings.leadTimeMin) {
         return { date: dateIso, slot: s };
       }
     }
@@ -377,12 +384,13 @@ export function bookableSlotsForDate(args: {
   // entire day). For today, drop slots that violate `now + leadTime > start`.
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   if (probe.getTime() === todayStart.getTime()) {
-    const cutoff = now.getTime() + args.settings.leadTimeMin * 60_000;
     return all.filter((s) => {
       const p = parseSlot(s);
       if (!p) return false;
       const slotStart = new Date(y, mo, d, 0, p.startMin, 0, 0);
-      return slotStart.getTime() >= cutoff;
+      // Minute-granularity to stay consistent with the server's isValidBooking.
+      const deltaMin = Math.floor((slotStart.getTime() - now.getTime()) / 60_000);
+      return deltaMin >= args.settings.leadTimeMin;
     });
   }
   return all;
