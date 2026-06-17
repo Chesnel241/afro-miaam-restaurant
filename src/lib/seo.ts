@@ -8,7 +8,7 @@ export const RESTAURANT_INFO = {
   legalName: "Afro Miaam",
   slogan: "Ça mijote, ça régale",
   description:
-    "Cuisine afro gastronomique à Lyon, en précommande 24h à l'avance. Plats africains faits maison, retrait sur place ou livraison à 3 € dans Lyon.",
+    "Cuisine afro gastronomique à Lyon. Commande dès aujourd'hui avec 3 h de marge minimum. Plats africains faits maison, retrait sur place ou livraison à 3 € dans Lyon.",
   url: SITE_URL,
   logo: `${SITE_URL}/logo.svg`,
   image: `${SITE_URL}/banniere-site.png`,
@@ -39,11 +39,16 @@ export const RESTAURANT_INFO = {
   },
 } as const;
 
+// Public/default opening hours used by the SEO structured data when the live
+// schedule from settings.global is not available at render time (e.g. on
+// statically-prerendered pages). The admin's actual current schedule lives in
+// settings.global.schedule — feel free to mirror it here whenever the brand
+// horaires change so the SEO metadata stays in sync without a DB query.
 export const OPENING_HOURS = [
   {
     dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-    opens: "10:00",
-    closes: "19:00",
+    opens: "17:00",
+    closes: "22:00",
   },
 ] as const;
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
 import { requireAdmin, authErrorResponse } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit-store";
+import { validateGlobalSettings } from "@/lib/schedule";
 
 /**
  * PATCH /api/admin/settings/[key] — admin updates a settings doc.
@@ -15,12 +16,10 @@ const ALLOWED_KEYS = new Set(["global", "promotions", "closures"]);
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function validateGlobal(v: unknown): boolean {
-  if (!v || typeof v !== "object") return false;
-  const o = v as Record<string, unknown>;
-  return (
-    typeof o.isReviewRewardActive === "boolean" &&
-    typeof o.isWelcomeOfferActive === "boolean"
-  );
+  // Full validation (boolean flags + schedule + lead time + slot duration)
+  // lives in @/lib/schedule so the same rules apply server-side, client-side,
+  // and inside the SettingsContext coerce path.
+  return validateGlobalSettings(v);
 }
 
 function validatePromotions(v: unknown): boolean {

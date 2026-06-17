@@ -53,7 +53,7 @@ export function Footer() {
               <MailIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
               afromiaam@gmail.com
             </li>
-            <li className="text-cream/70">Précommande 24h minimum · Paiement après validation</li>
+            <li className="text-cream/70">Commande même jour, 3 h de marge · Paiement après validation</li>
           </ul>
 
           <div className="mt-5 flex items-center gap-3">

@@ -3,14 +3,14 @@ import { JsonLd } from "@/components/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Réservation & précommande — Afro Miaam Lyon",
+  title: "Réservation & commande — Afro Miaam Lyon",
   description:
-    "Précommandez vos plats africains 24h à l'avance, choisissez votre créneau, livraison à 3 € dans Lyon ou retrait gratuit. Acompte 50%, paiement après validation.",
+    "Commandez vos plats africains dès aujourd'hui avec 3 h de marge minimum, choisissez votre créneau, livraison à 3 € dans Lyon ou retrait gratuit. Acompte 50%, paiement après validation.",
   alternates: { canonical: "/reservation" },
   openGraph: {
     title: "Réserver mes plats Afro Miaam",
     description:
-      "Précommande 24h. Livraison Lyon ou retrait. Paiement après validation.",
+      "Commande même jour, 3 h de marge. Livraison Lyon ou retrait. Paiement après validation.",
     url: "/reservation",
   },
 };

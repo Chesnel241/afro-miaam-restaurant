@@ -11,7 +11,7 @@ const STEPS = [
   {
     number: 2,
     title: "Commandez",
-    sub: "24h à l'avance minimum",
+    sub: "même jour, 3 h de marge minimum",
     icon: <CalendarIcon className="h-7 w-7" />,
   },
   {

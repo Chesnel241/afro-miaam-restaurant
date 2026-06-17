@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     template: "%s · Afro Miaam",
   },
   description:
-    "Cuisine afro gastronomique à Lyon, en précommande 24h à l'avance. Commande en ligne, retrait sur place ou livraison à 3 € dans Lyon. Paiement après validation par téléphone.",
+    "Cuisine afro gastronomique à Lyon. Commande dès aujourd'hui avec 3 h de marge minimum. Retrait sur place ou livraison à 3 € dans Lyon. Paiement après validation par téléphone.",
   metadataBase: new URL(SITE_URL),
   applicationName: "Afro Miaam",
   authors: [{ name: "Afro Miaam", url: SITE_URL }],
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     siteName: "Afro Miaam",
     title: "Afro Miaam — Ça mijote, ça régale",
     description:
-      "Cuisine afro gastronomique à Lyon. Précommande 24h à l'avance. Retrait à Lyon ou livraison à 3 €.",
+      "Cuisine afro gastronomique à Lyon. Commande même jour avec 3 h de marge. Retrait à Lyon ou livraison à 3 €.",
     images: [
       {
         url: "/opengraph-image",
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Afro Miaam — Ça mijote, ça régale",
     description:
-      "Cuisine afro gastronomique à Lyon. Précommande 24h à l'avance.",
+      "Cuisine afro gastronomique à Lyon. Commande même jour, 3 h de marge.",
     images: ["/twitter-image"],
   },
   robots: {

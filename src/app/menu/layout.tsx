@@ -5,12 +5,12 @@ import { menuJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Menu africain à Lyon — Yassa, Mafé, Tièp, Garba",
   description:
-    "Découvrez le menu Afro Miaam : signatures, plats africains, entrées, accompagnements, desserts et boissons. Précommande 24h à l'avance, retrait ou livraison à Lyon.",
+    "Découvrez le menu Afro Miaam : signatures, plats africains, entrées, accompagnements, desserts et boissons. Commande même jour avec 3 h de marge, retrait ou livraison à Lyon.",
   alternates: { canonical: "/menu" },
   openGraph: {
     title: "Menu Afro Miaam — Cuisine africaine à Lyon",
     description:
-      "Yassa, Mafé, Tièp, Garba, Bissap… Le meilleur de la cuisine africaine, à précommander pour un retrait ou une livraison à Lyon.",
+      "Yassa, Mafé, Tièp, Garba, Bissap… Le meilleur de la cuisine africaine, à commander dès aujourd'hui pour un retrait ou une livraison à Lyon.",
     url: "/menu",
   },
 };

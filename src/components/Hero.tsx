@@ -159,7 +159,7 @@ function CircularBadge() {
         </defs>
         <text className="text-[14px] font-black uppercase tracking-[0.2em] fill-white">
           <textPath href="#badge-path" startOffset="0">
-            ★ COMMANDEZ 24H À L&apos;AVANCE ★ COMMANDEZ 24H À L&apos;AVANCE
+            ★ COMMANDEZ EN 3H ★ COMMANDEZ EN 3H ★
           </textPath>
         </text>
       </svg>
@@ -167,8 +167,8 @@ function CircularBadge() {
       {/* Cœur du Badge */}
       <div className="absolute inset-[15%] flex items-center justify-center rounded-full bg-accent text-white shadow-glow">
         <div className="text-center">
-          <p className="text-[10px] font-black leading-none sm:text-xs md:text-sm lg:text-base">24H</p>
-          <p className="mt-0.5 text-[5px] font-bold uppercase tracking-tighter sm:text-[7px] md:text-[8px]">AVANCE</p>
+          <p className="text-[10px] font-black leading-none sm:text-xs md:text-sm lg:text-base">3H</p>
+          <p className="mt-0.5 text-[5px] font-bold uppercase tracking-tighter sm:text-[7px] md:text-[8px]">MARGE</p>
         </div>
       </div>
     </div>

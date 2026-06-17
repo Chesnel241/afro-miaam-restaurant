@@ -24,6 +24,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      # Match the app container so created_at / updated_at + the SETTINGS
+      # check (and any future window functions) line up with the operator's
+      # wall clock instead of UTC.
+      TZ: ${TZ:-Europe/Paris}
     volumes:
       - pg_data:/var/lib/postgresql/data
       # First-boot schema. The entrypoint only runs *.sql here when the data
@@ -40,6 +44,11 @@ services:
       #   docker compose exec -T postgres psql -U "$$POSTGRES_USER" \
       #     -d "$$POSTGRES_DB" -f /docker-entrypoint-initdb.d/003_order_statuses.sql
       - ./migrations/003_order_statuses.sql:/docker-entrypoint-initdb.d/003_order_statuses.sql:ro
+      # Extend settings.global with schedule (per-day-of-week hours), lead
+      # time, and slot duration. Idempotent. Re-run on an existing volume:
+      #   docker compose exec -T postgres psql -U "$$POSTGRES_USER" \
+      #     -d "$$POSTGRES_DB" -f /docker-entrypoint-initdb.d/004_schedule.sql
+      - ./migrations/004_schedule.sql:/docker-entrypoint-initdb.d/004_schedule.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -70,6 +79,19 @@ services:
     image: ghcr.io/chesnel241/afro-miaam-restaurant:latest
     restart: unless-stopped
     env_file: .env
+    environment:
+      # Explicit operational defaults so a missing/incomplete .env doesn't
+      # silently break things downstream. .env always wins (env_file is loaded
+      # first, environment second — but compose's last-write-wins makes the
+      # explicit ones override env_file for safety on critical flags).
+      # - TZ          drives Date local-time arithmetic (schedule, slots).
+      #               Defaults to Europe/Paris so the slot grid matches the
+      #               restaurant's wall clock instead of the container's UTC.
+      # - TRUSTED_PROXY tells clientIp() to read X-Forwarded-For from Caddy;
+      #               without it, every customer collapses to one shared
+      #               rate-limit bucket (denial of service surface).
+      TZ: ${TZ:-Europe/Paris}
+      TRUSTED_PROXY: ${TRUSTED_PROXY:-caddy}
     depends_on:
       postgres:
         condition: service_healthy

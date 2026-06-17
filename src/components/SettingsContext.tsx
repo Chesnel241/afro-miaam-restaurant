@@ -10,11 +10,27 @@ import React, {
   useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
+import {
+  coerceGlobalSettings,
+  DEFAULT_GLOBAL_SETTINGS,
+  type GlobalSettings,
+  type WeekSchedule,
+} from "@/lib/schedule";
 
 type SettingsContextType = {
+  // Legacy flags, kept for backward compatibility with admin & mon-compte
+  // consumers (admin/page.tsx, mon-compte/page.tsx).
   isReviewRewardActive: boolean;
   isWelcomeOfferActive: boolean;
-  updateGlobalSettings: (settings: Record<string, boolean>) => Promise<void>;
+  // New dynamic-schedule fields.
+  schedule: WeekSchedule;
+  leadTimeMin: number;
+  slotDurationMin: number;
+  // Convenient typed alias of the same data, for consumers that prefer the
+  // single object shape (e.g. the reservation page slot computation).
+  settings: GlobalSettings;
+  // Updates accept a partial — server validation ensures the result is sane.
+  updateGlobalSettings: (patch: Partial<GlobalSettings>) => Promise<void>;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -23,8 +39,7 @@ const POLL_INTERVAL_MS = 60_000;
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { user, authFetch } = useAuth();
-  const [isReviewRewardActive, setIsReviewRewardActive] = useState(true);
-  const [isWelcomeOfferActive, setIsWelcomeOfferActive] = useState(true);
+  const [settings, setSettings] = useState<GlobalSettings>(DEFAULT_GLOBAL_SETTINGS);
   const cancelledRef = useRef(false);
 
   const load = useCallback(
@@ -33,14 +48,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await authFetch("/api/settings/global", { signal });
         if (!res.ok) return;
-        const data = (await res.json()) as {
-          ok: boolean;
-          settings?: { isReviewRewardActive?: boolean; isWelcomeOfferActive?: boolean };
-        };
+        const data = (await res.json()) as { ok: boolean; settings?: unknown };
         if (!data.ok || cancelledRef.current) return;
-        const s = data.settings ?? {};
-        setIsReviewRewardActive(s.isReviewRewardActive ?? true);
-        setIsWelcomeOfferActive(s.isWelcomeOfferActive ?? true);
+        setSettings(coerceGlobalSettings(data.settings));
       } catch (e) {
         if ((e as Error).name !== "AbortError") {
           console.warn("SETTINGS_FETCH_FAILED", (e as Error).message);
@@ -66,32 +76,34 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [user, load]);
 
   const updateGlobalSettings = useCallback(
-    async (settings: Record<string, boolean>) => {
+    async (patch: Partial<GlobalSettings>) => {
       if (!user || user.role !== "admin") return;
-      const next = {
-        isReviewRewardActive,
-        isWelcomeOfferActive,
-        ...settings,
-      };
+      // Merge with the currently-known settings so the PATCH carries the full
+      // shape (the server validator demands every field). State is updated
+      // optimistically and resynced on the next poll.
+      const next: GlobalSettings = coerceGlobalSettings({ ...settings, ...patch });
       const res = await authFetch("/api/admin/settings/global", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(next),
       });
       if (!res.ok) throw new Error("Mise à jour des paramètres impossible.");
-      setIsReviewRewardActive(next.isReviewRewardActive);
-      setIsWelcomeOfferActive(next.isWelcomeOfferActive);
+      setSettings(next);
     },
-    [user, authFetch, isReviewRewardActive, isWelcomeOfferActive],
+    [user, authFetch, settings],
   );
 
-  const contextValue = useMemo(
+  const contextValue = useMemo<SettingsContextType>(
     () => ({
-      isReviewRewardActive,
-      isWelcomeOfferActive,
+      isReviewRewardActive: settings.isReviewRewardActive,
+      isWelcomeOfferActive: settings.isWelcomeOfferActive,
+      schedule: settings.schedule,
+      leadTimeMin: settings.leadTimeMin,
+      slotDurationMin: settings.slotDurationMin,
+      settings,
       updateGlobalSettings,
     }),
-    [isReviewRewardActive, isWelcomeOfferActive, updateGlobalSettings],
+    [settings, updateGlobalSettings],
   );
 
   return (

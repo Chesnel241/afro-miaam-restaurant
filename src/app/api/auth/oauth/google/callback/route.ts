@@ -177,7 +177,12 @@ export async function GET(request: Request) {
   const email = (info.email ?? "").trim().toLowerCase();
   const emailVerified = info.email_verified === true;
   const name = (info.name ?? "").trim().slice(0, 80) || email.split("@")[0] || "Utilisateur";
-  const picture = (info.picture ?? "").trim().slice(0, 500) || null;
+  // Picture must be a plain https URL. If Google were ever spoofed (or if a
+  // future hardened userinfo source returned exotic values), refusing
+  // anything but https:// blocks `data:` URIs that would otherwise be
+  // rendered through <img src> and bypass CSP for a stored-XSS vector.
+  const rawPicture = (info.picture ?? "").trim().slice(0, 500);
+  const picture = rawPicture.startsWith("https://") ? rawPicture : null;
 
   if (!providerAccountId || !email) {
     return failureRedirect(baseUrl, "missing_profile");

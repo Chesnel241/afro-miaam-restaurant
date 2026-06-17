@@ -4,17 +4,29 @@ import { useAuth, useRecaptcha } from "@/components/AuthContext";
 import { useCart } from "@/components/CartContext";
 import { formatPrice } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { CheckIcon, ClockIcon, MapPinIcon, UserIcon, GiftIcon } from "@/components/Icons";
 import { LottiePlayer } from "@/components/LottiePlayer";
 import { DELIVERY_FEE } from "@/lib/booking";
+import { useSettings } from "@/components/SettingsContext";
+import { bookableSlotsForDate, earliestBookable } from "@/lib/schedule";
 
 export default function ReservationPage() {
   const { cart, subtotal, clearCart } = useCart();
   const { user, loading: authLoading, authFetch } = useAuth();
   const { getToken: getRecaptchaToken } = useRecaptcha();
+  const { settings: scheduleSettings, leadTimeMin } = useSettings();
   const router = useRouter();
+
+  // Redirect to /panier if the cart is empty — the form is meaningless and
+  // the submit button would be locked anyway. Done in an effect (not in
+  // render) to avoid the "Cannot update a parent" warning and double-nav.
+  useEffect(() => {
+    if (!authLoading && user && (cart ?? []).length === 0) {
+      router.replace("/panier");
+    }
+  }, [authLoading, user, cart, router]);
 
   // Redirection vers login si non connecté
   useEffect(() => {
@@ -102,6 +114,26 @@ export default function ReservationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Compute the earliest bookable date once per settings change. `useMemo`
+  // avoids a fresh `new Date()` on every render, which would loop the effect
+  // below by changing the dep on every tick.
+  const minDate = useMemo(() => {
+    const now = new Date();
+    const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const earliest = earliestBookable(scheduleSettings, now);
+    return earliest?.date ?? todayIso;
+  }, [scheduleSettings]);
+
+  // Pré-remplir la date avec la prochaine date disponible une fois que les
+  // settings sont chargés. On ne touche jamais à un choix déjà fait par
+  // l'utilisateur — la condition `!form.date` suffit.
+  useEffect(() => {
+    if (!form.date && minDate) {
+      setForm((f) => ({ ...f, date: minDate }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minDate]);
+
   const canSubmit =
     (cart ?? []).length > 0 &&
     form.firstName &&
@@ -131,10 +163,18 @@ export default function ReservationPage() {
   const total = Math.max(0, totalBeforeDiscount - welcomeDiscount - promoDiscount - creditsToUse);
   const depositAmount = total * 0.5;
 
-  // Calcul de la date minimale (Demain) - Directement au rendu pour éviter le délai d'effet
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  // Today (server-local) and bookable slots for the chosen date. The slot list
+  // is filtered by lead time when `form.date === today`. We keep these
+  // computations outside useMemo because they depend on `new Date()` and we
+  // want the "current time" reflected on every render (cheap; tiny work).
+  const nowForRender = new Date();
+  const todayIso = `${nowForRender.getFullYear()}-${String(nowForRender.getMonth() + 1).padStart(2, "0")}-${String(nowForRender.getDate()).padStart(2, "0")}`;
+  const availableSlots = bookableSlotsForDate({
+    date: form.date || minDate,
+    settings: scheduleSettings,
+    now: nowForRender,
+  });
+  const leadTimeHours = Math.max(1, Math.round(leadTimeMin / 60));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,8 +184,12 @@ export default function ReservationPage() {
       return;
     }
 
-    if (form.date < minDate) {
-      alert("Désolé, les réservations doivent être effectuées au moins 24h à l'avance. Veuillez choisir une date à partir de demain.");
+    if (form.date < todayIso) {
+      alert("La date est passée. Choisissez une date d'aujourd'hui ou ultérieure.");
+      return;
+    }
+    if (!availableSlots.includes(form.slot)) {
+      alert(`Ce créneau n'est plus disponible. Choisissez un créneau au moins ${leadTimeHours} h à l'avance.`);
       return;
     }
 
@@ -431,7 +475,7 @@ export default function ReservationPage() {
                 min={minDate}
                 className={`field ${blockedDates.includes(form.date) ? 'border-red-500 bg-red-50 text-red-900' : ''}`}
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                onChange={(e) => setForm({ ...form, date: e.target.value, slot: "" })}
               />
               {blockedDates.includes(form.date) && (
                 <p className="text-[10px] font-bold text-red-600 mt-1 uppercase tracking-widest">⚠ Le restaurant est fermé à cette date.</p>
@@ -447,15 +491,20 @@ export default function ReservationPage() {
                 onChange={(e) => setForm({ ...form, slot: e.target.value })}
               >
                 <option value="">Choisir...</option>
-                <option value="12h00 - 12h30">12h00 - 12h30</option>
-                <option value="12h30 - 13h00">12h30 - 13h00</option>
-                <option value="13h00 - 13h30">13h00 - 13h30</option>
-                <option value="13h30 - 14h00">13h30 - 14h00</option>
-                <option value="19h00 - 19h30">19h00 - 19h30</option>
-                <option value="19h30 - 20h00">19h30 - 20h00</option>
-                <option value="20h00 - 20h30">20h00 - 20h30</option>
-                <option value="20h30 - 21h00">20h30 - 21h00</option>
+                {availableSlots.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
               </select>
+              {availableSlots.length === 0 && (
+                <p className="text-[10px] font-bold text-red-600 mt-1 uppercase tracking-widest">
+                  ⚠ Aucun créneau disponible ce jour. Choisissez une autre date.
+                </p>
+              )}
+              {availableSlots.length > 0 && form.date === todayIso && (
+                <p className="text-[10px] font-bold text-primary/60 mt-1 uppercase tracking-widest">
+                  Pour aujourd&apos;hui, choisissez un créneau au moins {leadTimeHours} h à l&apos;avance.
+                </p>
+              )}
             </div>
 
             <div className="sm:col-span-2 mt-4">
@@ -516,6 +565,63 @@ export default function ReservationPage() {
                   {isReferralValid === true && <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Code valide ! Récompense activée.</p>}
                   {isReferralValid === false && <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Code invalide ou expiré.</p>}
                 </div>
+              )}
+            </div>
+
+            {/* --- CODE PROMO --- */}
+            <div className="sm:col-span-2 mt-2 rounded-2xl border border-cream/20 bg-creamSoft/40 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">
+                Code promo
+              </p>
+              {appliedPromo ? (
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-50 px-3 py-2 ring-1 ring-emerald-200">
+                  <p className="text-sm font-bold text-emerald-700">
+                    {appliedPromo.code} appliqué
+                    {appliedPromo.discountType === "percentage"
+                      ? ` (-${appliedPromo.discountValue}%)`
+                      : ` (-${formatPrice(appliedPromo.discountValue)})`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedPromo(null);
+                      setPromoError("");
+                    }}
+                    className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 underline"
+                  >
+                    Retirer
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ex: XMAS"
+                      value={promoCodeInput}
+                      onChange={(e) => {
+                        setPromoCodeInput(e.target.value.toUpperCase());
+                        setPromoError("");
+                      }}
+                      maxLength={60}
+                      className={`field flex-1 ${promoError ? "border-red-500 bg-red-50" : ""}`}
+                      disabled={isVerifyingPromo}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyPromo}
+                      disabled={isVerifyingPromo || promoCodeInput.trim().length === 0}
+                      className="btn btn-md bg-primary text-white px-6 disabled:opacity-50"
+                    >
+                      {isVerifyingPromo ? "..." : "Appliquer"}
+                    </button>
+                  </div>
+                  {promoError && (
+                    <p className="mt-1 text-[10px] font-bold text-red-600 uppercase tracking-widest" role="alert">
+                      {promoError}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
