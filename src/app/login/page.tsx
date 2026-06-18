@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth, useRecaptcha } from "@/components/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -16,14 +16,29 @@ export default function LoginPage() {
   const { signIn, signUp, loginWithGoogle, user } = useAuth();
   const { getToken } = useRecaptcha();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Si déjà connecté, rediriger (en effet, hors render, pour éviter le warning
   // React "Cannot update a component while rendering" et la double navigation).
+  //
+  // Honors `?next=…` so a customer redirected here from /reservation
+  // (cart filled, not yet authed) is taken back to the reservation form on
+  // success instead of being dumped on /mon-compte and losing context.
+  // Strict whitelist: only same-origin RELATIVE paths starting with "/" are
+  // accepted (and never one that bounces to /login again), so an attacker
+  // cannot use ?next=https://evil.com/ for a redirect-then-steal-token gadget.
   useEffect(() => {
-    if (user) {
-      router.replace(user.role === "admin" ? "/admin" : "/mon-compte");
-    }
-  }, [user, router]);
+    if (!user) return;
+    const nextRaw = searchParams.get("next") ?? "";
+    const safeNext =
+      nextRaw.startsWith("/") &&
+      !nextRaw.startsWith("//") &&
+      !nextRaw.startsWith("/login")
+        ? nextRaw
+        : null;
+    const fallback = user.role === "admin" ? "/admin" : "/mon-compte";
+    router.replace(safeNext ?? fallback);
+  }, [user, router, searchParams]);
 
   if (user) return null;
 

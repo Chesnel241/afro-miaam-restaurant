@@ -200,6 +200,33 @@ export default function ReservationPage() {
 
     setLoading(true);
     try {
+      // Re-validate the applied promo right before submitting so an admin
+      // who disabled the code minutes ago doesn't leave the customer staring
+      // at a phantom discount that the server then quietly clamps to zero
+      // (the receipt would show a different total than the form). If the
+      // re-check rejects the code, we drop it client-side and show a clear
+      // message instead of silently shipping the order.
+      if (appliedPromo) {
+        try {
+          const tok = await getRecaptchaToken("reservation");
+          const recheck = await authFetch("/api/promotions/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: appliedPromo.code, recaptchaToken: tok }),
+          });
+          const rdata = await recheck.json().catch(() => ({}));
+          if (!recheck.ok || rdata?.valid !== true) {
+            setAppliedPromo(null);
+            setPromoError(`Le code "${appliedPromo.code}" n'est plus actif. Réessayez sans code ou utilisez-en un autre.`);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // Re-validation network failure — let the server be the
+          // authority (it clamps invalid promos to 0 anyway). Don't block
+          // the legitimate customer over a transient hiccup.
+        }
+      }
       // The server (/api/reservation) is the source of truth for prices:
       // it reads the menu, rejects unknown items, recomputes the subtotal,
       // and returns the authoritative total + deposit + reference.
@@ -224,8 +251,16 @@ export default function ReservationPage() {
             : `ik-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       }
 
+      // 30-second ceiling so a flaky network doesn't park the customer on
+      // the "Validation de votre commande..." spinner indefinitely. The
+      // server's idempotency key means a retry of the same submit will
+      // resolve to the existing order — safe to time out and let the user
+      // try again.
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 30_000);
       const apiRes = await authFetch("/api/reservation", {
         method: "POST",
+        signal: ctrl.signal,
         headers: {
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKeyRef.current,
@@ -250,6 +285,7 @@ export default function ReservationPage() {
           recaptchaToken,
         }),
       });
+      clearTimeout(timeoutId);
 
       const apiData = await apiRes.json().catch(() => ({}));
 
@@ -269,8 +305,15 @@ export default function ReservationPage() {
       // same user (after going back to the menu) gets a fresh one.
       idempotencyKeyRef.current = null;
     } catch (err) {
-      console.error("BOOKING_ERROR", (err as { code?: string }).code ?? "unknown");
-      alert("Erreur, réessayez.");
+      const isAbort =
+        (err as { name?: string })?.name === "AbortError" ||
+        (err as { code?: string })?.code === "ABORT_ERR";
+      if (isAbort) {
+        alert("La connexion a expiré. Vérifiez votre internet et réessayez — votre commande n'a pas été créée.");
+      } else {
+        console.error("BOOKING_ERROR", (err as { code?: string }).code ?? "unknown");
+        alert("Erreur, réessayez.");
+      }
     } finally {
       setLoading(false);
     }

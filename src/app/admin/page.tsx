@@ -180,8 +180,13 @@ export default function AdminPage() {
   useEffect(() => {
     const activeCount = activeOrders.length;
     if (activeCount > lastOrdersCount && lastOrdersCount > 0) {
-      // Play audio notification chime for new order
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-120.wav");
+      // Play a chime when a new order arrives. Loaded from a same-origin
+      // asset so we don't depend on an external CDN (mixkit was blocking
+      // hot-linking with a 403 even though the play() promise silently
+      // catches it — that meant prod ran without any notification).
+      // To enable, drop a .wav at public/sounds/new-order.wav; otherwise
+      // the file 404s and play() rejects silently.
+      const audio = new Audio("/sounds/new-order.wav");
       audio.play().catch(() => {});
     }
     setLastOrdersCount(activeCount);

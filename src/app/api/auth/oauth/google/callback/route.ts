@@ -181,8 +181,11 @@ export async function GET(request: Request) {
   // future hardened userinfo source returned exotic values), refusing
   // anything but https:// blocks `data:` URIs that would otherwise be
   // rendered through <img src> and bypass CSP for a stored-XSS vector.
+  // Case-insensitive on the scheme so a freak uppercase response doesn't
+  // strip a legitimate avatar — Google sends lowercase today but the check
+  // is cheap robustness.
   const rawPicture = (info.picture ?? "").trim().slice(0, 500);
-  const picture = rawPicture.startsWith("https://") ? rawPicture : null;
+  const picture = rawPicture.toLowerCase().startsWith("https://") ? rawPicture : null;
 
   if (!providerAccountId || !email) {
     return failureRedirect(baseUrl, "missing_profile");

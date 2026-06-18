@@ -165,7 +165,18 @@ Then edit `.env` (`nano .env`) and fill in EVERY `CHANGEME`:
 - **Email (Resend)** — `RESEND_API_KEY`; `EMAIL_FROM` and `RESTAURANT_EMAIL`
   are already sensible defaults.
 - **reCAPTCHA** — `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET_KEY` (see §11).
-- **Maintenance** — `MAINTENANCE_BYPASS_KEY`.
+- **Maintenance** — `MAINTENANCE_BYPASS_KEY` (must be ≥ 32 chars in production
+  or the gate in `src/lib/maintenance.ts` refuses to honor it).
+- **Timezone** — `TZ` (IANA, defaults to `Europe/Paris`). Used by **both** the
+  app container and the Postgres container for local-time arithmetic (slot
+  grid, schedule, `created_at` display). If your restaurant is elsewhere, set
+  e.g. `TZ=Europe/Berlin`. Do **not** leave `TZ=` empty in `.env` — Compose
+  treats the empty string as "set" and propagates it, which makes the
+  container run in UTC. Either set a real value or remove the line entirely
+  so the compose default kicks in.
+- **Trusted proxy** — `TRUSTED_PROXY=caddy` (already the compose default).
+  Tells `clientIp()` to read `X-Forwarded-For` from Caddy; without it every
+  customer collapses to one shared rate-limit bucket.
 
 > `DATABASE_URL` uses `postgres` (the compose service name) as the host because the
 > app talks to the database over the internal Docker network.
@@ -198,20 +209,45 @@ required reviewers.
 ## 6. First deploy
 
 On the VPS, in `/opt/afro-miaam`, bring up the full stack. On a brand-new
-`pg_data` volume, Postgres automatically runs `migrations/001_init.sql` from
-`/docker-entrypoint-initdb.d`.
+`pg_data` volume, Postgres automatically runs every `*.sql` it finds under
+`/docker-entrypoint-initdb.d` in **alphabetical order** — currently:
+
+1. `001_init.sql` — schema, seeds, indexes
+2. `002_hardening.sql` — `orders.idempotency_key`, `delivery_fee` CHECK
+3. `003_order_statuses.sql` — adds `'En Livraison'` and `'Rejetée'`
+4. `004_schedule.sql` — backfills the per-day-of-week schedule, lead time,
+   slot duration into `settings.global`
 
 ```bash
 docker compose up -d --build      # --build for the very first boot (no image in GHCR yet)
 docker compose ps
-docker compose logs -f postgres   # confirm "database system is ready" + migration ran
+docker compose logs -f postgres   # confirm "database system is ready" + each migration ran
 ```
 
 Verify the schema loaded:
 
 ```bash
 docker compose exec postgres psql -U afro -d afromiaam -c '\dt'
+# settings.global must contain the schedule/leadTimeMin/slotDurationMin keys
+docker compose exec postgres psql -U afro -d afromiaam -tAc \
+  "SELECT value FROM settings WHERE key='global';" | jq
 ```
+
+### Re-applying a migration on an existing volume
+
+`/docker-entrypoint-initdb.d` runs ONLY when the Postgres data directory is
+empty (fresh volume). After the first boot, migrations are no-ops — you must
+apply new ones by hand:
+
+```bash
+# Example: re-apply migration 004 on a running stack
+docker compose exec -T postgres \
+  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -f /docker-entrypoint-initdb.d/004_schedule.sql
+```
+
+Every migration is idempotent (`IF NOT EXISTS`, `DO` blocks, `ON CONFLICT`)
+so re-running them is safe.
 
 > After the first deploy, subsequent deploys are fully automated: push to `main`
 > → CI builds, pushes to GHCR, SSHes in, `docker compose pull app` +

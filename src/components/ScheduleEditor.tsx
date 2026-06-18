@@ -127,17 +127,21 @@ export function ScheduleEditor() {
         </button>
       </div>
 
+      {/* Mobile: the row becomes a 2-line stack (label+toggle on top, the
+          two time inputs on the bottom) so the inputs don't get squeezed
+          below their usable width on a ~360px screen. From sm: up we use the
+          original 4-column dense grid the desktop UX expects. */}
       <div className="space-y-3">
         {draftSchedule.map((day, i) => (
           <div
             key={i}
-            className="grid grid-cols-[110px_60px_1fr_1fr] items-center gap-3 rounded-2xl border border-cream/20 bg-creamSoft/40 p-3"
+            className="grid grid-cols-[1fr_auto] gap-3 rounded-2xl border border-cream/20 bg-creamSoft/40 p-3 sm:grid-cols-[110px_60px_1fr_1fr] sm:items-center"
           >
             <label className="text-sm font-bold text-primary">{DAY_NAMES_FR[i]}</label>
             <button
               type="button"
               onClick={() => updateDay(i, { open: !day.open })}
-              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors ${
+              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors justify-self-end sm:justify-self-auto ${
                 day.open ? "bg-accent" : "bg-primary/20"
               }`}
               aria-label={day.open ? "Ouvert" : "Fermé"}
@@ -154,14 +158,16 @@ export function ScheduleEditor() {
               value={day.openHHMM}
               disabled={!day.open}
               onChange={(e) => updateDay(i, { openHHMM: e.target.value })}
-              className="rounded-lg border border-cream/30 bg-white px-3 py-2 text-sm text-primary disabled:opacity-50"
+              aria-label={`Ouverture ${DAY_NAMES_FR[i]}`}
+              className="col-span-2 rounded-lg border border-cream/30 bg-white px-3 py-2 text-sm text-primary disabled:opacity-50 sm:col-span-1"
             />
             <input
               type="time"
               value={day.closeHHMM}
               disabled={!day.open}
               onChange={(e) => updateDay(i, { closeHHMM: e.target.value })}
-              className="rounded-lg border border-cream/30 bg-white px-3 py-2 text-sm text-primary disabled:opacity-50"
+              aria-label={`Fermeture ${DAY_NAMES_FR[i]}`}
+              className="col-span-2 rounded-lg border border-cream/30 bg-white px-3 py-2 text-sm text-primary disabled:opacity-50 sm:col-span-1"
             />
           </div>
         ))}
