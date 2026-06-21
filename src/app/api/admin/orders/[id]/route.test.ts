@@ -232,9 +232,12 @@ describe("PATCH — 'Livré' transition side effects", () => {
 });
 
 describe("DELETE /api/admin/orders/[id]", () => {
-  it("404 when not found", async () => {
-    const sql = makeTx([[]]);
-    getSqlMock.mockReturnValueOnce(sql);
+  it("404 when not found (the SELECT FOR UPDATE returns nothing)", async () => {
+    // The DELETE handler now runs inside a withTransaction. Queue an empty
+    // FOR-UPDATE result to simulate the missing row.
+    withTransactionMock.mockImplementationOnce(async (fn: (t: unknown) => Promise<unknown>) =>
+      fn(makeTx([[]])),
+    );
     const req = new Request("http://localhost/api/admin/orders/o1", {
       method: "DELETE",
       headers: { Authorization: "Bearer t" },
@@ -244,30 +247,40 @@ describe("DELETE /api/admin/orders/[id]", () => {
   });
 
   it("rolls back orders_count when the deleted order was 'Livré'", async () => {
-    const deleted = { id: "o1", status: "Livré", user_id: "u1" };
-    const sql = makeTx([[deleted], []]);
-    getSqlMock.mockReturnValueOnce(sql);
+    const lockedRow = { id: "o1", status: "Livré", user_id: "u1" };
+    let tx: ReturnType<typeof makeTx> | null = null;
+    withTransactionMock.mockImplementationOnce(async (fn: (t: unknown) => Promise<unknown>) => {
+      // queue: SELECT FOR UPDATE -> [row]; DELETE -> []; UPDATE users -> []
+      tx = makeTx([[lockedRow], [], []]);
+      return fn(tx);
+    });
     const req = new Request("http://localhost/api/admin/orders/o1", {
       method: "DELETE",
       headers: { Authorization: "Bearer t" },
     });
     const res = await DELETE(req, { params: Promise.resolve({ id: "o1" }) });
     expect(res.status).toBe(200);
-    const sqls = sql.calls.map((c) => c.sql).join("\n");
+    const sqls = tx!.calls.map((c) => c.sql).join("\n");
+    expect(sqls).toContain("FOR UPDATE");
+    expect(sqls).toContain("DELETE FROM orders");
     expect(sqls).toContain("orders_count = GREATEST(orders_count - 1, 0)");
   });
 
   it("does NOT roll back orders_count when the order was not delivered", async () => {
-    const deleted = { id: "o1", status: "En cours", user_id: "u1" };
-    const sql = makeTx([[deleted]]);
-    getSqlMock.mockReturnValueOnce(sql);
+    const lockedRow = { id: "o1", status: "En cours", user_id: "u1" };
+    let tx: ReturnType<typeof makeTx> | null = null;
+    withTransactionMock.mockImplementationOnce(async (fn: (t: unknown) => Promise<unknown>) => {
+      tx = makeTx([[lockedRow], []]);
+      return fn(tx);
+    });
     const req = new Request("http://localhost/api/admin/orders/o1", {
       method: "DELETE",
       headers: { Authorization: "Bearer t" },
     });
     const res = await DELETE(req, { params: Promise.resolve({ id: "o1" }) });
     expect(res.status).toBe(200);
-    const sqls = sql.calls.map((c) => c.sql).join("\n");
+    const sqls = tx!.calls.map((c) => c.sql).join("\n");
+    expect(sqls).toContain("DELETE FROM orders");
     expect(sqls).not.toContain("orders_count = GREATEST");
   });
 });

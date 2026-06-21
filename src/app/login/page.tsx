@@ -169,6 +169,8 @@ export default function LoginPage() {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              inputMode="email"
               className="mt-2 block w-full rounded-md border-0 bg-white px-4 py-3 text-primary shadow-sm ring-1 ring-inset ring-cream/20 focus:ring-2 focus:ring-inset focus:ring-accent"
               placeholder="votre@email.com"
               required
@@ -184,6 +186,7 @@ export default function LoginPage() {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
               className="mt-2 block w-full rounded-md border-0 bg-white px-4 py-3 text-primary shadow-sm ring-1 ring-inset ring-cream/20 focus:ring-2 focus:ring-inset focus:ring-accent"
               placeholder={mode === "signup" ? "Minimum 6 caractères" : "Votre mot de passe"}
               required

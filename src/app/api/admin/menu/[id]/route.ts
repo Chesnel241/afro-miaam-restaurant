@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
 import { requireAdmin, authErrorResponse } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit-store";
+import { invalidateMenuCache } from "@/lib/menu-cache";
 
 /**
  * PATCH /api/admin/menu/[id] — admin update menu item.
@@ -90,6 +91,7 @@ export async function PATCH(
     if (rows.length === 0) {
       return NextResponse.json({ error: "Article introuvable." }, { status: 404 });
     }
+    invalidateMenuCache();
     return NextResponse.json({ ok: true, item: mapItem(rows[0]) });
   } catch (e) {
     return authErrorResponse(e);
@@ -115,6 +117,7 @@ export async function DELETE(
     if (rows.length === 0) {
       return NextResponse.json({ error: "Article introuvable." }, { status: 404 });
     }
+    invalidateMenuCache();
     return NextResponse.json({ ok: true });
   } catch (e) {
     return authErrorResponse(e);

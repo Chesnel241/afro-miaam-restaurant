@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Lottie, { LottieRefCurrentProps } from "lottie-react";
+import dynamic from "next/dynamic";
+import type { LottieRefCurrentProps } from "lottie-react";
+
+// Lazy-load the lottie-react runtime so pages that never actually display
+// an animation (e.g. the menu, the cart, the home) don't pay the bundle
+// cost. ssr:false because Lottie touches the DOM at mount. The fallback is
+// a transparent placeholder so swapping in the real player doesn't shift
+// layout.
+const Lottie = dynamic(() => import("lottie-react"), {
+  ssr: false,
+  loading: () => null,
+});
 
 interface LottiePlayerProps {
   src: string; // The filename in /public/animations/

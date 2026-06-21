@@ -3,6 +3,7 @@ import { getSql } from "@/lib/db";
 import { requireAdmin, authErrorResponse } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit-store";
 import { clientIp } from "@/lib/utils";
+import { invalidateMenuCache } from "@/lib/menu-cache";
 
 /**
  * POST /api/admin/menu — admin-only create menu item.
@@ -107,6 +108,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Identifiant déjà utilisé." }, { status: 409 });
     }
 
+    // Drop the reservation route's process-local menu cache so the next
+    // customer order sees the new item / price immediately instead of up
+    // to 60s stale.
+    invalidateMenuCache();
     return NextResponse.json({ ok: true, item: mapItem(rows[0]) });
   } catch (e) {
     return authErrorResponse(e);

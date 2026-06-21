@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { menuItems } from "@/data/menu";
+import { getMenuById } from "@/lib/menu-cache";
 import { DELIVERY_FEE } from "@/lib/booking";
 import { MAINTENANCE_MODE } from "@/lib/maintenance";
 import { clientIp } from "@/lib/utils";
@@ -50,88 +50,10 @@ const FIELD_LIMITS = {
 };
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-const PRICE_CACHE_TTL_MS = 60_000;
+// Menu price/availability cache moved to @/lib/menu-cache so admin write
+// paths can invalidate it after a successful mutation (avoids serving stale
+// prices for up to PRICE_CACHE_TTL_MS = 60s after an admin price change).
 
-type FlavorSupplement = { name: string; supplement: number };
-type MenuEntry = {
-  price: number;
-  available: boolean;
-  flavors: FlavorSupplement[];
-};
-
-// Static fallback used ONLY when the Postgres read fails (e.g. transient DB
-// outage). It is treated as a last-resort safety net so reservations don't
-// 500 outright; admin-set availability and prices still take precedence
-// whenever the DB read succeeds.
-const STATIC_MENU_BY_ID: Record<string, MenuEntry> = Object.fromEntries(
-  menuItems.map((i) => [
-    i.id,
-    {
-      price: i.price,
-      available: true,
-      flavors: Array.isArray((i as { flavors?: FlavorSupplement[] }).flavors)
-        ? ((i as { flavors?: FlavorSupplement[] }).flavors as FlavorSupplement[])
-        : [],
-    },
-  ]),
-);
-
-let menuCache: { byId: Record<string, MenuEntry>; expires: number } | null = null;
-let menuCachePromise: Promise<Record<string, MenuEntry>> | null = null;
-
-async function getMenuById(): Promise<Record<string, MenuEntry>> {
-  const now = Date.now();
-  if (menuCache && now < menuCache.expires) return menuCache.byId;
-  if (menuCachePromise) return menuCachePromise;
-
-  menuCachePromise = (async () => {
-    try {
-      const sql = getSql();
-      const rows = await sql<
-        { id: string; price: string | number; available: boolean; flavors: unknown }[]
-      >`
-        SELECT id, price, available, flavors
-        FROM menu_items
-        WHERE deleted_at IS NULL
-      `;
-      const byId: Record<string, MenuEntry> = {};
-      for (const row of rows) {
-        const price = typeof row.price === "number" ? row.price : Number(row.price);
-        if (!Number.isFinite(price) || price < 0) continue;
-        const flavors = Array.isArray(row.flavors)
-          ? (row.flavors as unknown[])
-              .map((f): FlavorSupplement | null => {
-                if (!f || typeof f !== "object") return null;
-                const obj = f as { name?: unknown; supplement?: unknown };
-                const name = typeof obj.name === "string" ? obj.name : null;
-                const supplement =
-                  typeof obj.supplement === "number"
-                    ? obj.supplement
-                    : Number(obj.supplement);
-                if (!name || !Number.isFinite(supplement) || supplement < 0) {
-                  return null;
-                }
-                return { name, supplement };
-              })
-              .filter((f): f is FlavorSupplement => f !== null)
-          : [];
-        byId[row.id] = { price, available: row.available !== false, flavors };
-      }
-      menuCache = { byId, expires: Date.now() + PRICE_CACHE_TTL_MS };
-      return byId;
-    } catch (e) {
-      console.warn("MENU_PG_READ_FAILED", (e as { code?: string }).code ?? "unknown");
-      // Fall back to the static menu so we don't outright reject reservations
-      // during a transient DB hiccup. Items in the static map are treated as
-      // available; admin-side overrides are simply unavailable for ~1 minute.
-      return STATIC_MENU_BY_ID;
-    } finally {
-      menuCachePromise = null;
-    }
-  })();
-
-  return menuCachePromise;
-}
 
 function bad(error: string, status = 400) {
   return NextResponse.json({ error }, { status });
@@ -277,7 +199,15 @@ export async function POST(request: Request) {
     }
     scheduleSettings = coerceGlobalSettings(globalValue);
   } catch (e) {
-    console.error("SETTINGS_READ_FAILED", e);
+    // Structured payload makes prod post-mortems trivial — grep for
+    // SETTINGS_READ_FAILED and you immediately see whether Postgres was the
+    // root cause (vs a transient network glitch, vs missing settings row).
+    console.error("SETTINGS_READ_FAILED", {
+      uid: claims.sub,
+      stage: "pre-tx settings + closures fetch",
+      code: (e as { code?: string })?.code ?? "unknown",
+      msg: (e as { message?: string })?.message ?? "unknown",
+    });
     return bad("Service temporairement indisponible, réessayez dans un instant.", 503);
   }
 
@@ -785,7 +715,17 @@ export async function POST(request: Request) {
     const isDbError =
       error && typeof error === "object" && ("code" in error || "severity_local" in error);
     const safe = !isDbError && SAFE_MESSAGES.has(msg);
-    console.error("TRANSACTION_FAILED", error);
+    // Structured: lets ops distinguish business-rule rejections (safe=true)
+    // from real DB errors (isDbError) when grepping prod logs.
+    console.error("TRANSACTION_FAILED", {
+      uid: claims.sub,
+      ref: reference,
+      mode: deliveryMode,
+      isDbError,
+      safe,
+      code: (error as { code?: string })?.code ?? "unknown",
+      msg,
+    });
     if (safe) return bad(msg, 400);
     return bad("Erreur lors de la validation et l'insertion de la commande.", 500);
   }

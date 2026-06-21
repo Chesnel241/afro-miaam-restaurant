@@ -65,9 +65,28 @@ export function QRScannerModal({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
+  // Close on Escape — basic modal accessibility. We attach to window so the
+  // listener fires even when focus is inside the camera viewport.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-primary/60 backdrop-blur-md" onClick={onClose} />
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Scanner un QR code de livraison"
+    >
+      <div
+        className="absolute inset-0 bg-primary/60 backdrop-blur-md"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       
       <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-fade-in">
         <div className="bg-primary p-6 text-center text-cream">

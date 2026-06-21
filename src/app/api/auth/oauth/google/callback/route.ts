@@ -102,7 +102,22 @@ export async function GET(request: Request) {
   const errorParam = url.searchParams.get("error");
 
   if (errorParam) {
-    return failureRedirect(baseUrl, errorParam);
+    // Defense-in-depth: never echo an unvalidated parameter into a redirect
+    // URL, even when it comes from a "trusted" upstream like Google. Whitelist
+    // the standard OAuth 2.0 error codes (RFC 6749 §4.1.2.1); anything else
+    // collapses into a generic "oauth_error".
+    const KNOWN_OAUTH_ERRORS = new Set([
+      "access_denied",
+      "invalid_request",
+      "unauthorized_client",
+      "unsupported_response_type",
+      "invalid_scope",
+      "server_error",
+      "temporarily_unavailable",
+      "invalid_grant",
+    ]);
+    const safe = KNOWN_OAUTH_ERRORS.has(errorParam) ? errorParam : "oauth_error";
+    return failureRedirect(baseUrl, safe);
   }
   if (!code || !state) {
     return failureRedirect(baseUrl, "missing_params");

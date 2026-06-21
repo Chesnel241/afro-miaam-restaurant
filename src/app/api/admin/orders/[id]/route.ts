@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSql, withTransaction } from "@/lib/db";
 import { requireAdmin, authErrorResponse } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limit-store";
 
 /**
  * PATCH /api/admin/orders/[id] — admin-only order update.
@@ -98,10 +99,17 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  let claims;
   try {
-    await requireAdmin(request);
+    claims = await requireAdmin(request);
   } catch (e) {
     return authErrorResponse(e);
+  }
+  // Defense-in-depth against a compromised admin token spamming order
+  // mutations (audit-trail flood, accidental scripted DoS). 60 per minute is
+  // generous for a kitchen workflow but blocks runaway scripts.
+  if (!(await checkRateLimit(`admin-order-patch:${claims.sub}`, 60, 60_000))) {
+    return bad("Trop de requêtes.", 429);
   }
 
   const { id } = await context.params;
@@ -243,28 +251,50 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let claims;
   try {
-    await requireAdmin(request);
-    const { id } = await params;
-    const sql = getSql();
-    const rows = await sql<OrderRow[]>`
-      DELETE FROM orders WHERE id = ${id}
-      RETURNING id, reference, user_id, user_name, user_email, items,
-                subtotal, delivery_fee, total, deposit_amount, discounts,
-                status, customer, referrer_id, referral_reward_paid,
-                has_reviewed, review, delivery_token_hash, delivery_token_exp,
-                delivered_at, deletion_requested, created_at, updated_at
-    `;
-    if (rows.length === 0) {
-      return bad("Commande introuvable.", 404);
-    }
-    const row = rows[0];
-    if (row.status === "Livré" && row.user_id) {
-      await sql`
-        UPDATE users
-        SET orders_count = GREATEST(orders_count - 1, 0), updated_at = now()
-        WHERE id = ${row.user_id}
+    claims = await requireAdmin(request);
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+  if (!(await checkRateLimit(`admin-order-del:${claims.sub}`, 30, 60_000))) {
+    return bad("Trop de requêtes.", 429);
+  }
+
+  const { id } = await params;
+  try {
+    // Atomic: the SELECT FOR UPDATE on the order row keeps a concurrent
+    // PATCH-to-Livré from changing the status between our read and the
+    // counter rollback. Both operations target orders.id so the lock chain
+    // serializes them. Without this, deleting an order at the moment an
+    // admin flips it to Livré would skip the orders_count decrement.
+    const out = await withTransaction(async (tx) => {
+      const lockRows = await tx<OrderRow[]>`
+        SELECT id, reference, user_id, user_name, user_email, items,
+               subtotal, delivery_fee, total, deposit_amount, discounts,
+               status, customer, referrer_id, referral_reward_paid,
+               has_reviewed, review, delivery_token_hash, delivery_token_exp,
+               delivered_at, deletion_requested, created_at, updated_at
+        FROM orders
+        WHERE id = ${id}
+        FOR UPDATE
       `;
+      if (lockRows.length === 0) return null;
+      const row = lockRows[0];
+      const wasDelivered = row.status === "Livré";
+      const ownerId = row.user_id;
+      await tx`DELETE FROM orders WHERE id = ${id}`;
+      if (wasDelivered && ownerId) {
+        await tx`
+          UPDATE users
+          SET orders_count = GREATEST(orders_count - 1, 0), updated_at = now()
+          WHERE id = ${ownerId}
+        `;
+      }
+      return row;
+    });
+    if (!out) {
+      return bad("Commande introuvable.", 404);
     }
     return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
