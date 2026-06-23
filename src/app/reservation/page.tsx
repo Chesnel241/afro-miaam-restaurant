@@ -19,21 +19,6 @@ export default function ReservationPage() {
   const { settings: scheduleSettings, leadTimeMin } = useSettings();
   const router = useRouter();
 
-  // Redirect to /panier if the cart is empty — the form is meaningless and
-  // the submit button would be locked anyway. Done in an effect (not in
-  // render) to avoid the "Cannot update a parent" warning and double-nav.
-  //
-  // Critical: skip when `success` is true. On a successful submit we call
-  // setSuccess(true) then clearCart() in the same tick; without this guard
-  // React's batched re-render observes an empty cart and bounces the user
-  // to /panier before the success screen ever paints, eating the deposit
-  // payment instructions.
-  useEffect(() => {
-    if (!authLoading && user && !success && (cart ?? []).length === 0) {
-      router.replace("/panier");
-    }
-  }, [authLoading, user, cart, router, success]);
-
   // Redirection vers login si non connecté
   useEffect(() => {
     if (!authLoading && !user) {
@@ -56,6 +41,21 @@ export default function ReservationPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [finalDeposit, setFinalDeposit] = useState(0);
+
+  // Redirect to /panier if the cart is empty — the form is meaningless and
+  // the submit button would be locked anyway. Done in an effect (not in
+  // render) to avoid the "Cannot update a parent" warning and double-nav.
+  //
+  // Critical: skip when `success` is true. On a successful submit we call
+  // setSuccess(true) then clearCart() in the same tick; without this guard
+  // React's batched re-render observes an empty cart and bounces the user
+  // to /panier before the success screen ever paints, eating the deposit
+  // payment instructions. Declared AFTER `success` so TS sees the binding.
+  useEffect(() => {
+    if (!authLoading && user && !success && (cart ?? []).length === 0) {
+      router.replace("/panier");
+    }
+  }, [authLoading, user, cart, router, success]);
   // Idempotency key — generated once per real submit attempt and sent as
   // Idempotency-Key. If the server already saw this key for this user, it
   // returns the original order instead of creating a duplicate (covers
