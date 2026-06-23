@@ -105,16 +105,16 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
-    # NOTE: intentionally NO `ports:` — the app is never exposed to the host.
     networks:
-      - internal
+      internal:
+        ipv4_address: 172.20.0.10
 
   # ---------------------------------------------------------------------------
   # Caddy — public edge. Auto-provisions Let's Encrypt TLS, reverse-proxies to
   # the app, and serves /uploads/* straight from disk for performance.
   # ---------------------------------------------------------------------------
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2
     restart: unless-stopped
     depends_on:
       app:
@@ -131,7 +131,8 @@ services:
       - caddy_config:/config
       - caddy_logs:/var/log/caddy
     networks:
-      - internal
+      internal:
+        ipv4_address: 172.20.0.11
 
 # -----------------------------------------------------------------------------
 # Networks — single private bridge. Only Caddy publishes ports to the host.
@@ -139,6 +140,9 @@ services:
 networks:
   internal:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 # -----------------------------------------------------------------------------
 # Named volumes — survive container recreation / redeploys.
