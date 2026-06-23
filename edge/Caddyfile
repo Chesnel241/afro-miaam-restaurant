@@ -1,0 +1,98 @@
+# =============================================================================
+# Shared edge — routes every domain on the VPS by Host header.
+# =============================================================================
+# ONE Caddy owns 80/443. Each site block reverse-proxies to its app on the host
+# loopback. Add one block per site; never run a second proxy on this host.
+#
+# After editing, apply without downtime:
+#     docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+# =============================================================================
+
+# Global options. ACME registration email for Let's Encrypt notices/recovery.
+{
+	email bonjour@afromiaam.com
+}
+
+# -----------------------------------------------------------------------------
+# Afro Miaam  ->  app on 127.0.0.1:3000
+# -----------------------------------------------------------------------------
+afromiaam.com, www.afromiaam.com {
+	# Serve uploaded menu images straight from the shared (read-only) volume.
+	# A request for /uploads/foo.jpg resolves to /srv/afro-miaam/uploads/foo.jpg.
+	# Long cache: filenames are content-addressed/immutable once written.
+	handle /uploads/* {
+		root * /srv/afro-miaam
+		file_server
+		header Cache-Control "public, max-age=2592000"
+	}
+
+	# Everything else -> the afro-miaam app on the host loopback. Inject the
+	# real client IP; the app's clientIp() trusts the leftmost X-Forwarded-For
+	# only when TRUSTED_PROXY=caddy.
+	handle {
+		reverse_proxy 127.0.0.1:3000 {
+			header_up X-Forwarded-For {client_ip}
+			header_up X-Real-IP {client_ip}
+		}
+	}
+
+	encode zstd gzip
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	# Strip the maintenance bypass key from logged query strings so it never
+	# leaks to log readers / shipping targets.
+	log {
+		output file /var/log/caddy/afromiaam.access.log {
+			roll_size 50mb
+			roll_keep 5
+		}
+		format json
+	}
+}
+
+# -----------------------------------------------------------------------------
+# jt-alwm  ->  app on 127.0.0.1:3001
+# Uncomment and set the real domain once the jt-alwm stack publishes its app on
+# 127.0.0.1:3001 and stops running its own proxy.
+# -----------------------------------------------------------------------------
+# jt-alwm.example.com, www.jt-alwm.example.com {
+# 	reverse_proxy 127.0.0.1:3001 {
+# 		header_up X-Forwarded-For {client_ip}
+# 		header_up X-Real-IP {client_ip}
+# 	}
+# 	encode zstd gzip
+# 	header {
+# 		-Server
+# 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+# 		X-Content-Type-Options nosniff
+# 		X-Frame-Options DENY
+# 		Referrer-Policy strict-origin-when-cross-origin
+# 	}
+# }
+
+# -----------------------------------------------------------------------------
+# pce  ->  app on 127.0.0.1:3002
+# Uncomment and set the real domain once the pce stack publishes its app on
+# 127.0.0.1:3002 and stops running its own proxy.
+# -----------------------------------------------------------------------------
+# pce.example.com {
+# 	reverse_proxy 127.0.0.1:3002 {
+# 		header_up X-Forwarded-For {client_ip}
+# 		header_up X-Real-IP {client_ip}
+# 	}
+# 	encode zstd gzip
+# 	header {
+# 		-Server
+# 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+# 		X-Content-Type-Options nosniff
+# 		X-Frame-Options DENY
+# 		Referrer-Policy strict-origin-when-cross-origin
+# 	}
+# }

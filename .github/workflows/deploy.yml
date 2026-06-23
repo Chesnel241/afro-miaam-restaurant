@@ -105,6 +105,23 @@ jobs:
             # Pull the new app image and roll it forward without touching
             # postgres/caddy. --no-deps avoids recreating dependencies.
             docker compose pull app
+
+            # ----------------------------------------------------------------
+            # Apply DB migrations BEFORE rolling the app, so the new container
+            # never meets an older schema. /docker-entrypoint-initdb.d only runs
+            # on a brand-new volume; on an existing volume these never re-apply
+            # on their own. All migrations are idempotent (IF NOT EXISTS / ON
+            # CONFLICT), so re-running every deploy is safe. POSTGRES_USER/DB are
+            # read from inside the container's own env (single-quoted sh -c), and
+            # the SQL is piped from the repo via stdin.
+            # ----------------------------------------------------------------
+            echo "Applying database migrations..."
+            for f in migrations/0*.sql; do
+              echo "  -> $f"
+              docker compose exec -T postgres \
+                sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < "$f"
+            done
+
             docker compose up -d --no-deps app
 
             # ----------------------------------------------------------------

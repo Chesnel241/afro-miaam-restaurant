@@ -1,0 +1,52 @@
+# =============================================================================
+# Shared edge reverse proxy — the SINGLE owner of host ports 80 / 443
+# =============================================================================
+# This is the ONLY process on the VPS allowed to bind 80/443. It terminates TLS
+# (Let's Encrypt) for every site on the box and reverse-proxies each domain to
+# the right app over the host loopback (127.0.0.1:<port>).
+#
+# Each app project on this host (afro-miaam, jt-alwm, pce, ...) MUST:
+#   - NOT run its own public proxy (no caddy/nginx binding 80/443), and
+#   - publish ONLY 127.0.0.1:<unique-port>:<container-port>.
+#
+# Deploy once, independently of the app stacks:
+#     cd /opt/edge && docker compose up -d
+#
+# See ./README.md for the full runbook (volume sharing, adding a site, etc.).
+# =============================================================================
+
+name: edge
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    # Host mode: Caddy binds 80/443 directly on the host and reaches every app
+    # via 127.0.0.1:<port>. This deliberately keeps the edge OFF the Docker
+    # bridge, sidestepping the embedded-DNS / overlapping-subnet failures that
+    # plagued the per-project setup.
+    network_mode: "host"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # afro-miaam's uploaded menu images, mounted READ-ONLY so the edge can
+      # file_server /uploads/* for afromiaam.com (the app does not serve them).
+      # This is the volume the afro-miaam stack creates (explicit name
+      # `afro_miaam_uploads`).
+      - afro_miaam_uploads:/srv/afro-miaam/uploads:ro
+      - caddy_data:/data        # ACME certs & account keys — MUST persist
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  # Read-only view of the afro-miaam app's uploads volume. Declared external so
+  # this stack never owns or wipes it — afro-miaam creates and writes it, the
+  # edge only reads. The name MUST match the `name:` set on the uploads volume
+  # in afro-miaam's docker-compose.yml.
+  afro_miaam_uploads:
+    external: true
+  caddy_data:     # Let's Encrypt certificates & ACME state (one place, for all sites)
+  caddy_config:   # Caddy autosave config
+  caddy_logs:     # Access logs (rolled by Caddy)

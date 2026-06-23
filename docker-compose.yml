@@ -1,11 +1,24 @@
 # =============================================================================
 # Afro Miaam — self-hosted stack (Hetzner VPS)
 # =============================================================================
-# Three services on a single host:
+# Default services (always up):
 #   postgres : data store, internal-only, runs migrations on first boot.
-#   app      : Next.js standalone server, internal-only, writes uploads volume.
-#   caddy    : public edge — TLS termination, reverse proxy, static file_server
-#              for uploaded images.
+#   app      : Next.js standalone server, published on 127.0.0.1:3000 (loopback
+#              only) so the SHARED EDGE proxy can reach it. Writes uploads vol.
+#
+# Optional service (profile "standalone"):
+#   caddy    : single-site public edge. Use ONLY when this is the sole site on
+#              the host (e.g. local/dev or a dedicated VPS). On a multi-site box
+#              it MUST stay off — the shared edge (see ./edge/) owns 80/443.
+#
+# WHY: on a host running several compose projects, only ONE process can bind
+# ports 80/443. Three per-project proxies fighting for them was the root cause
+# of the intermittent outages. The fix is a single shared edge (./edge/) that
+# routes every domain by Host header to each app on 127.0.0.1:<port>.
+#
+#   Multi-site (production):   docker compose up -d            # postgres + app
+#                              (then deploy ./edge/ once for the whole host)
+#   Single-site / dev:         docker compose --profile standalone up -d
 #
 # Secrets/config come from .env (see .env.example). On the VPS the image is
 # pulled from GHCR by the CD pipeline; locally `docker compose build` works too.
@@ -112,11 +125,17 @@ services:
         ipv4_address: 10.200.0.10
 
   # ---------------------------------------------------------------------------
-  # Caddy — public edge. Auto-provisions Let's Encrypt TLS, reverse-proxies to
-  # the app, and serves /uploads/* straight from disk for performance.
+  # Caddy — SINGLE-SITE public edge (profile "standalone" only).
+  #
+  # Disabled by default. On a multi-site host this would fight the other
+  # projects' proxies for ports 80/443 — the exact bug we fixed. Use the shared
+  # ./edge/ stack instead, which owns 80/443 for the whole host. Enable this
+  # only on a dedicated single-site box or for local testing:
+  #     docker compose --profile standalone up -d
   # ---------------------------------------------------------------------------
   caddy:
     image: caddy:2
+    profiles: ["standalone"]
     restart: unless-stopped
     network_mode: "host"
     depends_on:
@@ -131,21 +150,30 @@ services:
       - caddy_logs:/var/log/caddy
 
 # -----------------------------------------------------------------------------
-# Networks — single private bridge. Only Caddy publishes ports to the host.
+# Networks — single private bridge for app <-> postgres only. The app is reached
+# from the shared edge over the host loopback (127.0.0.1:3000), not this bridge.
+# A small /24 (not /16) minimises the chance of overlapping another project's
+# subnet — overlap was what broke Docker's embedded DNS earlier.
 # -----------------------------------------------------------------------------
 networks:
   internal:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.200.0.0/16
+        - subnet: 10.200.0.0/24
 
 # -----------------------------------------------------------------------------
 # Named volumes — survive container recreation / redeploys.
 # -----------------------------------------------------------------------------
 volumes:
   pg_data:        # PostgreSQL data directory
-  uploads:        # Uploaded menu images (shared app <-> caddy)
-  caddy_data:     # Let's Encrypt certificates & ACME state
-  caddy_config:   # Caddy autosave config
-  caddy_logs:     # Access logs (rolled by Caddy)
+  # Uploaded menu images. Explicit, project-independent name so the shared edge
+  # stack (./edge/) can mount the SAME volume read-only to file_server
+  # /uploads/* — the app writes here but does not serve these files itself.
+  # NOTE: if you previously ran with the default name (e.g. afro-miaam_uploads),
+  # migrate the data once — see ./edge/README.md.
+  uploads:
+    name: afro_miaam_uploads
+  caddy_data:     # Let's Encrypt certs & ACME state (standalone profile only)
+  caddy_config:   # Caddy autosave config (standalone profile only)
+  caddy_logs:     # Access logs (standalone profile only)

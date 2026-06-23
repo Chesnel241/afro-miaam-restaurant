@@ -3,23 +3,37 @@
 Production deployment of the Afro Miaam Next.js 15 app on a **single Hetzner VPS**,
 fully self-hosted: **PostgreSQL + local image storage**. No Firebase, no Vercel.
 
-The stack runs as three Docker Compose services:
+The afro-miaam stack runs as two always-on Docker Compose services, plus a
+single **shared edge** that fronts every site on the host:
 
-| Service    | Image                | Exposure        | Purpose                                            |
-|------------|----------------------|-----------------|----------------------------------------------------|
-| `postgres` | `postgres:16-alpine` | internal only   | App database; runs `migrations/001_init.sql` on first boot |
-| `app`      | built from Dockerfile| internal only   | Next.js standalone server (non-root), writes uploads volume |
-| `caddy`    | `caddy:2-alpine`     | `80`,`443` (+udp) | TLS edge, reverse proxy, static file server for `/uploads/*` |
+| Service       | Image                | Exposure              | Purpose                                            |
+|---------------|----------------------|-----------------------|----------------------------------------------------|
+| `postgres`    | `postgres:16-alpine` | internal only         | App database; runs `migrations/*.sql` on first boot |
+| `app`         | built from Dockerfile| `127.0.0.1:3000` (loopback only) | Next.js standalone server (non-root), writes uploads volume |
+| `caddy`       | `caddy:2`            | profile `standalone` only | Single-site TLS edge (off by default — see below) |
+| **edge** (`./edge/`) | `caddy:2`     | `80`,`443` (+udp)     | **Shared** TLS edge for the whole host; routes by `Host` to each app |
 
-Public traffic only ever reaches **Caddy**. The app and database are never
-published to the host.
+> **Why a shared edge?** Only one process can bind host ports 80/443. With
+> several compose projects on one box (afro-miaam, jt-alwm, pce), three
+> per-project proxies fought for those ports — the cause of the intermittent
+> outages. The single `./edge/` stack owns 80/443 and reverse-proxies each
+> domain to its app over the host loopback. The per-project `caddy` service is
+> therefore disabled by default (moved to the `standalone` profile, for
+> single-site / dev hosts only). See `edge/README.md`.
+
+The app port is published on **`127.0.0.1:3000`** (loopback only — never
+`0.0.0.0`) so the host-mode edge can reach it without going over the Docker
+bridge. Postgres is never published. Public traffic only ever reaches the edge.
 
 ```
-Internet ──► Caddy (80/443) ──► app:3000 (reverse_proxy)
-                  │
-                  └──► /srv/uploads (file_server, read-only)  ◄── shared volume ──► app:/app/uploads
-                                                                        │
-                                                              postgres:5432 (internal)
+Internet ──► edge Caddy (80/443, host net) ──► 127.0.0.1:3000  (afro-miaam app)
+                  │                         ├─► 127.0.0.1:3001  (jt-alwm app)
+                  │                         └─► 127.0.0.1:3002  (pce app)
+                  └──► /srv/afro-miaam/uploads (file_server, read-only)
+                                  ▲
+                shared volume `afro_miaam_uploads`  ◄──► app:/app/uploads
+                                                              │
+                                                    postgres:5432 (internal bridge)
 ```
 
 ---
@@ -102,9 +116,12 @@ sudo systemctl enable --now fail2ban
 sudo fail2ban-client status sshd
 ```
 
-> Docker can bypass UFW by writing its own iptables rules. Because **only Caddy
-> publishes ports** (and only 80/443), and postgres/app have no `ports:` mapping,
-> there is nothing for Docker to expose. Do not add `ports:` to the app or db.
+> Docker can bypass UFW by writing its own iptables rules. The **edge** is the
+> only thing that exposes public ports (80/443, via host network mode). The app
+> publishes **only `127.0.0.1:3000`** — a loopback bind that is not reachable
+> from outside the host, so there is nothing for Docker to expose to the
+> internet. Postgres has no `ports:` mapping at all. Never bind the app or db to
+> `0.0.0.0`.
 
 ---
 
