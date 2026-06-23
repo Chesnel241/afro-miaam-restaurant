@@ -105,6 +105,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    ports:
+      - "127.0.0.1:3000:3000"
     networks:
       internal:
         ipv4_address: 10.200.0.10
@@ -116,13 +118,10 @@ services:
   caddy:
     image: caddy:2
     restart: unless-stopped
+    network_mode: "host"
     depends_on:
       app:
         condition: service_healthy
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"   # HTTP/3 (QUIC)
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # Uploaded images, mounted read-only — Caddy file_servers /uploads/*.
@@ -130,9 +129,6 @@ services:
       - caddy_data:/data       # ACME certs & account keys (must persist!)
       - caddy_config:/config
       - caddy_logs:/var/log/caddy
-    networks:
-      internal:
-        ipv4_address: 10.200.0.11
 
 # -----------------------------------------------------------------------------
 # Networks — single private bridge. Only Caddy publishes ports to the host.
