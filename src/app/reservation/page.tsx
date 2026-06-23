@@ -22,11 +22,17 @@ export default function ReservationPage() {
   // Redirect to /panier if the cart is empty — the form is meaningless and
   // the submit button would be locked anyway. Done in an effect (not in
   // render) to avoid the "Cannot update a parent" warning and double-nav.
+  //
+  // Critical: skip when `success` is true. On a successful submit we call
+  // setSuccess(true) then clearCart() in the same tick; without this guard
+  // React's batched re-render observes an empty cart and bounces the user
+  // to /panier before the success screen ever paints, eating the deposit
+  // payment instructions.
   useEffect(() => {
-    if (!authLoading && user && (cart ?? []).length === 0) {
+    if (!authLoading && user && !success && (cart ?? []).length === 0) {
       router.replace("/panier");
     }
-  }, [authLoading, user, cart, router]);
+  }, [authLoading, user, cart, router, success]);
 
   // Redirection vers login si non connecté
   useEffect(() => {

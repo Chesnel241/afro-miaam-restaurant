@@ -93,7 +93,9 @@ jobs:
           port: ${{ secrets.HETZNER_SSH_PORT }}
           script: |
             set -euo pipefail
-            cd /opt/afro-miaam
+            # The repo is cloned into /opt/afro-miaam/afro-miaam on the VPS,
+            # not /opt/afro-miaam (the parent dir, which holds multiple things).
+            cd /opt/afro-miaam/afro-miaam
 
             # Pull the latest compose file / migrations etc.
             git pull --ff-only
