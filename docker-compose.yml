@@ -107,7 +107,7 @@ services:
       start_period: 20s
     networks:
       internal:
-        ipv4_address: 172.20.0.10
+        ipv4_address: 10.200.0.10
 
   # ---------------------------------------------------------------------------
   # Caddy — public edge. Auto-provisions Let's Encrypt TLS, reverse-proxies to
@@ -132,7 +132,7 @@ services:
       - caddy_logs:/var/log/caddy
     networks:
       internal:
-        ipv4_address: 172.20.0.11
+        ipv4_address: 10.200.0.11
 
 # -----------------------------------------------------------------------------
 # Networks — single private bridge. Only Caddy publishes ports to the host.
@@ -142,7 +142,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 10.200.0.0/16
 
 # -----------------------------------------------------------------------------
 # Named volumes — survive container recreation / redeploys.

@@ -28,7 +28,7 @@ afromiaam.com, www.afromiaam.com {
 	# Inject the real client IP via X-Forwarded-For (leftmost = client).
 	# The app's clientIp() reads this only when TRUSTED_PROXY=caddy.
 	handle {
-		reverse_proxy 172.20.0.10:3000 {
+		reverse_proxy 10.200.0.10:3000 {
 			header_up X-Forwarded-For {client_ip}
 			header_up X-Real-IP {client_ip}
 		}
