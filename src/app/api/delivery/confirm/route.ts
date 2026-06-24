@@ -3,7 +3,7 @@ import { createHash, timingSafeEqual } from "crypto";
 import { requireAuth, authErrorResponse } from "@/lib/auth";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { checkRateLimit } from "@/lib/rate-limit-store";
-import { withTransaction } from "@/lib/db";
+import { getSql, withTransaction } from "@/lib/db";
 import { clientIp } from "@/lib/utils";
 
 // =============================================================================
@@ -166,6 +166,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const code = e instanceof Error ? e.message : "";
+
+    // Hygiene: when the stored token is expired, wipe it from the row so the
+    // dead hash doesn't sit there forever. The TX has already rolled back, so
+    // we re-issue the update outside of any transaction; the guarded WHERE
+    // makes it idempotent and safe against the race where another request
+    // refreshed the token in between (only NULL it if it is still expired).
+    if (code === "TOKEN_EXPIRED") {
+      try {
+        const sql = getSql();
+        await sql`
+          update orders
+          set delivery_token_hash = null,
+              delivery_token_exp = null
+          where id = ${orderId}
+            and delivery_token_exp is not null
+            and delivery_token_exp <= ${Date.now()}
+        `;
+      } catch (cleanupErr) {
+        console.warn(
+          "TOKEN_CLEANUP_FAILED",
+          (cleanupErr as { code?: string }).code ?? "unknown",
+        );
+      }
+    }
+
     const map: Record<string, [string, number]> = {
       ORDER_NOT_FOUND: ["Commande introuvable.", 404],
       FORBIDDEN: ["Vous n'êtes pas autorisé à confirmer cette commande.", 403],

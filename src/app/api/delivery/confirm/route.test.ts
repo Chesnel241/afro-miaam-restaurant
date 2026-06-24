@@ -34,10 +34,14 @@ vi.mock("@/lib/rate-limit-store", () => ({
   checkRateLimit: vi.fn(async () => true),
 }));
 
-const { withTransactionMock } = vi.hoisted(() => ({ withTransactionMock: vi.fn() }));
+const { withTransactionMock, getSqlMock } = vi.hoisted(() => ({
+  withTransactionMock: vi.fn(),
+  getSqlMock: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   withTransaction: withTransactionMock,
+  getSql: getSqlMock,
 }));
 
 import { POST } from "./route";
@@ -236,8 +240,42 @@ describe("POST /api/delivery/confirm — state transitions", () => {
     withTransactionMock.mockImplementationOnce(async (fn: (tx: unknown) => Promise<unknown>) =>
       fn(makeTx([[row]])),
     );
+    // The route also fires a cleanup UPDATE on expiry — provide a stub sql.
+    getSqlMock.mockReturnValueOnce(makeTx([[]]));
     const res = await POST(confirmReq({ orderId: "o1", token: RAW_TOKEN }));
     expect(res.status).toBe(410);
+  });
+
+  it("410 + cleanup: NULLs the stored hash + exp when the token is expired", async () => {
+    const row = orderRow({ delivery_token_exp: Date.now() - 1000 });
+    withTransactionMock.mockImplementationOnce(async (fn: (tx: unknown) => Promise<unknown>) =>
+      fn(makeTx([[row]])),
+    );
+    const cleanupSql = makeTx([[]]);
+    getSqlMock.mockReturnValueOnce(cleanupSql);
+    const res = await POST(confirmReq({ orderId: "o1", token: RAW_TOKEN }));
+    expect(res.status).toBe(410);
+    // Cleanup MUST have run, and it must (a) NULL both columns, (b) guard the
+    // race where another request refreshes the token between the TX rollback
+    // and this update.
+    expect(cleanupSql.calls.length).toBe(1);
+    const sql = cleanupSql.calls[0].sql;
+    expect(sql).toContain("delivery_token_hash = null");
+    expect(sql).toContain("delivery_token_exp = null");
+    expect(sql).toContain("delivery_token_exp is not null");
+    expect(sql).toContain("delivery_token_exp <= ");
+  });
+
+  it("does NOT fire cleanup when the token is merely mismatched (still valid)", async () => {
+    const row = orderRow(); // valid exp, valid hash
+    withTransactionMock.mockImplementationOnce(async (fn: (tx: unknown) => Promise<unknown>) =>
+      fn(makeTx([[row]])),
+    );
+    // No getSqlMock queued — if cleanup fires, the mock returns undefined and
+    // we'd see a different error. The assertion is that getSql was never called.
+    const res = await POST(confirmReq({ orderId: "o1", token: "x".repeat(48) }));
+    expect(res.status).toBe(403);
+    expect(getSqlMock).not.toHaveBeenCalled();
   });
 
   it("403 when the submitted token does not match the stored hash", async () => {
